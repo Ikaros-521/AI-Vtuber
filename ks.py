@@ -27,7 +27,7 @@ from ks_pb2 import SCWebEnterRoomAck
 
 from utils.my_handle import My_handle
 
-my_handle = My_handle("config.json")
+my_handle = My_handle("config.json", None)
 if my_handle is None:
     print("程序初始化失败！")
     exit(0)
