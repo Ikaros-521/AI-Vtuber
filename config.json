@@ -1,4 +1,5 @@
 {
+  "platform" : "直播平台类型",
   "room_display_id": "你的直播间房间号",
   "chat_type": "none",
   "need_lang": "none",

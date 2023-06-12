@@ -1,3 +1,4 @@
+import json
 import os
 import logging
 
@@ -56,7 +57,7 @@ class My_handle():
     log_file_path = None
 
 
-    def __init__(self, config_path):
+    def __init__(self, config_path, userConfig):
         LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
         # logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
         # 不想看那么多日志信息，可以把日志等级提一提
@@ -65,6 +66,11 @@ class My_handle():
         
         self.common = Common()
         self.config = Config(config_path)
+
+        # 如果存在用户自定义config, 更新配置
+        if len(userConfig) > 0:
+            self.config.update(userConfig)
+
         self.audio = Audio()
 
         self.proxy = None

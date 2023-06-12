@@ -1,0 +1,8 @@
+platform
+room_display_id
+chat_type
+need_lang
+before_promet
+after_promet
+max_len
+max_char_len

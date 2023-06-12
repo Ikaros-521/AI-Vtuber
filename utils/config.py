@@ -21,3 +21,8 @@ class Config:
             if result is None:
                 break
         return result
+
+    def update(self, json):
+        if len(json) > 0:
+            print(json)
+            self.config.update(json)
