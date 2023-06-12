@@ -91,6 +91,8 @@ class Chatgpt:
         max_length = len(self.data_openai['api_key']) - 1
 
         try:
+            openai.api_base = self.data_openai['api']
+
             if not self.data_openai['api_key']:
                 return "请设置Api Key"
             else:

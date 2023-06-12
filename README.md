@@ -146,6 +146,19 @@ pip install -r requirements_ks.txt
 }
 ```
 
+### chatgpt代理
+例如：[API2D](https://api2d.com/wiki/doc)  
+```
+"openai": {
+  // 代理地址，需要和官方接口一致的才行。例如：api2d
+  "api": "https://oa.api2d.net/v1",
+  // 代理站提供的密钥
+  "api_key": [
+    "fkxxxxxxxxxxx"
+  ]
+}
+```
+
 ## 使用
 
 各版本都需要做的前期准备操作。  
