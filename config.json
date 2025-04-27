@@ -1081,7 +1081,7 @@
   "talk": {
     "key_listener_enable": false,
     "direct_run_talk": false,
-    "device_index": "1",
+    "device_index": "None",
     "no_recording_during_playback": true,
     "no_recording_during_playback_sleep_interval": 1.0,
     "username": "主人",
@@ -1165,7 +1165,7 @@
     "screenshot_delay": 3.0,
     "loop_screenshot_enable": false,
     "loop_screenshot_delay": 15,
-    "cam_screenshot_enable": false,
+    "cam_screenshot_enable": true,
     "cam_index": 0,
     "cam_screenshot_delay": 3.0,
     "loop_cam_screenshot_enable": false,
@@ -1927,7 +1927,7 @@
   },
   "webui": {
     "ip": "192.168.2.89",
-    "port": 8081,
+    "port": 8083,
     "title": "AI Vtuber",
     "auto_run": false,
     "local_dir_to_endpoint": {
