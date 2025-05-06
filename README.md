@@ -61,6 +61,8 @@ https://lug.ustc.edu.cn/wiki/doc/smart-questions
 
 ### 简易流程图
 
+sdf
+
 ![image](./docs/simple_flowchart.png)
 ![image](./docs/chart.jpg)
 
