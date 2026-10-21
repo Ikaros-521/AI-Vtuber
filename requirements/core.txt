@@ -5,6 +5,8 @@ starlette==0.36.3
 uvicorn==0.22.0
 httpx==0.28.1
 aiohttp==3.9.3
+# blivedm（platform 组）要求 yarl~=1.9.3，钉住以免与其他组解析出的 1.25.x 互相覆盖
+yarl==1.9.11
 requests==2.32.3
 openai==1.90.0
 packaging==23.0
@@ -14,7 +16,8 @@ loguru==0.7.0
 schedule==1.2.2
 
 # 语音合成与播放（edge-tts 为默认 TTS）
-edge-tts==6.1.15
+# edge-tts 更新频繁（且微软侧接口时常变动），刻意不锁版本，方便随时升到最新；实际版本仍由各 lock 固定
+edge-tts>=7.3.1
 pydub==0.25.1
 pygame==2.5.0
 PyAudio==0.2.13
@@ -34,3 +37,5 @@ colorlog==6.8.0
 keyboard==0.13.5
 SpeechRecognition==3.10.0
 baidu-aip==4.16.11
+# baidu-aip 代码里 import 了 chardet 却没声明依赖，不显式装上会在 import aip 时报 ModuleNotFoundError
+chardet==5.2.0

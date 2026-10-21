@@ -33,6 +33,8 @@ certifi==2026.10.19
     #   httpx
     #   nicegui
     #   requests
+chardet==5.2.0
+    # via -r requirements/core.txt
 charset-normalizer==3.5.2
     # via requests
 click==8.5.0
@@ -49,7 +51,7 @@ distro==1.9.0
     # via openai
 docutils==0.19
     # via nicegui
-edge-tts==6.1.15
+edge-tts==7.3.1
     # via -r requirements/core.txt
 exceptiongroup==1.3.1
     # via anyio
@@ -130,8 +132,6 @@ pillow==10.1.0
     #   webuiapi
 profanity==1.1
     # via -r requirements/core.txt
-propcache==0.5.4
-    # via yarl
 pscript==0.7.7
     # via vbuild
 pyahocorasick==2.0.0
@@ -209,12 +209,15 @@ starlette==0.36.3
     # via
     #   -r requirements/core.txt
     #   fastapi
+tabulate==0.10.0
+    # via edge-tts
 tqdm==4.70.1
     # via openai
 typing-extensions==4.16.0
     # via
     #   aiosignal
     #   anyio
+    #   edge-tts
     #   exceptiongroup
     #   fastapi
     #   multidict
@@ -249,5 +252,7 @@ win32-setctime==1.2.0
     # via loguru
 wsproto==1.3.2
     # via simple-websocket
-yarl==1.25.1
-    # via aiohttp
+yarl==1.9.11
+    # via
+    #   -r requirements/core.txt
+    #   aiohttp

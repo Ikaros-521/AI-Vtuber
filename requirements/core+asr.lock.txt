@@ -52,6 +52,8 @@ cffi==2.1.1
     # via
     #   cryptography
     #   soundfile
+chardet==5.2.0
+    # via -r requirements/core.txt
 charset-normalizer==3.5.2
     # via requests
 click==8.5.0
@@ -82,7 +84,7 @@ distro==1.9.0
     # via openai
 docutils==0.19
     # via nicegui
-edge-tts==6.1.15
+edge-tts==7.3.1
     # via -r requirements/core.txt
 editdistance==0.8.1
     # via funasr
@@ -253,8 +255,6 @@ pooch==1.9.0
     # via librosa
 profanity==1.1
     # via -r requirements/core.txt
-propcache==0.5.4
-    # via yarl
 protobuf==7.36.2
     # via
     #   onnxruntime
@@ -363,6 +363,8 @@ sympy==1.14.0
     # via
     #   onnxruntime
     #   torch
+tabulate==0.10.0
+    # via edge-tts
 tensorboardx==2.6.5
     # via funasr
 threadpoolctl==3.7.0
@@ -390,6 +392,7 @@ typing-extensions==4.16.0
     #   aiosignal
     #   anyio
     #   cryptography
+    #   edge-tts
     #   exceptiongroup
     #   fastapi
     #   httpx2
@@ -429,5 +432,7 @@ win32-setctime==1.2.0
     # via loguru
 wsproto==1.3.2
     # via simple-websocket
-yarl==1.25.1
-    # via aiohttp
+yarl==1.9.11
+    # via
+    #   -r requirements/core.txt
+    #   aiohttp

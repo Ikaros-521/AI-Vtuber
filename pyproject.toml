@@ -6,91 +6,125 @@ authors = ["ikaros <327209194@qq.com>"]
 license = "GPL-3.0"
 readme = "README.md"
 
+# 安装的事实来源是 requirements/ 下的分组文件与 *.lock.txt（见 README「依赖分层」）。
+# 本文件只是把它镜像成 Poetry 依赖组，方便用 Poetry 工具链查看/安装；
+# 两处若不一致，以 requirements/ 为准。
+
 [tool.poetry.dependencies]
 python = "^3.10"
-requests = "2.32.3"
+
+# --- core：WebUI 与本地对话/播报主链路（requirements/core.txt） ---
+nicegui = "==1.4.30"
+fastapi = "==0.109.2"
+starlette = "==0.36.3"
+uvicorn = "==0.22.0"
+httpx = "==0.28.1"
+aiohttp = "==3.9.3"
+requests = "==2.32.3"
+openai = "==1.90.0"
+packaging = "==23.0"
+pydantic = ">=2.11,<3"
+numpy = "==1.25.0"
+loguru = "==0.7.0"
+schedule = "==1.2.2"
+edge-tts = ">=7.3.1"
+pydub = "==0.25.1"
+pygame = "==2.5.0"
+PyAudio = "==0.2.13"
+websockets = "==11.0.3"
+langid = "==1.1.6"
+profanity = "==1.1"
+pyahocorasick = "==2.0.0"
+send2trash = "==1.8.2"
+pypinyin = "==0.49.0"
+jieba = "==0.42.1"
+pygtrans = "==1.5.3"
+colorlog = "==6.8.0"
+keyboard = "==0.13.5"
+SpeechRecognition = "==3.10.0"
+baidu-aip = "==4.16.11"
+
+# --- llm：云端/本地大模型 provider（requirements/llm.txt） ---
+[tool.poetry.group.llm]
+optional = true
+
+[tool.poetry.group.llm.dependencies]
+bardapi = "==0.1.33"
+dashscope = "==1.14.1"
+g4f = "==0.3.0.6"
+google-generativeai = "==0.7.2"
+PyJWT = "==2.8.0"
+revTongYi = "==0.0.1.0"
+volcengine-python-sdk = { version = "==1.0.99", extras = ["ark"] }
+zhipuai = "==2.1.4.20230731"
 wenxinworkshop = { git = "https://gitee.com/ikaros-521/WenxinWorkshop-Python-SDK", rev = "12b863fca7ec1cdf969d73a04b50f66d2d24a878" }
-blivedm = { git = "https://gitee.com/ikaros-521/blivedm", rev = "c9ac671f783c4c3eaa4ee4e7738226ebbf402259" }
-sparkdesk-api = { git = "https://gitee.com/ikaros-521/sparkdesk-api", rev = "bb830c0f1a1b5c575a29a24c4077d6482aa9e6e1" }
-openai = "*"
-pygame = "*"
-edge-tts = "6.1.6"
-langid = "*"
-aiohttp = "3.9.1"
-asyncio = "*"
-slack_sdk = "3.21.3"
-profanity = "1.1"
-elevenlabs = "0.2.8"
-PyPDF2 = "*"
-protobuf_inspector = "*"
-websocket-client = "*"
-websocket-client-py3 = "*"
-tiktoken = "*"
-pyahocorasick = "*"
-webuiapi = "*"
-pyvirtualcam = "*"
-numpy = "*"
-faiss-cpu = "*"
-sentence_transformers = "*"
-pydub = "*"
-pydantic = "1.10.13"
-send2trash = "*"
-keyboard = "*"
-PyAudio = "*"
-SpeechRecognition = "*"
-baidu-aip = "*"
-chardet = "*"
-pypinyin = "*"
-gradio_client = "*"
-schedule = "*"
-bilibili-api-python = "*"
-langchain = "0.0.142"
-playwright = "*"
-protobuf = "3.20.3"
-certifi = "*"
-charset-normalizer = "*"
-greenlet = "*"
-idna = "*"
-lxml = "*"
-pyee = "*"
-typing_extensions = "*"
-urllib3 = "2.2.2"
-pyhandytools = "*"
-curl_cffi = "*"
-zhipuai = "*"
-bardapi = "*"
-revTongYi = "*"
-pyautogui = "*"
-nicegui = "1.4.30"
-pytchat = "*"
-PySocks = "*"
-pure-protobuf = "3.0.0a5"
-xingchen = "1.1.5"
-emoji = "*"
-google-generativeai = "*"
-colorlog = "*"
-faster_whisper = "*"
-httpx = "0.25.2"
-Pillow = "10.1.0"
-pygtrans = "*"
-jieba = "*"
-gradio = "4.16.0"
-TikTokLive = "*"
-azure-cognitiveservices-speech = "*"
-pyjwt = "*"
-dashscope = "*"
-pygetwindow = "*"
-opencv-python = "*"
-g4f = "*"
-starlette = "0.36.3"
-pyserial = "*"
+sparkdesk-api = { git = "https://gitee.com/ikaros-521/sparkdesk-api", rev = "0c4994d769908708321b3598aa34de2062dd6df5" }
 
-# dy2
-betterproto = "2.0.0b6"
-loguru = "*"
+# --- tts：额外 TTS（requirements/tts.txt） ---
+[tool.poetry.group.tts]
+optional = true
 
-# asr
-funasr = "1.1.3"
+[tool.poetry.group.tts.dependencies]
+elevenlabs = "==0.2.8"
+azure-cognitiveservices-speech = "==1.35.0"
+gradio_client = "==1.10.3"
+
+# --- asr：本地语音识别（requirements/asr.txt） ---
+[tool.poetry.group.asr]
+optional = true
+
+[tool.poetry.group.asr.dependencies]
+funasr = "==1.1.3"
+faster-whisper = "==1.0.2"
+
+# --- platform：直播平台弹幕与逆向协议（requirements/platform.txt） ---
+# 该组暂未生成 lock：bilibili-api-python 16.1.0 与 core 的 requests/httpx/aiohttp 冲突，
+# 需升级到 17.4.2 并把 login 迁到 login_v2 后才能解析。
+[tool.poetry.group.platform]
+optional = true
+
+[tool.poetry.group.platform.dependencies]
+bilibili-api-python = "==17.4.2"
+blivedm = { git = "https://gitee.com/ikaros-521/blivedm", rev = "8c5f6a910d9f755ef01a6b099b7da2e2d4453fa6" }
+TikTokLive = "==6.2.1.post1"
+betterproto = "==2.0.0b1"
+playwright = "==1.36.0"
+pytchat = "==0.5.5"
+PySocks = "==1.7.1"
+emoji = "==2.14.1"
+websocket-client = "==1.8.0"
+protobuf = "==4.25.8"
+protobuf-inspector = "==0.2"
+rsocket = "==0.4.15"
+
+# --- visual：数字人/绘图/桌面自动化（requirements/visual.txt） ---
+[tool.poetry.group.visual]
+optional = true
+
+[tool.poetry.group.visual.dependencies]
+opencv-python = "==4.9.0.80"
+Pillow = "==10.1.0"
+pyvirtualcam = "==0.10.2"
+webuiapi = "==0.9.3"
+pyautogui = "==0.9.54"
+PyGetWindow = "==0.0.9"
+pyserial = "==3.5"
+
+# --- chat-with-file：文档问答（requirements/chat-with-file.txt） ---
+[tool.poetry.group.chat-with-file]
+optional = true
+
+[tool.poetry.group.chat-with-file.dependencies]
+faiss-cpu = "==1.7.4"
+PyPDF2 = "==3.0.1"
+
+# --- xingchen：通义星尘 SDK，要求 pydantic<2，与 core 互斥，
+# 因此和 requirements/llm-xingchen.txt 一样不并入全量入口 ---
+[tool.poetry.group.xingchen]
+optional = true
+
+[tool.poetry.group.xingchen.dependencies]
+xingchen = "==1.1.5"
 
 [build-system]
 requires = ["poetry-core"]

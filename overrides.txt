@@ -1,4 +1,0 @@
-aiohttp==3.9.1 # https://github.com/Ikaros-521/AI-Vtuber/issues/655#issuecomment-1962414562
-urllib3==2.2.2 # Because xingchen==1.1.5 depends on urllib3>=1.25.3,<2.1.0 and you require urllib3==2.2.2
-pydantic==1.10.13 # Because gradio==4.16.0 depends on pydantic>=2.0 and you require pydantic==1.10.13
-pyyaml>=6.0.1 # https://github.com/astral-sh/uv/issues/1455

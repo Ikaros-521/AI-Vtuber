@@ -65,7 +65,7 @@ https://lug.ustc.edu.cn/wiki/doc/smart-questions
 
 | 分组 | 内容 | 何时需要 |
 | --- | --- | --- |
-| `core.txt` | WebUI、本地对话、edge-tts、拾音、文本处理 | 必装（77 个包） |
+| `core.txt` | WebUI、本地对话、edge-tts、拾音、文本处理 | 必装（78 个包） |
 | `llm.txt` | 讯飞/智谱/通义/文心/Gemini/g4f 等模型 SDK | 选用对应 `chat_type` |
 | `llm-xingchen.txt` | 通义星尘 SDK | 需要该 provider，但它要求 `pydantic<2`，与核心互斥，故未收进全量入口 |
 | `tts.txt` | elevenlabs、Azure TTS、gradio_client | 选用对应 TTS |
@@ -73,6 +73,8 @@ https://lug.ustc.edu.cn/wiki/doc/smart-questions
 | `platform.txt` | B站/抖音/快手/TikTok/YouTube 弹幕与逆向协议 | 对应直播平台 |
 | `visual.txt` | OpenCV、Pillow、虚拟摄像头、SD、pyautogui | 数字人/绘图/桌面自动化 |
 | `chat-with-file.txt` | 文档问答：OpenAI 向量化 + faiss 检索 | 启用 `chat_with_file` |
+
+`pyproject.toml` 只是把上述分组镜像成 Poetry 依赖组（`[tool.poetry.group.*]`），方便用 Poetry 工具链查看；实际安装仍以 `requirements/` 为准，两处不一致时同理。
 
 ```bash
 # 最小安装：直接用锁定文件，装出来的环境和仓库验证过的一致
@@ -96,15 +98,15 @@ uv pip compile requirements/core.txt --python .venv/Scripts/python.exe -o requir
 uv pip compile requirements/core.txt requirements/llm.txt --python .venv/Scripts/python.exe --no-build-isolation -o requirements/core+llm.lock.txt
 ```
 
-`platform` 组暂未生成 lock：`bilibili-api-python==16.1.0` 声明了 `requests<2.32`、`httpx<0.25`、`aiohttp<3.9`、`brotli<1.1`，与核心版本冲突，需先升级到 17.4.2 并迁移 `login` → `login_v2`。
+`platform` 组的 lock 也已生成（`requirements/core+platform.lock.txt`）：`bilibili-api-python` 升到 17.4.2 后不再钉死 `requests`/`httpx`/`aiohttp`/`brotli` 上限，可与 core 合并解析。注意 17.x 的登录 API 换成了异步的 `login_v2`，且需要极验验证码的「账号密码登录」已移除，B站登录请用 `cookie` 或 `手机扫码`。
 
 ### 冒烟测试
 
 改完依赖或核心代码后，先跑这个确认主链路没被改坏：
 
 ```bash
-python tools/smoke_test.py               # 配置检查 + 核心模块导入 + 启动 WebUI 并请求首页
-python tools/smoke_test.py --skip-webui   # 只做静态检查
+python tools/smoke_test.py               # 配置检查 + 核心模块导入 + 平台注册表 + 启动 WebUI 并请求首页
+python tools/smoke_test.py --skip-webui   # 只做静态检查（含平台注册表）
 ```
 
 测试用 `LUNA_CONFIG_PATH` 指向临时副本并把端口换成空闲端口，不会动你的 `config.json`，也不需要先关掉正在运行的实例。
