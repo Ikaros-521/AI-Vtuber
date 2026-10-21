@@ -35,7 +35,9 @@ CORE_MODULES = [
     "utils.my_handle",
     "webui_app.pages.data_analysis",
     "webui_app.pages.static_pages",
+    "webui_app.pages.svc",
     "webui_app.pages.translate",
+    "webui_app.pages.visual_body",
 ]
 REQUIRED_CONFIG_KEYS = ["webui", "platform", "chat_type", "filter", "openai"]
 

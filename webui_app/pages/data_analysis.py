@@ -1,7 +1,8 @@
-"""数据分析页：弹幕词云与积分/礼物榜单。返回参与保存的 config 映射。"""
+"""数据分析页：弹幕词云与积分/礼物榜单。"""
 from nicegui import ui
 
 from utils.data_analysis import Data_Analysis
+from webui_app.pages import PageConfig
 
 
 def build_data_analysis_tab(config, config_path, echart_css):
@@ -63,7 +64,7 @@ def build_data_analysis_tab(config, config_path, echart_css):
 
             ui.button('更新数据', on_click=lambda: update_echart_gift())
 
-    return {
+    return PageConfig(mapping={
         "data_analysis": {
             "comment_word_cloud": {
                 "top_num": (input_data_analysis_comment_word_cloud_top_num, 'int'),
@@ -75,4 +76,4 @@ def build_data_analysis_tab(config, config_path, echart_css):
                 "top_num": (input_data_analysis_gift_top_num, 'int'),
             },
         }
-    }
+    })

@@ -15,6 +15,8 @@ from utils.audio import Audio
 
 from webui_app.pages.data_analysis import build_data_analysis_tab
 from webui_app.pages.static_pages import build_about_tab, build_docs_tab
+from webui_app.pages.svc import build_svc_tab
+from webui_app.pages.visual_body import build_visual_body_tab
 from webui_app.pages.translate import build_translate_tab
 
 """
@@ -2716,80 +2718,6 @@ def goto_func_page():
                 config_data = update_config(config_mapping, config, config_data, "tts")
 
             """
-            SVC
-            """
-            if True:
-                config_mapping = {}
-                if config.get("webui", "show_card", "svc", "ddsp_svc"):
-                    config_mapping["ddsp_svc"] = {
-                        "enable": (switch_ddsp_svc_enable, 'bool'),
-                        "config_path": (input_ddsp_svc_config_path, 'str'),
-                        "api_ip_port": (input_ddsp_svc_api_ip_port, 'str'),
-                        "fSafePrefixPadLength": (input_ddsp_svc_fSafePrefixPadLength, 'float'),
-                        "fPitchChange": (input_ddsp_svc_fPitchChange, 'float'),
-                        "sSpeakId": (input_ddsp_svc_sSpeakId, 'int'),
-                        "sampleRate": (input_ddsp_svc_sampleRate, 'int'),
-                    }
-                if config.get("webui", "show_card", "svc", "so_vits_svc"):  
-                    config_mapping["so_vits_svc"] = {
-                        "enable": (switch_so_vits_svc_enable, 'bool'),
-                        "config_path": (input_so_vits_svc_config_path, 'str'),
-                        "api_ip_port": (input_so_vits_svc_api_ip_port, 'str'),
-                        "spk": (input_so_vits_svc_spk, 'str'),
-                        "tran": (input_so_vits_svc_tran, 'float'),
-                        "wav_format": (input_so_vits_svc_wav_format, 'str'),
-                    }
-
-                config_data = update_config(config_mapping, config, config_data, "svc")
-                  
-            """
-            虚拟身体
-            """
-            if True:
-                config_mapping = {}
-                if config.get("webui", "show_card", "visual_body", "live2d"):  
-                    config_mapping["live2d"] = {
-                        "enable": (switch_live2d_enable, 'bool'),
-                        "port": (input_live2d_port, 'int'),
-                        "name": (select_live2d_name, 'str'),
-                    }
-                if config.get("webui", "show_card", "visual_body", "live2d_TTS_LLM_GPT_SoVITS_Vtuber"):  
-                    config_mapping["live2d_TTS_LLM_GPT_SoVITS_Vtuber"] = {
-                        "api_ip_port": (input_live2d_TTS_LLM_GPT_SoVITS_Vtuber_api_ip_port, 'str'),
-                    } 
-                if config.get("webui", "show_card", "visual_body", "xuniren"):  
-                    config_mapping["xuniren"] = {
-                        "api_ip_port": (input_xuniren_api_ip_port, 'str'),
-                    } 
-                if config.get("webui", "show_card", "visual_body", "metahuman_stream"):  
-                    config_mapping["metahuman_stream"] = {
-                        "type": (select_metahuman_stream_type, 'str'),
-                        "api_ip_port": (input_metahuman_stream_api_ip_port, 'str'),
-                    } 
-                if config.get("webui", "show_card", "visual_body", "unity"):  
-                    config_mapping["unity"] = {
-                        "api_ip_port": (input_unity_api_ip_port, 'str'),
-                        "password": (input_unity_password, 'str'),
-                    } 
-                if config.get("webui", "show_card", "visual_body", "EasyAIVtuber"):  
-                    config_mapping["EasyAIVtuber"] = {
-                        "api_ip_port": (input_EasyAIVtuber_api_ip_port, 'str'),
-                    } 
-                if config.get("webui", "show_card", "visual_body", "digital_human_video_player"):  
-                    config_mapping["digital_human_video_player"] = {
-                        "type": (select_digital_human_video_player_type, 'str'),
-                        "api_ip_port": (input_digital_human_video_player_api_ip_port, 'str'),
-                    }         
-                
-                config_data = update_config(config_mapping, config, config_data, None)
-
-                if config.get("webui", "show_card", "visual_body", "live2d"):
-                    tmp_str = f"var model_name = \"{select_live2d_name.value}\";"
-                    # 路径写死了，注意
-                    common.write_content_to_file("Live2D/js/model_name.js", tmp_str)
-
-                
-            """
             文案
             """
             if True:
@@ -3157,9 +3085,13 @@ def goto_func_page():
                 config_data["webui"]["local_dir_to_endpoint"]["config"] = tmp_arr
 
                 
-            for mapping in page_config_mappings:
-                if mapping:
-                    config_data = update_config(mapping, config, config_data, None)
+            for page_config in page_config_mappings:
+                if page_config is None:
+                    continue
+                if page_config.mapping:
+                    config_data = update_config(page_config.mapping, config, config_data, None)
+                if page_config.on_save:
+                    page_config.on_save(config_data)
 
             return config_data
         except Exception as e:
@@ -5754,175 +5686,10 @@ def goto_func_page():
                         input_index_tts_temperature = ui.input(label='temperature', value=config.get("index_tts", "temperature"), placeholder='temperature').style("width:200px;").tooltip("temperature")
                         
         with ui.tab_panel(svc_page).style(tab_panel_css):
-            if config.get("webui", "show_card", "svc", "ddsp_svc"):
-                with ui.card().style(card_css):
-                    ui.label("DDSP-SVC")
-                    with ui.row():
-                        switch_ddsp_svc_enable = ui.switch('启用', value=config.get("ddsp_svc", "enable")).style(switch_internal_css)
-                        input_ddsp_svc_config_path = ui.input(label='配置文件路径', placeholder='模型配置文件config.yaml的路径(此处可以不配置，暂时没有用到)', value=config.get("ddsp_svc", "config_path"))
-                        input_ddsp_svc_config_path.style("width:400px")
+            page_config_mappings.append(build_svc_tab(config, common, card_css, switch_internal_css))
 
-                        input_ddsp_svc_api_ip_port = ui.input(
-                            label='API地址', 
-                            placeholder='flask_api服务运行的ip端口，例如：http://127.0.0.1:6844', 
-                            value=config.get("ddsp_svc", "api_ip_port"),
-                            validation={
-                                '请输入正确格式的URL': lambda value: common.is_url_check(value),
-                            }
-                        )
-                        input_ddsp_svc_api_ip_port.style("width:400px")
-                        input_ddsp_svc_fSafePrefixPadLength = ui.input(label='安全前缀填充长度', placeholder='安全前缀填充长度，不知道干啥用，默认为0', value=config.get("ddsp_svc", "fSafePrefixPadLength"))
-                        input_ddsp_svc_fSafePrefixPadLength.style("width:300px")
-                    with ui.row():
-                        input_ddsp_svc_fPitchChange = ui.input(label='变调', placeholder='音调设置，默认为0', value=config.get("ddsp_svc", "fPitchChange"))
-                        input_ddsp_svc_fPitchChange.style("width:300px")
-                        input_ddsp_svc_sSpeakId = ui.input(label='说话人ID', placeholder='说话人ID，需要和模型数据对应，默认为0', value=config.get("ddsp_svc", "sSpeakId"))
-                        input_ddsp_svc_sSpeakId.style("width:400px")
-
-                        input_ddsp_svc_sampleRate = ui.input(label='采样率', placeholder='DAW所需的采样率，默认为44100', value=config.get("ddsp_svc", "sampleRate"))
-                        input_ddsp_svc_sampleRate.style("width:300px")
-            
-            if config.get("webui", "show_card", "svc", "so_vits_svc"):
-                with ui.card().style(card_css):
-                    ui.label("SO-VITS-SVC")
-                    with ui.row():
-                        switch_so_vits_svc_enable = ui.switch('启用', value=config.get("so_vits_svc", "enable")).style(switch_internal_css)
-                        input_so_vits_svc_config_path = ui.input(label='配置文件路径', placeholder='模型配置文件config.json的路径', value=config.get("so_vits_svc", "config_path"))
-                        input_so_vits_svc_config_path.style("width:400px")
-                    with ui.grid(columns=2):
-                        input_so_vits_svc_api_ip_port = ui.input(
-                            label='API地址', 
-                            placeholder='flask_api_full_song服务运行的ip端口，例如：http://127.0.0.1:1145', 
-                            value=config.get("so_vits_svc", "api_ip_port"),
-                            validation={
-                                '请输入正确格式的URL': lambda value: common.is_url_check(value),
-                            }
-                        )
-                        input_so_vits_svc_api_ip_port.style("width:400px")
-                        input_so_vits_svc_spk = ui.input(label='说话人', placeholder='说话人，需要和配置文件内容对应', value=config.get("so_vits_svc", "spk"))
-                        input_so_vits_svc_spk.style("width:400px") 
-                        input_so_vits_svc_tran = ui.input(label='音调', placeholder='音调设置，默认为1', value=config.get("so_vits_svc", "tran"))
-                        input_so_vits_svc_tran.style("width:300px")
-                        input_so_vits_svc_wav_format = ui.input(label='输出音频格式', placeholder='音频合成后输出的格式', value=config.get("so_vits_svc", "wav_format"))
-                        input_so_vits_svc_wav_format.style("width:300px") 
         with ui.tab_panel(visual_body_page).style(tab_panel_css):
-            if config.get("webui", "show_card", "visual_body", "live2d"):
-                with ui.card().style(card_css):
-                    ui.label("Live2D")
-                    with ui.row():
-                        switch_live2d_enable = ui.switch('启用', value=config.get("live2d", "enable")).style(switch_internal_css)
-                        input_live2d_port = ui.input(label='端口', value=config.get("live2d", "port"), placeholder='web服务运行的端口号，默认：12345，范围:0-65535，没事不要乱改就好')
-                        # input_live2d_name = ui.input(label='模型名', value=config.get("live2d", "name"), placeholder='模型名称，模型存放于Live2D\live2d-model路径下，请注意路径和模型内容是否匹配')
-
-                        live2d_names = common.get_folder_names("Live2D/live2d-model") # 路径写死
-                        logger.info(f"本地Live2D模型名列表：{live2d_names}")
-
-                        data_json = {}
-                        for line in live2d_names:
-                            data_json[line] = line
-                        # live2d_model_name = common.get_live2d_model_name("Live2D/js/model_name.js") # 路径写死
-                        select_live2d_name = ui.select(
-                            label='模型名', 
-                            options=data_json, 
-                            value=config.get("live2d", "name")
-                        ).style("width:150px") 
-            
-            if config.get("webui", "show_card", "visual_body", "EasyAIVtuber"):
-                with ui.card().style(card_css):
-                    ui.label("EasyAIVtuber")
-                    with ui.row():
-                        input_EasyAIVtuber_api_ip_port = ui.input(
-                            label='API地址', 
-                            value=config.get("EasyAIVtuber", "api_ip_port"), 
-                            placeholder='对接EasyAIVtuber应用监听的ip和端口',
-                            validation={
-                                '请输入正确格式的URL': lambda value: common.is_url_check(value),
-                            }
-                        )
-
-            if config.get("webui", "show_card", "visual_body", "digital_human_video_player"):
-                with ui.card().style(card_css):
-                    ui.label("数字人视频播放器")
-                    with ui.row():
-                        select_digital_human_video_player_type = ui.select(
-                            label='类型', 
-                            options={
-                                "easy_wav2lip": "easy_wav2lip", 
-                                "sadtalker": "sadtalker", 
-                                "genefaceplusplus": "GeneFacePlusPlus",
-                                "musetalk": "MuseTalk",
-                                "anitalker": "AniTalker",
-                            }, 
-                            value=config.get("digital_human_video_player", "type")
-                        ).style("width:150px") 
-                        input_digital_human_video_player_api_ip_port = ui.input(
-                            label='API地址', 
-                            value=config.get("digital_human_video_player", "api_ip_port"), 
-                            placeholder='对接 数字人视频播放器 监听的ip和端口',
-                            validation={
-                                '请输入正确格式的URL': lambda value: common.is_url_check(value),
-                            }
-                        )
-                       
-            if config.get("webui", "show_card", "visual_body", "metahuman_stream"):
-                with ui.card().style(card_css):
-                    ui.label("metahuman_stream")
-                    with ui.row():
-                        select_metahuman_stream_type = ui.select(
-                            label='类型', 
-                            options={'ernerf': 'ernerf', 'musetalk': 'musetalk', 'wav2lip': 'wav2lip'}, 
-                            value=config.get("metahuman_stream", "type")
-                        ).style("width:100px;")
-                        input_metahuman_stream_api_ip_port = ui.input(
-                            label='API地址', 
-                            value=config.get("metahuman_stream", "api_ip_port"), 
-                            placeholder='metahuman_stream应用启动API后，监听的ip和端口',
-                            validation={
-                                '请输入正确格式的URL': lambda value: common.is_url_check(value),
-                            }
-                        )
-
-            if config.get("webui", "show_card", "visual_body", "live2d_TTS_LLM_GPT_SoVITS_Vtuber"):
-                with ui.card().style(card_css):
-                    ui.label("live2d_TTS_LLM_GPT_SoVITS_Vtuber")
-                    with ui.row():
-                        input_live2d_TTS_LLM_GPT_SoVITS_Vtuber_api_ip_port = ui.input(
-                            label='API地址', 
-                            value=config.get("live2d_TTS_LLM_GPT_SoVITS_Vtuber", "api_ip_port"), 
-                            placeholder='live2d_TTS_LLM_GPT_SoVITS_Vtuber应用启动API后，监听的ip和端口',
-                            validation={
-                                '请输入正确格式的URL': lambda value: common.is_url_check(value),
-                            }
-                        )            
-
-            if config.get("webui", "show_card", "visual_body", "xuniren"):
-                with ui.card().style(card_css):
-                    ui.label("xuniren")
-                    with ui.row():
-                        input_xuniren_api_ip_port = ui.input(
-                            label='API地址', 
-                            value=config.get("xuniren", "api_ip_port"), 
-                            placeholder='xuniren应用启动API后，监听的ip和端口',
-                            validation={
-                                '请输入正确格式的URL': lambda value: common.is_url_check(value),
-                            }
-                        )
-            
-            if config.get("webui", "show_card", "visual_body", "unity"):
-                with ui.card().style(card_css):
-                    ui.label("Unity")
-                    with ui.row():
-                        # switch_unity_enable = ui.switch('启用', value=config.get("unity", "enable")).style(switch_internal_css)
-                        input_unity_api_ip_port = ui.input(
-                            label='API地址', 
-                            value=config.get("unity", "api_ip_port"), 
-                            placeholder='对接Unity应用使用的HTTP中转站监听的ip和端口',
-                            validation={
-                                '请输入正确格式的URL': lambda value: common.is_url_check(value),
-                            }
-                        )
-                        input_unity_password = ui.input(label='密码', value=config.get("unity", "password"), placeholder='对接Unity应用使用的HTTP中转站的密码')
-
+            page_config_mappings.append(build_visual_body_tab(config, common, card_css, switch_internal_css))
 
         with ui.tab_panel(copywriting_page).style(tab_panel_css):
             with ui.row():

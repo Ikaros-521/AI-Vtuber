@@ -1,5 +1,7 @@
-"""翻译页：百度/谷歌翻译配置。返回参与保存的 config 映射。"""
+"""翻译页：百度/谷歌翻译配置。"""
 from nicegui import ui
+
+from webui_app.pages import PageConfig
 
 
 def build_translate_tab(config, card_css, switch_internal_css):
@@ -47,7 +49,7 @@ def build_translate_tab(config, card_css, switch_internal_css):
                 value=config.get("translate", "google", "tgt_lang")
             ).style("width:100px;")
 
-    return {
+    return PageConfig(mapping={
         "translate": {
             "enable": (switch_translate_enable, 'bool'),
             "type": (select_translate_type, 'str'),
@@ -64,4 +66,4 @@ def build_translate_tab(config, card_css, switch_internal_css):
                 "tgt_lang": (select_translate_google_tgt_lang, 'str'),
             },
         }
-    }
+    })
