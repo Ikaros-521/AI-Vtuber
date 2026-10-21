@@ -694,7 +694,10 @@ class Common:
 
         # 遍历键值对列表，查找指定字段名
         for pair in key_value_pairs:
-            key, value = pair.strip().split('=')
+            key, sep, value = pair.strip().partition('=')
+            # 结尾的 ';' 会切出空项；值本身含 '='（如 base64 填充）时只按第一个 '=' 切
+            if not sep:
+                continue
             if key == field_name:
                 return value
 

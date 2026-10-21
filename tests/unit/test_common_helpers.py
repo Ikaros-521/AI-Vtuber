@@ -125,6 +125,27 @@ def test_parse_cookie_data(c):
     assert c.parse_cookie_data(raw, "missing") == ""
 
 
+def test_parse_cookie_data_tolerates_trailing_semicolon(c):
+    # 浏览器复制出来的 cookie 常以 ';' 结尾，切出的空项不能被当成 key=value
+    raw = "SESSDATA=abc123; bili_jct=def;"
+
+    assert c.parse_cookie_data(raw, "bili_jct") == "def"
+    assert c.parse_cookie_data(raw, "SESSDATA") == "abc123"
+
+
+def test_parse_cookie_data_keeps_equals_inside_value(c):
+    # base64 值带 '=' 填充，只能按第一个 '=' 切，否则解出来的是被截断的 cookie
+    raw = "bili_jct=YWJjZGVm==; SESSDATA=x"
+
+    assert c.parse_cookie_data(raw, "bili_jct") == "YWJjZGVm=="
+
+
+def test_parse_cookie_data_skips_malformed_entries(c):
+    raw = "没有等号的一项; SESSDATA=abc123"
+
+    assert c.parse_cookie_data(raw, "SESSDATA") == "abc123"
+
+
 def test_dynamic_variable_replacement(c):
     data = {"username": "观众甲", "content": "你好"}
 
