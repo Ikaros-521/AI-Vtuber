@@ -78,8 +78,8 @@ funasr = "==1.1.3"
 faster-whisper = "==1.0.2"
 
 # --- platform：直播平台弹幕与逆向协议（requirements/platform.txt） ---
-# 该组暂未生成 lock：bilibili-api-python 16.1.0 与 core 的 requests/httpx/aiohttp 冲突，
-# 需升级到 17.4.2 并把 login 迁到 login_v2 后才能解析。
+# bilibili-api-python 17.4.2 起不再钉死 requests/httpx/aiohttp/brotli 上限，可与 core 合并解析，
+# lock 见 requirements/core+platform.lock.txt。登录 API 已换成异步的 login_v2。
 [tool.poetry.group.platform]
 optional = true
 
