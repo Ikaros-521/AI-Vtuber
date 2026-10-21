@@ -1,25 +1,16 @@
 import sqlite3
-from queue import Queue
 from datetime import datetime
 
 
 class SQLiteDB:
-    def __init__(self, db_file, max_connections=5):
+    """按操作建连、用完即关。
+
+    这里曾经有个连接池，但 execute/fetch_all 都各自新建连接，池里的 5 条从来没人取用也从不关闭，
+    数据分析页每次刷新图表都新建一个实例，等于每次泄漏 5 个句柄，所以删掉了。
+    """
+
+    def __init__(self, db_file):
         self.db_file = db_file
-        self.connection_pool = self._create_connection_pool(max_connections)
-
-    def _create_connection_pool(self, max_connections):
-        connections = Queue(max_connections)
-        for _ in range(max_connections):
-            conn = sqlite3.connect(self.db_file)
-            connections.put(conn)
-        return connections
-
-    def _get_connection(self):
-        return self.connection_pool.get()
-
-    def _release_connection(self, conn):
-        self.connection_pool.put(conn)
 
     def execute(self, query, args=None):
         conn = sqlite3.connect(self.db_file)  # 创建新的连接对象
@@ -51,52 +42,6 @@ class SQLiteDB:
         # 最后，无论try块中的代码是否成功执行，finally 块都会关闭数据库连接，以确保资源得到正确释放，避免资源泄漏。
         finally:
             conn.close()
-            
-    # def __init__(self, db_file, max_connections=5):
-    #     self.db_file = db_file
-    #     self.connection_pool = self._create_connection_pool(max_connections)
-    #     self.db_lock = threading.Lock()
-
-    # def _create_connection_pool(self, max_connections):
-    #     connections = Queue(max_connections)
-    #     for _ in range(max_connections):
-    #         conn = sqlite3.connect(self.db_file)
-    #         connections.put(conn)
-    #     return connections
-
-    # def _get_connection(self):
-    #     return self.connection_pool.get()
-
-    # def _release_connection(self, conn):
-    #     self.connection_pool.put(conn)
-
-    # def execute(self, query, args=None):
-    #     conn = self._get_connection()
-    #     cursor = conn.cursor()
-
-    #     try:
-    #         with self.db_lock:
-    #             if args:
-    #                 cursor.execute(query, args)
-    #             else:
-    #                 cursor.execute(query)
-    #             conn.commit()
-    #     finally:
-    #         self._release_connection(conn)
-
-    # def fetch_all(self, query, args=None):
-    #     conn = self._get_connection()
-    #     cursor = conn.cursor()
-
-    #     try:
-    #         with self.db_lock:
-    #             if args:
-    #                 cursor.execute(query, args)
-    #             else:
-    #                 cursor.execute(query)
-    #             return cursor.fetchall()
-    #     finally:
-    #         self._release_connection(conn)
 
 
 if __name__ == "__main__":
