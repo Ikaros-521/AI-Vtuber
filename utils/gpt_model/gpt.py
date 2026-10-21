@@ -7,66 +7,73 @@
 @Date    : 2023/06/23 下午 7:47 
 @Description :  统一模型层抽象
 """
+import importlib
+
 from utils.my_log import logger
 
-from utils.gpt_model.chatgpt import Chatgpt
-from utils.gpt_model.text_generation_webui import TEXT_GENERATION_WEBUI
-from utils.gpt_model.sparkdesk import SPARKDESK
-from utils.gpt_model.langchain_chatchat import Langchain_ChatChat
-from utils.gpt_model.zhipu import Zhipu
-from utils.gpt_model.bard import Bard_api
-from utils.gpt_model.tongyi import TongYi
-from utils.gpt_model.tongyixingchen import TongYiXingChen
-from utils.gpt_model.my_wenxinworkshop import My_WenXinWorkShop
-from utils.gpt_model.gemini import Gemini
-from utils.gpt_model.koboldcpp import Koboldcpp
-from utils.gpt_model.anythingllm import AnythingLLM
-from utils.gpt_model.gpt4free import GPT4Free
-from utils.gpt_model.custom_llm import Custom_LLM
-from utils.gpt_model.llm_tpu import LLM_TPU
-from utils.gpt_model.dify import Dify
-from utils.gpt_model.volcengine import VolcEngine
+# 延迟导入的模型注册表：只有配置里真正选中的模型才会导入对应 SDK
+PROVIDERS = {
+    "chatgpt": ("utils.gpt_model.chatgpt", "Chatgpt"),
+    "text_generation_webui": ("utils.gpt_model.text_generation_webui", "TEXT_GENERATION_WEBUI"),
+    "sparkdesk": ("utils.gpt_model.sparkdesk", "SPARKDESK"),
+    "langchain_chatchat": ("utils.gpt_model.langchain_chatchat", "Langchain_ChatChat"),
+    "zhipu": ("utils.gpt_model.zhipu", "Zhipu"),
+    "bard": ("utils.gpt_model.bard", "Bard_api"),
+    "tongyi": ("utils.gpt_model.tongyi", "TongYi"),
+    "tongyixingchen": ("utils.gpt_model.tongyixingchen", "TongYiXingChen"),
+    "my_wenxinworkshop": ("utils.gpt_model.my_wenxinworkshop", "My_WenXinWorkShop"),
+    "gemini": ("utils.gpt_model.gemini", "Gemini"),
+    "koboldcpp": ("utils.gpt_model.koboldcpp", "Koboldcpp"),
+    "anythingllm": ("utils.gpt_model.anythingllm", "AnythingLLM"),
+    "gpt4free": ("utils.gpt_model.gpt4free", "GPT4Free"),
+    "custom_llm": ("utils.gpt_model.custom_llm", "Custom_LLM"),
+    "llm_tpu": ("utils.gpt_model.llm_tpu", "LLM_TPU"),
+    "dify": ("utils.gpt_model.dify", "Dify"),
+    "volcengine": ("utils.gpt_model.volcengine", "VolcEngine"),
+}
+
+
+def load_model_class(model_name):
+    provider = PROVIDERS.get(model_name)
+    if provider is None:
+        return None
+
+    module_name, class_name = provider
+    try:
+        return getattr(importlib.import_module(module_name), class_name)
+    except ImportError as e:
+        raise ImportError(
+            f"模型 {model_name} 缺少依赖（{module_name}），请按 requirements/ 里的对应分组安装后重试"
+        ) from e
+
 
 class GPT_Model:
     openai = None
     
     def set_model_config(self, model_name, config):
-        model_classes = {
-            "text_generation_webui": TEXT_GENERATION_WEBUI,
-            "sparkdesk": SPARKDESK,
-            "langchain_chatchat": Langchain_ChatChat,
-            "zhipu": Zhipu,
-            "bard": Bard_api,
-            "tongyi": TongYi,
-            "tongyixingchen": TongYiXingChen,
-            "my_wenxinworkshop": My_WenXinWorkShop,
-            "gemini": Gemini,
-            "koboldcpp": Koboldcpp,
-            "anythingllm": AnythingLLM,
-            "gpt4free": GPT4Free,
-            "custom_llm": Custom_LLM,
-            "llm_tpu": LLM_TPU,
-            "dify": Dify,
-            "volcengine": VolcEngine,
-        }
-
         if model_name == "openai":
             self.openai = config
-        elif model_name == "chatgpt":
+            return
+
+        model_class = load_model_class(model_name)
+        if model_class is None:
+            return
+
+        if model_name == "chatgpt":
             if self.openai is None:
                 logger.error("openai key 为空，无法配置chatgpt模型")
                 exit(-1)
-            self.chatgpt = Chatgpt(self.openai, config)
-        elif model_name in model_classes:
-            setattr(self, model_name, model_classes[model_name](config))
+            self.chatgpt = model_class(self.openai, config)
+            return
+
+        setattr(self, model_name, model_class(config))
 
     def set_vision_model_config(self, model_name, config):
-        model_classes = {
-            "gemini": Gemini,
-            "zhipu": Zhipu,
-        }
+        model_class = load_model_class(model_name)
+        if model_class is None:
+            return
 
-        setattr(self, model_name, model_classes[model_name](config))
+        setattr(self, model_name, model_class(config))
 
     def get(self, name):
         logger.info("GPT_MODEL: 进入get方法")

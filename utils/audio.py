@@ -7,8 +7,6 @@ import os, random
 import copy
 import traceback
 
-from elevenlabs import generate, play, set_api_key
-
 from pydub import AudioSegment
 
 from .common import Common
@@ -983,6 +981,8 @@ class Audio:
                 # 调用接口合成语音
                 voice_tmp_path = await self.my_tts.edge_tts_api(data)
             elif message["tts_type"] == "elevenlabs":
+                from elevenlabs import generate, play, set_api_key
+
                 # 如果配置了密钥就设置上0.0
                 if message["data"]["api_key"] != "":
                     set_api_key(message["data"]["api_key"])
@@ -1925,22 +1925,6 @@ class Audio:
 
         elif audio_synthesis_type == "elevenlabs":
             return
-        
-            try:
-                # 如果配置了密钥就设置上0.0
-                if message["data"]["elevenlabs_api_key"] != "":
-                    set_api_key(message["data"]["elevenlabs_api_key"])
-
-                audio = generate(
-                    text=message["content"],
-                    voice=message["data"]["elevenlabs_voice"],
-                    model=message["data"]["elevenlabs_model"]
-                )
-
-                # play(audio)
-            except Exception as e:
-                logger.error(traceback.format_exc())
-                return
 
         elif audio_synthesis_type == "openai_tts":
             data = {

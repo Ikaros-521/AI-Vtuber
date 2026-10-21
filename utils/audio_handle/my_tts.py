@@ -1,7 +1,6 @@
 import json, os
 import aiohttp, requests, ssl, asyncio
 from urllib.parse import urlencode
-from gradio_client import Client
 import traceback
 import edge_tts
 from urllib.parse import urljoin
@@ -369,6 +368,8 @@ class MY_TTS:
     def openai_tts_api(self, data):
         try:
             if data["type"] == "huggingface":
+                from gradio_client import Client
+
                 client = Client(data["api_ip_port"])
                 result = client.predict(
                     data["content"],	# str in 'Text' Textbox component
@@ -423,6 +424,7 @@ class MY_TTS:
                 fn_index = data.pop('fn_index')  # 获取并移除函数索引
                 data_analysis = data.pop('data_analysis')
 
+                from gradio_client import Client
                 client = Client(url)
 
                 # data是一个字典，包含了所有需要的参数
@@ -486,6 +488,8 @@ class MY_TTS:
             logger.debug(f"data={data}")
             
             if data["type"] == "gradio_0322":
+                from gradio_client import Client
+
                 client = Client(data["gradio_ip_port"])
                 voice_tmp_path = client.predict(
                     data["content"],	# str  in '需要合成的文本' Textbox component

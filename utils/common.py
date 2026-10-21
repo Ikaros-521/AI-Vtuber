@@ -1587,7 +1587,11 @@ class Common:
             list: 获取所有有标题的窗口名列表
         """
         if self.detect_os() == "Windows":
-            import pygetwindow as gw
+            try:
+                import pygetwindow as gw
+            except ImportError:
+                logger.warning("未安装 pygetwindow（见 requirements/visual.txt），窗口列表暂时为空")
+                return []
 
             windows = gw.getWindowsWithTitle('')
             
