@@ -1336,8 +1336,6 @@ class Audio:
     # 只进行普通音频播放   
     async def only_play_audio(self):
         try:
-            captions_config = self.config.get("captions")
-
             try:
                 if self.config.get("play_audio", "player") in ["pygame"]:
                     Audio.mixer_normal.init()
@@ -1369,6 +1367,9 @@ class Audio:
                         logger.debug(f"切换间隔结束，准备播放普通音频")
 
                     # 是否启用字幕输出
+                    # 每轮重读，与旁边的 web_captions_printer 一致；
+                    # 在循环外取快照会让 webui 改了字幕开关并保存后必须重启 main 才生效
+                    captions_config = self.config.get("captions")
                     if captions_config["enable"]:
                         # 输出当前播放的音频文件的文本内容到字幕文件中
                         self.common.write_content_to_file(captions_config["file_path"], data_json["content"], write_log=False)
@@ -1619,9 +1620,6 @@ class Audio:
 
 
             try:
-                # 获取文案配置
-                copywriting_configs = self.config.get("copywriting", "config")
-
                 # 获取自动播放配置
                 if self.config.get("copywriting", "auto_play"):
                     self.unpause_copywriting_play()
@@ -1637,6 +1635,10 @@ class Audio:
                 # 重载所有数据
                 def all_data_reload(file_path_arr, audio_path_arr, play_list_arr, continuous_play_num_arr, max_play_time_arr):      
                     logger.info("重载所有文案数据")
+
+                    # 这里重新读一次配置，而不是复用外层 1624 行的快照：
+                    # 否则在 webui 新增/删除文案组并保存后，main 不重启就永远看不到变化
+                    copywriting_configs = self.config.get("copywriting", "config")
 
                     file_path_arr = []
                     audio_path_arr = []
