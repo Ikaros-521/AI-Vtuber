@@ -131,9 +131,8 @@ def init():
     init_dir()
     logger.debug("项目相关文件夹初始化完成")
 
-    # 配置文件路径
-    config_path = file_relative_path / 'config.json'
-    config_path = str(config_path)
+    # 配置文件路径（可用 LUNA_CONFIG_PATH 覆盖，便于多实例与自动化测试）
+    config_path = os.environ.get("LUNA_CONFIG_PATH") or str(file_relative_path / 'config.json')
 
     logger.debug("配置文件路径=" + str(config_path))
 

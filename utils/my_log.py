@@ -1,66 +1,24 @@
-# import sys
-# from loguru import logger
-
-# from utils.common import Common
-# from utils.config import Config
-
-
-# # 配置文件路径
-# config_path = 'config.json'
-# common = Common()
-
-# logger.debug("配置文件路径=" + str(config_path))
-
-# # 实例化配置类
-# config = Config(config_path)
-
-# # 获取当前时间并生成日志文件路径
-# file_path = "./log/log-" + common.get_bj_time(1) + ".txt"
-
-# # 配置 logger
-# def configure_logger(file_path, log_level, max_file_size):
-#     level = log_level.upper() if log_level else "INFO"
-#     max_size = max_file_size if max_file_size else "1024 MB"
-
-#     # 清空之前的handlers
-#     logger.remove()
-
-#     # 配置控制台输出
-#     if level == "INFO":
-#         logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss.SSS} | <lvl>{level:8}</>| <lvl>{message}</>", colorize=True, level=level)
-
-#     # 配置文件输出
-#     logger.add(file_path, level=level, rotation=max_size)
-
-# # 获取日志配置
-# log_level = config["webui"]["log"].get("log_level", "INFO")
-# max_file_size = config["webui"]["log"].get("max_file_size", "1024 MB")
-
-# # 配置 logger
-# configure_logger(file_path, log_level, max_file_size)
-
-# # 导出 logger 供其他模块使用
-# __all__ = ["logger"]
-
-
+import os
 import sys
 import logging
+from datetime import datetime
+from pathlib import Path
+
 from loguru import logger
 
-from utils.common import Common
 from utils.config import Config
 
-# 配置文件路径
-config_path = 'config.json'
-common = Common()
+project_dir = Path(__file__).resolve().parent.parent
+config_path = os.environ.get("LUNA_CONFIG_PATH") or str(project_dir / "config.json")
 
 logger.debug("配置文件路径=" + str(config_path))
 
-# 实例化配置类
 config = Config(config_path)
 
-# 获取当前时间并生成日志文件路径
-file_path = "./log/log-" + common.get_bj_time(1) + ".txt"
+log_dir = project_dir / "log"
+log_dir.mkdir(parents=True, exist_ok=True)
+now = datetime.now()
+file_path = str(log_dir / f"log-{now.year}-{now.month}-{now.day}.txt")
 
 # 配置 logger
 def configure_logger(file_path, log_level, max_file_size):
