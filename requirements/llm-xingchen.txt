@@ -1,4 +1,0 @@
-# 通义星尘 provider。SDK 1.1.5 声明 pydantic<2 与 urllib3<2.1，与核心的 pydantic 2 互斥，
-# 因此没有收进 requirements.txt 的全量入口：要用它就得整体退回 pydantic 1.x 环境。
-# 若要保留该 provider，替代方案是改用 dashscope（同集团的百炼接口）重写 utils/gpt_model/tongyixingchen.py。
-xingchen==1.1.5

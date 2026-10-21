@@ -49,16 +49,13 @@ baidu-aip = "==4.16.11"
 optional = true
 
 [tool.poetry.group.llm.dependencies]
-bardapi = "==0.1.33"
 dashscope = "==1.14.1"
-g4f = "==0.3.0.6"
 google-generativeai = "==0.7.2"
 PyJWT = "==2.8.0"
 revTongYi = "==0.0.1.0"
 volcengine-python-sdk = { version = "==1.0.99", extras = ["ark"] }
 zhipuai = "==2.1.4.20230731"
 wenxinworkshop = { git = "https://gitee.com/ikaros-521/WenxinWorkshop-Python-SDK", rev = "12b863fca7ec1cdf969d73a04b50f66d2d24a878" }
-sparkdesk-api = { git = "https://gitee.com/ikaros-521/sparkdesk-api", rev = "0c4994d769908708321b3598aa34de2062dd6df5" }
 
 # --- tts：额外 TTS（requirements/tts.txt） ---
 [tool.poetry.group.tts]
@@ -117,14 +114,6 @@ optional = true
 [tool.poetry.group.chat-with-file.dependencies]
 faiss-cpu = "==1.7.4"
 PyPDF2 = "==3.0.1"
-
-# --- xingchen：通义星尘 SDK，要求 pydantic<2，与 core 互斥，
-# 因此和 requirements/llm-xingchen.txt 一样不并入全量入口 ---
-[tool.poetry.group.xingchen]
-optional = true
-
-[tool.poetry.group.xingchen.dependencies]
-xingchen = "==1.1.5"
 
 [build-system]
 requires = ["poetry-core"]
