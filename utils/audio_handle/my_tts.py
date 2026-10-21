@@ -508,6 +508,8 @@ class MY_TTS:
                     data["api_0322"]["fragment_interval"],	# float (numeric value between 0.01 and 1) in '分段间隔(秒)' Slider component
                     api_name="/inference"
                 )
+                new_file_path = None
+
                 if voice_tmp_path:
                     new_file_path = self.common.move_file(voice_tmp_path, os.path.join(self.audio_out_path, 'gpt_sovits_' + self.common.get_bj_time(4)), 'gpt_sovits_' + self.common.get_bj_time(4))
 
