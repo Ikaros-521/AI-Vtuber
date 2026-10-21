@@ -13,6 +13,10 @@ from utils.config import Config
 from utils.common import Common
 from utils.audio import Audio
 
+from webui_app.pages.data_analysis import build_data_analysis_tab
+from webui_app.pages.static_pages import build_about_tab, build_docs_tab
+from webui_app.pages.translate import build_translate_tab
+
 """
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -3023,31 +3027,6 @@ def goto_func_page():
                 config_data = update_config(config_mapping, config, config_data, None)
 
             """
-            翻译
-            """
-            if True:
-                config_mapping = {
-                    "translate": {
-                        "enable": (switch_translate_enable, 'bool'),
-                        "type": (select_translate_type, 'str'),
-                        "trans_type": (select_translate_trans_type, 'str'),
-                        "baidu": {
-                            "appid": (input_translate_baidu_appid, 'str'),
-                            "appkey": (input_translate_baidu_appkey, 'str'),
-                            "from_lang": (select_translate_baidu_from_lang, 'str'),
-                            "to_lang": (select_translate_baidu_to_lang, 'str'),
-                        },
-                        "google": {
-                            "proxy": (input_translate_google_proxy, 'str'),
-                            "src_lang": (select_translate_google_src_lang, 'str'),
-                            "tgt_lang": (select_translate_google_tgt_lang, 'str'),
-                        },
-                    }
-                }
-
-                config_data = update_config(config_mapping, config, config_data, None)
-
-            """
             串口
             """
             if True:
@@ -3065,25 +3044,6 @@ def goto_func_page():
                     tmp_arr.append(tmp_json)
                 # logger.info(tmp_arr)
                 config_data["serial"]["config"] = tmp_arr
-
-            """
-            数据分析
-            """
-            if True:
-                config_mapping = {
-                    "data_analysis": {
-                        "comment_word_cloud": {
-                            "top_num": (input_data_analysis_comment_word_cloud_top_num, 'int'),
-                        },
-                        "integral": {
-                            "top_num": (input_data_analysis_integral_top_num, 'int'),
-                        },
-                        "gift": {
-                            "top_num": (input_data_analysis_gift_top_num, 'int'),
-                        },
-                    }
-                }
-                config_data = update_config(config_mapping, config, config_data, None)
 
             """
             UI配置
@@ -3197,6 +3157,10 @@ def goto_func_page():
                 config_data["webui"]["local_dir_to_endpoint"]["config"] = tmp_arr
 
                 
+            for mapping in page_config_mappings:
+                if mapping:
+                    config_data = update_config(mapping, config, config_data, None)
+
             return config_data
         except Exception as e:
             logger.error(f"无法读取webui配置到变量！\n{e}")
@@ -3351,6 +3315,8 @@ def goto_func_page():
         'live2d_TTS_LLM_GPT_SoVITS_Vtuber': 'live2d-TTS-LLM-GPT-SoVITS-Vtuber',
         'xuniren': 'xuniren', 
     }
+
+    page_config_mappings = []
 
     with ui.tabs().classes('w-full') as tabs:
         common_config_page = ui.tab('通用配置')
@@ -6596,47 +6562,7 @@ def goto_func_page():
                 input_assistant_anchor_local_qa_audio_similarity = ui.input(label='音频最低相似度', value=config.get("assistant_anchor", "local_qa", "audio", "similarity"), placeholder='最低音频匹配相似度，就是说用户发送的内容和本地音频库中音频文件名的最低相似度。\n低了就会被当做一般弹幕处理').style("width:200px;")
         
         with ui.tab_panel(translate_page).style(tab_panel_css):
-            with ui.row():
-                switch_translate_enable = ui.switch('启用', value=config.get("translate", "enable")).style(switch_internal_css)
-                select_translate_type = ui.select(
-                        label='类型', 
-                        options={'baidu': '百度翻译', 'google': '谷歌翻译'}, 
-                        value=config.get("translate", "type")
-                    ).style("width:100px;")
-                select_translate_trans_type = ui.select(
-                        label='翻译类型', 
-                        options={'弹幕': '弹幕', '回复': '回复', '弹幕+回复': '弹幕+回复'}, 
-                        value=config.get("translate", "trans_type")
-                    ).style("width:150px;")
-            with ui.card().style(card_css):
-                ui.label("百度翻译")
-                with ui.row():
-                    input_translate_baidu_appid = ui.input(label='APP ID', value=config.get("translate", "baidu", "appid"), placeholder='翻译开放平台 开发者中心 APP ID')
-                    input_translate_baidu_appkey = ui.input(label='密钥', value=config.get("translate", "baidu", "appkey"), placeholder='翻译开放平台 开发者中心 密钥')
-                    select_translate_baidu_from_lang = ui.select(
-                        label='源语言', 
-                        options={'auto': '自动检测', 'zh': '中文', 'cht': '繁体中文', 'en': '英文', 'jp': '日文', 'kor': '韩文', 'yue': '粤语', 'wyw': '文言文'}, 
-                        value=config.get("translate", "baidu", "from_lang")
-                    ).style("width:100px;")
-                    select_translate_baidu_to_lang = ui.select(
-                        label='目标语言', 
-                        options={'zh': '中文', 'cht': '繁体中文', 'en': '英文', 'jp': '日文', 'kor': '韩文', 'yue': '粤语', 'wyw': '文言文'}, 
-                        value=config.get("translate", "baidu", "to_lang")
-                    ).style("width:100px;")
-            with ui.card().style(card_css):
-                ui.label("谷歌翻译")
-                with ui.row():
-                    input_translate_google_proxy = ui.input(label='代理地址', value=config.get("translate", "google", "proxy"), placeholder='代理的完整地址，请携带协议')
-                    select_translate_google_src_lang = ui.select(
-                        label='源语言', 
-                        options={'auto': '自动', 'zh-CN': '中文', 'en': '英文', 'ja': '日文'}, 
-                        value=config.get("translate", "google", "src_lang")
-                    ).style("width:100px;")
-                    select_translate_google_tgt_lang = ui.select(
-                        label='目标语言', 
-                        options={'zh-CN': '中文', 'en': '英文', 'ja': '日文'}, 
-                        value=config.get("translate", "google", "tgt_lang")
-                    ).style("width:100px;")
+            page_config_mappings.append(build_translate_tab(config, card_css, switch_internal_css))
 
         with ui.tab_panel(serial_page).style(tab_panel_css):
             with ui.element('div').classes('p-2 bg-blue-100'):
@@ -6741,58 +6667,8 @@ def goto_func_page():
                         serial_config_var[str(8 * index + 7)] = ui.button('发送', on_click=lambda idx=index: send_data_to_serial(idx))
 
         with ui.tab_panel(data_analysis_page).style(tab_panel_css):
-            from utils.data_analysis import Data_Analysis
+            page_config_mappings.append(build_data_analysis_tab(config, config_path, echart_css))
 
-            data_analysis = Data_Analysis(config_path)
-
-            data_analysis_comment_word_cloud_card = ui.card()
-            with data_analysis_comment_word_cloud_card.style("width:100%;"):
-                echart_comment_word_cloud = ui.echart(data_analysis.get_comment_word_cloud_option(
-                    int(config.get("data_analysis", "comment_word_cloud", "top_num")))
-                ).style(echart_css)
-        
-                with ui.row():
-                    input_data_analysis_comment_word_cloud_top_num = ui.input(label='前N个关键词', value=config.get("data_analysis", "comment_word_cloud", "top_num"), placeholder='筛选前N个弹幕关键词做为词云数据')
-                    def update_echart_comment_word_cloud():
-                        data_analysis_comment_word_cloud_card.remove(0)
-                        echart_comment_word_cloud = ui.echart(data_analysis.get_comment_word_cloud_option(
-                            int(input_data_analysis_comment_word_cloud_top_num.value))
-                        ).style(echart_css)
-                        echart_comment_word_cloud.move(data_analysis_comment_word_cloud_card, 0)
-                    ui.button('更新数据', on_click=lambda: update_echart_comment_word_cloud())
-            
-            data_analysis_integral_card = ui.card()
-            with data_analysis_integral_card.style("width:100%;"):
-                echart_integral = ui.echart(data_analysis.get_integral_option(
-                    "integral", int(config.get("data_analysis", "integral", "top_num")))
-                ).style(echart_css)
-        
-                with ui.row():
-                    input_data_analysis_integral_top_num = ui.input(label='Top N个数据', value=config.get("data_analysis", "integral", "top_num"), placeholder='筛选Top N个数据')
-                    def update_echart_integral(type):
-                        data_analysis_integral_card.remove(0)
-                        echart_integral = ui.echart(data_analysis.get_integral_option(
-                            type,
-                            int(input_data_analysis_integral_top_num.value))
-                        ).style(echart_css)
-                        echart_integral.move(data_analysis_integral_card, 0)
-                    ui.button('获取积分榜', on_click=lambda: update_echart_integral('integral'))
-                    ui.button('获取观看榜', on_click=lambda: update_echart_integral('view_num'))
-                    ui.button('获取签到榜', on_click=lambda: update_echart_integral('sign_num'))
-                    ui.button('获取金额榜', on_click=lambda: update_echart_integral('total_price'))
-            data_analysis_gift_card = ui.card()
-            with data_analysis_gift_card.style("width:100%;"):
-                echart_gift = ui.echart(data_analysis.get_gift_option(int(config.get("data_analysis", "gift", "top_num")))).style(echart_css)
-        
-                with ui.row():
-                    input_data_analysis_gift_top_num = ui.input(label='Top N个数据', value=config.get("data_analysis", "gift", "top_num"), placeholder='筛选Top N个数据')
-                    def update_echart_gift():
-                        data_analysis_gift_card.remove(0)
-                        echart_gift = ui.echart(data_analysis.get_gift_option(
-                            int(input_data_analysis_gift_top_num.value))
-                        ).style(echart_css)
-                        echart_gift.move(data_analysis_gift_card, 0)
-                    ui.button('更新数据', on_click=lambda: update_echart_gift())
         with ui.tab_panel(web_page).style(tab_panel_css):
             with ui.card().style(card_css):
                 ui.label("webui配置")
@@ -6950,40 +6826,11 @@ def goto_func_page():
                     input_login_username = ui.input(label='用户名', placeholder='您的账号喵，配置在config.json中', value=config.get("login", "username")).style("width:250px;")
                     input_login_password = ui.input(label='密码', password=True, placeholder='您的密码喵，配置在config.json中', value=config.get("login", "password")).style("width:250px;")
         with ui.tab_panel(docs_page).style(tab_panel_css):
-            with ui.row():
-                ui.label('在线文档：')
-                ui.link('https://ikaros521.eu.org/site/', 'https://ikaros521.eu.org/site/', new_tab=True)
-                ui.link('gitee备份文档', 'https://ikaros-521.gitee.io/luna-docs/site/index.html', new_tab=True)
+            build_docs_tab()
 
-                ui.label('NiceGUI官方文档：')
-                ui.link('nicegui.io/documentation', 'https://nicegui.io/documentation', new_tab=True)
-
-                ui.label('视频教程合集：')
-                ui.link('点我跳转', 'https://space.bilibili.com/3709626/channel/collectiondetail?sid=1422512', new_tab=True)
-
-                ui.label('GitHub仓库：')
-                ui.link('Ikaros-521/AI-Vtuber', 'https://github.com/Ikaros-521/AI-Vtuber', new_tab=True)
-            
-            with ui.expansion('视频教程', icon='movie_filter', value=True).classes('w-full'):
-                ui.html('<iframe src="https://space.bilibili.com/3709626/channel/collectiondetail?sid=1422512" allowfullscreen="true" width="1800" height="800"> </iframe>').style("width:100%")
-
-            with ui.expansion('文档', icon='article', value=True).classes('w-full'):
-                ui.html('<iframe src="https://ikaros521.eu.org/site/" width="1800" height="800"></iframe>').style("width:100%")
         with ui.tab_panel(about_page).style(tab_panel_css):
-            with ui.card().style(card_css):
-                ui.label('介绍').style("font-size:24px;")
-                ui.label('AI Vtuber 是一款结合了最先进技术的虚拟AI主播。它的核心是一系列高效的人工智能模型，包括 ChatterBot、GPT、Claude、langchain、chatglm、text-generation-webui、讯飞星火、智谱AI、谷歌Bard、文心一言 和 通义星尘。这些模型既可以在本地运行，也可以通过云端服务提供支持。')
-                ui.label('AI Vtuber 的外观由 Live2D、Vtube Studio、xuniren 和 UE5 结合 Audio2Face 技术打造，为用户提供了一个生动、互动的虚拟形象。这使得 AI Vtuber 能够在各大直播平台，如 Bilibili、抖音、快手、斗鱼、YouTube 和 Twitch，进行实时互动直播。当然，它也可以在本地环境中与您进行个性化对话。')
-                ui.label('为了使交流更加自然，AI Vtuber 使用了先进的自然语言处理技术，结合文本转语音系统，如 Edge-TTS、VITS-Fast、elevenlabs、VALL-E-X、睿声AI、 tts.ai-lab.top和GPT-SoVITS。这不仅让它能够生成流畅的回答，还可以通过 so-vits-svc 和 DDSP-SVC 实现声音的变化，以适应不同的场景和角色。')
-                ui.label('此外，AI Vtuber 还能够通过特定指令与 Stable Diffusion 协作，展示画作。用户还可以自定义文案，让 AI Vtuber 循环播放，以满足不同场合的需求。')
-            with ui.card().style(card_css):
-                ui.label('许可证').style("font-size:24px;")
-                ui.label('这个项目采用 GNU通用公共许可证（GPL） 进行许可。有关详细信息，请参阅 LICENSE 文件。')
-            with ui.card().style(card_css):
-                ui.label('注意').style("font-size:24px;")
-                ui.label('严禁将此项目用于一切违反《中华人民共和国宪法》，《中华人民共和国刑法》，《中华人民共和国治安管理处罚法》和《中华人民共和国民法典》之用途。')
-                ui.label('严禁用于任何政治相关用途。')
-            ui.image('./docs/xmind.png').style("width:1000px;")
+            build_about_tab(card_css)
+
     with ui.grid(columns=6).style("position: fixed; bottom: 10px; text-align: center;"):
         button_save = ui.button('保存配置', on_click=lambda: save_config(), color=button_bottom_color).style(button_bottom_css).tooltip("保存webui的配置到本地文件，有些配置保存后需要重启生效")
         button_run = ui.button('一键运行', on_click=lambda: run_external_program(), color=button_bottom_color).style(button_bottom_css).tooltip("运行main.py")

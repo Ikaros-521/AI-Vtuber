@@ -33,6 +33,9 @@ CORE_MODULES = [
     "utils.db",
     "utils.my_translate",
     "utils.my_handle",
+    "webui_app.pages.data_analysis",
+    "webui_app.pages.static_pages",
+    "webui_app.pages.translate",
 ]
 REQUIRED_CONFIG_KEYS = ["webui", "platform", "chat_type", "filter", "openai"]
 
