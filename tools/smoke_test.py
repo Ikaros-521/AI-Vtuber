@@ -47,6 +47,7 @@ CORE_MODULES = [
     "webui_app.pages.serial",
     "webui_app.pages.talk",
     "webui_app.pages.tts",
+    "webui_app.pages.web_page",
     "webui_app.pages.static_pages",
     "webui_app.pages.svc",
     "webui_app.pages.translate",
