@@ -129,3 +129,9 @@ xingchen = "==1.1.5"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+# tests/ 下其余目录是各 provider 的手工联调脚本（要真实 key 和外网），不是单元测试，
+# 所以只收集 tests/unit。
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+python_files = ["test_*.py"]

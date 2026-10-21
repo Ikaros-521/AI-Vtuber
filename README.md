@@ -100,6 +100,19 @@ uv pip compile requirements/core.txt requirements/llm.txt --python .venv/Scripts
 
 `platform` 组的 lock 也已生成（`requirements/core+platform.lock.txt`）：`bilibili-api-python` 升到 17.4.2 后不再钉死 `requests`/`httpx`/`aiohttp`/`brotli` 上限，可与 core 合并解析。注意 17.x 的登录 API 换成了异步的 `login_v2`，且需要极验验证码的「账号密码登录」已移除，B站登录请用 `cookie` 或 `手机扫码`。
 
+### 单元测试
+
+只依赖 `core` 分组即可运行，不需要任何模型 key 或外网：
+
+```bash
+uv pip install --python .venv/Scripts/python.exe -r requirements/dev.txt
+python -m pytest
+```
+
+用例放在 `tests/unit/`，覆盖弹幕过滤与违禁词、本地问答库匹配、限时去重、队列委托、webui 配置写回、LLM provider 注册表。`tests/` 下其余目录是各平台/模型的手工联调脚本（要真实 key 和外网），不会被 pytest 收集——`pyproject.toml` 里已把 `testpaths` 钉在 `tests/unit`。
+
+GitHub Actions 每次 push 都会跑一遍 `pytest` + 冒烟测试，见 `.github/workflows/ci.yml`。
+
 ### 冒烟测试
 
 改完依赖或核心代码后，先跑这个确认主链路没被改坏：
