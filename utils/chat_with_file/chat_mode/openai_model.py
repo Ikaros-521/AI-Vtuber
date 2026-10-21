@@ -1,160 +1,156 @@
+# -*- coding: UTF-8 -*-
+"""@File    : openai_model.py
+@Description : 本地资料向量化后检索问答。直接调用 OpenAI 兼容接口 + faiss，不再依赖 langchain。
+"""
 import os
 import zipfile
 
+import faiss
+import numpy as np
+from openai import OpenAI
 from PyPDF2 import PdfReader
-from langchain.document_loaders import DirectoryLoader, TextLoader, PyPDFLoader
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.vectorstores import ElasticVectorSearch, Pinecone, Weaviate, FAISS
-from langchain.chains.question_answering import load_qa_chain
-from langchain.llms import OpenAI
-from langchain.chat_models import ChatOpenAI
-from langchain.callbacks import get_openai_callback
-from langchain.prompts import PromptTemplate
-from tqdm.auto import tqdm
-
-import logging
 
 from utils.chat_with_file.chat_mode.chat_model import Chat_model
+from utils.my_log import logger
+
+EMBEDDING_MODEL = "text-embedding-ada-002"
+EMBEDDING_BATCH_SIZE = 64
+TEXT_SUFFIXES = (".txt", ".tex", ".md")
+NO_MATCH_REPLY = "没有获取到匹配结果。"
 
 
 class Openai_mode(Chat_model):
-    docsearch = None
-    chain = None
-
     def __init__(self, data):
-        # 配置信息
-        super(Openai_mode, self).__init__(data)
+        super().__init__(data)
 
-        logging.info(f"pdf文件路径：{self.data_path}")
+        self.client = OpenAI(api_key=self.openai_api_key, base_url=self.openai_api)
+        self.chunks = []
+        self.index = None
 
-        # 加载本地的zip文件
-        # 存储的文件格式
-        # structure: ./data/vector_base
-        #               - source data
-        store_path = os.getcwd() + "/data/vector_base/"
-        if not os.path.exists(store_path):
-            os.makedirs(store_path)
-            project_path = store_path
-            source_data = os.path.join(project_path, "source_data")
-            os.makedirs(source_data)  # ./vector_base/source_data
-        else:
-            project_path = store_path
-            source_data = os.path.join(project_path, "source_data")
+        logger.info(f"chat_with_file 数据文件：{self.data_path}")
+        self.chunks = self._read_chunks()
+        if not self.chunks:
+            logger.error(f"chat_with_file 未能从 {self.data_path} 读取到文本，检索功能不可用")
+            return
 
-        # 解压数据包
-        with zipfile.ZipFile(self.data_path, 'r') as zip_ref:
-            # extract everything to "source_data"
+        logger.info(f"chat_with_file 共切分为 {len(self.chunks)} 块文本")
+        vectors = self._embed(self.chunks)
+        self.index = faiss.IndexFlatIP(vectors.shape[1])
+        self.index.add(vectors)
+
+    def _read_chunks(self):
+        chunks = []
+        for dir_path, _, file_names in os.walk(self._extract_source_data()):
+            for file_name in sorted(file_names):
+                path = os.path.join(dir_path, file_name)
+                if file_name.endswith(TEXT_SUFFIXES):
+                    text = self._read_text_file(path)
+                elif file_name.endswith(".pdf"):
+                    text = self._read_pdf_file(path)
+                else:
+                    continue
+                chunks.extend(self._split_text(text))
+        return [chunk for chunk in chunks if chunk.strip()]
+
+    def _extract_source_data(self):
+        source_data = os.path.join(os.getcwd(), "data", "vector_base", "source_data")
+        os.makedirs(source_data, exist_ok=True)
+
+        with zipfile.ZipFile(self.data_path, "r") as zip_ref:
+            # 压缩包由用户提供，先校验成员路径，避免 ../ 写到目标目录之外
+            for member in zip_ref.namelist():
+                target = os.path.abspath(os.path.join(source_data, member))
+                if os.path.commonpath([target, source_data]) != source_data:
+                    raise ValueError(f"数据压缩包内含越界路径：{member}")
             zip_ref.extractall(source_data)
 
-        logging.info(f"source_data={source_data}")
+        return source_data
 
-        # 处理不同的文本文件
-        all_docs = []
-        for ext in [".txt", ".tex", ".md", ".pdf"]:
-            if ext in [".txt", ".tex", ".md"]:
-                loader = DirectoryLoader(source_data, glob=f"**/*{ext}", loader_cls=TextLoader,
-                                         loader_kwargs={'autodetect_encoding': True})
-            elif ext in [".pdf"]:
-                loader = DirectoryLoader(source_data, glob=f"**/*{ext}", loader_cls=PyPDFLoader)
-            else:
+    def _read_text_file(self, path):
+        with open(path, "rb") as f:
+            raw = f.read()
+        for encoding in ("utf-8", "gb18030"):
+            try:
+                return raw.decode(encoding)
+            except UnicodeDecodeError:
                 continue
-            docs = loader.load()
-            all_docs = all_docs + docs
+        return raw.decode("utf-8", errors="replace")
 
-        # logging.info(all_docs)
+    def _read_pdf_file(self, path):
+        try:
+            reader = PdfReader(path)
+            return "\n".join(page.extract_text() or "" for page in reader.pages)
+        except Exception as e:
+            logger.error(f"chat_with_file 解析 PDF 失败：{path}，{e}")
+            return ""
 
-        # We need to split the text that we read into smaller chunks so that during information retreival we don't hit the token size limits. 
-        # 我们需要将读取的文本分成更小的块，这样在信息检索过程中就不会达到令牌大小的限制。
-        text_splitter = CharacterTextSplitter(
-            # 拆分文本的分隔符
-            separator=self.separator,
-            # 每个文本块的最大字符数(文本块字符越多，消耗token越多，回复越详细)
-            chunk_size=self.chunk_size,
-            # 两个相邻文本块之间的重叠字符数
-            # 这种重叠可以帮助保持文本的连贯性，特别是当文本被用于训练语言模型或其他需要上下文信息的机器学习模型时
-            chunk_overlap=self.chunk_overlap,
-            # 用于计算文本块的长度
-            # 在这里，长度函数是len，这意味着每个文本块的长度是其字符数。在某些情况下，你可能想要使用其他的长度函数。
-            # 例如，如果你的文本是由词汇组成的，你可能想要使用一个函数，其计算文本块中的词汇数，而不是字符数。
-            length_function=len,
-        )
+    def _split_text(self, text):
+        if not text or not text.strip():
+            return []
+        if len(text) <= self.chunk_size:
+            return [text.strip()]
 
-        texts = []
+        pieces = text.split(self.separator) if self.separator else list(text)
+        chunks = []
+        current = ""
+        for piece in pieces:
+            candidate = current + self.separator + piece if current else piece
+            if len(candidate) > self.chunk_size and current:
+                chunks.append(current)
+                current = current[-self.chunk_overlap :] if self.chunk_overlap > 0 else ""
 
-        for idx, page in enumerate(tqdm(all_docs)):
-            content = page.page_content
+            while len(piece) > self.chunk_size:
+                chunks.append(piece[: self.chunk_size])
+                piece = piece[self.chunk_size :]
 
-            # logging.debug(f"[{content}]")
+            current = current + self.separator + piece if current else piece
 
-            if len(content) > self.chunk_size:
-                texts = texts + text_splitter.split_text(content)
+        if current:
+            chunks.append(current)
+        return chunks
 
-        logging.info("共切分为" + str(len(texts)) + "块文本内容")
+    def _embed(self, texts):
+        vectors = []
+        for start in range(0, len(texts), EMBEDDING_BATCH_SIZE):
+            batch = [text or " " for text in texts[start : start + EMBEDDING_BATCH_SIZE]]
+            response = self.client.embeddings.create(model=EMBEDDING_MODEL, input=batch)
+            vectors.extend(item.embedding for item in response.data)
 
-        logging.debug(texts)
+        array = np.asarray(vectors, dtype="float32")
+        # 归一化后用内积索引，等价于余弦相似度
+        norms = np.linalg.norm(array, axis=1, keepdims=True)
+        return array / np.clip(norms, 1e-12, None)
 
-        # 创建了一个OpenAIEmbeddings实例，然后使用这个实例将一些文本转化为向量表示（嵌入）。
-        # 然后，这些向量被加载到一个FAISS（Facebook AI Similarity Search）索引中，用于进行相似性搜索。
-        # 这种索引允许你在大量向量中快速找到与给定向量最相似的向量。
-        embeddings = OpenAIEmbeddings(openai_api_key=self.openai_api_key[0])
-        # 将字符串列表转换为 UTF-8 编码
-        # encode_texts = [s.encode('utf-8') for s in texts]
-        self.docsearch = FAISS.from_texts(texts, embeddings)
-
-        if self.chat_mode == "openai_gpt":
-            # 此处的提示词模板可以自己修改，如Use the following context to answer the final question first. Then summarize and answer based on your own knowledge
-            # 使用以下上下文来回答最后的问题。如果你不知道答案，就说你不知道或者你在文章中找不到答案，不要试图编造答案。
-            # Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know or you can't find the answer in the article, don't try to make up an answer
-            prompt_template = self.question_prompt + """
-            
-            content：{context}
-
-            question: {question}
-            """
-            PROMPT = PromptTemplate(
-                template=prompt_template, input_variables=["context", "question"]
-            )
-
-            # 创建一个询问-回答链（QA Chain），使用了一个自定义的提示模板
-            self.chain = load_qa_chain(
-                ChatOpenAI(model_name=self.openai_model_name, openai_api_key=self.openai_api_key[0]), \
-                chain_type=self.chain_type, prompt=PROMPT)
+    def _search(self, query):
+        if self.index is None:
+            return []
+        k = min(self.local_max_query, len(self.chunks))
+        _, indices = self.index.search(self._embed([query]), k)
+        return [self.chunks[i] for i in indices[0] if 0 <= i < len(self.chunks)]
 
     def get_model_resp(self, content=""):
+        docs = self._search(content)
+        if not docs:
+            return NO_MATCH_REPLY
+
         if self.chat_mode == "openai_vector_search":
-            # 只用langchain，不做gpt的调用，可以节省token，做个简单的本地数据搜索
-            resp_contents = self.docsearch.similarity_search(content)
-            if len(resp_contents) != 0:
-                resp_content = resp_contents[0].page_content
-            else:
-                resp_content = "没有获取到匹配结果。"
+            return docs[0]
 
-            return resp_content
+        if self.chain_type != "stuff":
+            logger.warning(f"chat_with_file 仅实现了 stuff 链，chain_type={self.chain_type} 按 stuff 处理")
 
-        # 当用户输入一个查询时，这个系统首先会在本地文档集合中进行相似性搜索，寻找与查询最相关的文档。
-        # 然后，它会把这些相关文档以及用户的查询作为输入，传递给语言模型。这个语言模型会基于这些输入生成一个答案。
-        # 如果系统在本地文档集合中找不到任何与用户查询相关的文档，或者如果语言模型无法基于给定的输入生成一个有意义的答案，
-        # 那么这个系统可能就无法回答用户的查询。
-        elif self.chat_mode == "openai_gpt":
-            with get_openai_callback() as cb:
-                query = content
-                # 将用户的查询进行相似性搜索，并使用QA链运行
-                docs = self.docsearch.similarity_search(query)
+        context = "\n\n".join(docs)
+        prompt = f"{self.question_prompt}\n\ncontent：{context}\n\nquestion: {content}"
+        response = self.client.chat.completions.create(
+            model=self.openai_model_name,
+            messages=[{"role": "user", "content": prompt}],
+        )
 
-                # 可以打印匹配的文档内容，看看
-                # logging.info(docs)
+        if self.show_token_cost:
+            usage = response.usage
+            logger.info(
+                f"chat_with_file token 用量：输入 {usage.prompt_tokens}，输出 {usage.completion_tokens}，"
+                f"合计 {usage.total_tokens}"
+            )
 
-                res = self.chain.run(input_documents=docs, question=query)
-                # logging.info(f"Output: {res}")
-
-                # 显示花费
-                if self.show_token_cost:
-                    # 相关消耗和费用
-                    logging.info(f"Total Tokens: {cb.total_tokens}")
-                    logging.info(f"Prompt Tokens: {cb.prompt_tokens}")
-                    logging.info(f"Completion Tokens: {cb.completion_tokens}")
-                    logging.info(f"Successful Requests: {cb.successful_requests}")
-                    logging.info(f"Total Cost (USD): ${cb.total_cost}")
-
-                return res
+        return response.choices[0].message.content

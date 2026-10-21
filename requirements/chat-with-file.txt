@@ -1,8 +1,4 @@
-# 文档问答（chat_with_file）。langchain==0.0.142 是把 pydantic 钉在 1.x 的根因，替换后可移除
-langchain==0.0.142
-PyPDF2==3.0.1
+# 文档问答（chat_with_file）。原先靠 langchain 0.0.142，连带把 pydantic 钉在 1.x、
+# 并经由 sentence-transformers 拖进 torch；改成 OpenAI 兼容接口 + faiss 直连后只剩这两个依赖。
 faiss-cpu==1.7.4
-sentence-transformers==4.1.0
-tiktoken==0.4.0
-tqdm==4.66.4
-colorlog==6.8.0
+PyPDF2==3.0.1

@@ -1,56 +1,27 @@
 # -*- coding: UTF-8 -*-
-"""
-@Project : PyCharm 
-@File    : chat_model.py
-@Author  : HildaM
-@Email   : Hilda_quan@163.com
-@Date    : 2023/6/28 17:09
-@Description : 
-"""
+"""@File : chat_model.py — chat_with_file 的公共配置层"""
 from utils.gpt_model.gpt import GPT_MODEL
 
 
 class Chat_model:
-    # 通用配置信息
-    chat_mode = None
-    data_path = None
-    separator = "\n"
-    chunk_size = 100
-    chunk_overlap = 50
-
-    # openai 设置
-    openai_api_key = None
-    openai_model_name = "gpt-3.5-turbo-0301"
-    chain_type = "stuff"
-    show_token_cost = False
-
-    # 本地向量数据库配置
-    local_vector_embedding_model = "sebastian-hofstaetter/distilbert-dot-tas_b-b256-msmarco"
-    local_max_query = 3
-
-    # prompt配置
-    question_prompt = None
-
     def __init__(self, data):
-        # 通用配置信息
-        self.chat_mode = data["chat_mode"]
-        self.data_path = data["data_path"]
-        self.separator = data["separator"]
-        self.chunk_size = data["chunk_size"]
-        self.chunk_overlap = data["chunk_overlap"]
+        self.chat_mode = data.get("chat_mode", "openai_gpt")
+        self.data_path = data.get("data_path")
 
-        # openai 设置
-        self.openai_api_key = GPT_MODEL.get_openai_key()
+        # 文本切分：分隔符、块大小、块之间的重叠字符数
+        self.separator = data.get("separator", "\n")
+        self.chunk_size = int(data.get("chunk_size", 1000))
+        self.chunk_overlap = int(data.get("chunk_overlap", 100))
+
+        api_key = GPT_MODEL.get_openai_key()
+        self.openai_api_key = api_key[0] if isinstance(api_key, (list, tuple)) else api_key
+        self.openai_api = GPT_MODEL.get_openai_api()
         self.openai_model_name = GPT_MODEL.get_openai_model_name()
-        self.chain_type = data["chain_type"]
-        self.show_token_cost = data["show_token_cost"]
 
-        # 本地向量数据库配置
-        self.local_vector_embedding_model = data["local_vector_embedding_model"]
-        self.local_max_query = data["local_max_query"]
-
-        # prompt配置
-        self.question_prompt = data["question_prompt"]
+        self.chain_type = data.get("chain_type", "stuff")
+        self.show_token_cost = bool(data.get("show_token_cost", False))
+        self.local_max_query = max(1, int(data.get("local_max_query", 3)))
+        self.question_prompt = data.get("question_prompt", "")
 
     def get_model_resp(self, question=""):
-        pass
+        raise NotImplementedError

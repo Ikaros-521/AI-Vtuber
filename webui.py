@@ -2253,7 +2253,6 @@ def goto_func_page():
                         "separator": (input_chat_with_file_separator, 'str'),
                         "chunk_size": (input_chat_with_file_chunk_size, 'int'),
                         "chunk_overlap": (input_chat_with_file_chunk_overlap, 'int'),
-                        "local_vector_embedding_model": (select_chat_with_file_local_vector_embedding_model, 'str'),
                         "chain_type": (input_chat_with_file_chain_type, 'str'),
                         "question_prompt": (input_chat_with_file_question_prompt, 'str'),
                         "local_max_query": (input_chat_with_file_local_max_query, 'int'),
@@ -4416,15 +4415,6 @@ def goto_func_page():
                         input_chat_with_file_chunk_size.style("width:300px")
                         input_chat_with_file_chunk_overlap = ui.input(label='块重叠', placeholder='两个相邻文本块之间的重叠字符数。这种重叠可以帮助保持文本的连贯性，特别是当文本被用于训练语言模型或其他需要上下文信息的机器学习模型时', value=config.get("chat_with_file", "chunk_overlap"))
                         input_chat_with_file_chunk_overlap.style("width:300px")
-                        lines = ["sebastian-hofstaetter/distilbert-dot-tas_b-b256-msmarco", "GanymedeNil/text2vec-large-chinese"]
-                        data_json = {}
-                        for line in lines:
-                            data_json[line] = line
-                        select_chat_with_file_local_vector_embedding_model = ui.select(
-                            label='模型', 
-                            options=data_json, 
-                            value=config.get("chat_with_file", "local_vector_embedding_model")
-                        )
                     with ui.row():
                         input_chat_with_file_chain_type = ui.input(label='链类型', placeholder='指定要生成的语言链的类型，例如：stuff', value=config.get("chat_with_file", "chain_type"))
                         input_chat_with_file_chain_type.style("width:300px")
