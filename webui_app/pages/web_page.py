@@ -185,21 +185,14 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
         with ui.card().style(card_css):
             ui.label("大语言模型")
             with ui.row():
-                switch_webui_show_card_llm_chatgpt = ui.switch('ChatGPT/闻达', value=config.get("webui", "show_card", "llm", "chatgpt")).style(switch_internal_css)
+                switch_webui_show_card_llm_chatgpt = ui.switch('ChatGPT', value=config.get("webui", "show_card", "llm", "chatgpt")).style(switch_internal_css)
                 switch_webui_show_card_llm_zhipu = ui.switch('智谱AI', value=config.get("webui", "show_card", "llm", "zhipu")).style(switch_internal_css)
                 switch_webui_show_card_llm_chat_with_file = ui.switch('chat_with_file', value=config.get("webui", "show_card", "llm", "chat_with_file")).style(switch_internal_css)
                 switch_webui_show_card_llm_langchain_chatchat = ui.switch('langchain_chatchat', value=config.get("webui", "show_card", "llm", "langchain_chatchat")).style(switch_internal_css)
-                switch_webui_show_card_llm_chatterbot = ui.switch('chatterbot', value=config.get("webui", "show_card", "llm", "chatterbot")).style(switch_internal_css)
-                switch_webui_show_card_llm_text_generation_webui = ui.switch('text_generation_webui', value=config.get("webui", "show_card", "llm", "text_generation_webui")).style(switch_internal_css)
-                switch_webui_show_card_llm_sparkdesk = ui.switch('讯飞星火', value=config.get("webui", "show_card", "llm", "sparkdesk")).style(switch_internal_css)
-                switch_webui_show_card_llm_bard = ui.switch('bard', value=config.get("webui", "show_card", "llm", "bard")).style(switch_internal_css)
                 switch_webui_show_card_llm_tongyi = ui.switch('通义千问', value=config.get("webui", "show_card", "llm", "tongyi")).style(switch_internal_css)
-                switch_webui_show_card_llm_tongyixingchen = ui.switch('通义星尘', value=config.get("webui", "show_card", "llm", "tongyixingchen")).style(switch_internal_css)
                 switch_webui_show_card_llm_my_wenxinworkshop = ui.switch('千帆大模型', value=config.get("webui", "show_card", "llm", "my_wenxinworkshop")).style(switch_internal_css)
                 switch_webui_show_card_llm_gemini = ui.switch('gemini', value=config.get("webui", "show_card", "llm", "gemini")).style(switch_internal_css)
-                switch_webui_show_card_llm_koboldcpp = ui.switch('koboldcpp', value=config.get("webui", "show_card", "llm", "koboldcpp")).style(switch_internal_css)
                 switch_webui_show_card_llm_anythingllm = ui.switch('AnythingLLM', value=config.get("webui", "show_card", "llm", "anythingllm")).style(switch_internal_css)
-                switch_webui_show_card_llm_gpt4free = ui.switch('GPT4Free', value=config.get("webui", "show_card", "llm", "gpt4free")).style(switch_internal_css)
                 switch_webui_show_card_llm_dify = ui.switch('Dify', value=config.get("webui", "show_card", "llm", "dify")).style(switch_internal_css)
                 switch_webui_show_card_llm_volcengine = ui.switch('火山引擎', value=config.get("webui", "show_card", "llm", "volcengine")).style(switch_internal_css)
                 
@@ -285,17 +278,10 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
                         "zhipu": (switch_webui_show_card_llm_zhipu, 'bool'),
                         "chat_with_file": (switch_webui_show_card_llm_chat_with_file, 'bool'),
                         "langchain_chatchat": (switch_webui_show_card_llm_langchain_chatchat, 'bool'),
-                        "chatterbot": (switch_webui_show_card_llm_chatterbot, 'bool'),
-                        "text_generation_webui": (switch_webui_show_card_llm_text_generation_webui, 'bool'),
-                        "sparkdesk": (switch_webui_show_card_llm_sparkdesk, 'bool'),
-                        "bard": (switch_webui_show_card_llm_bard, 'bool'),
                         "tongyi": (switch_webui_show_card_llm_tongyi, 'bool'),
-                        "tongyixingchen": (switch_webui_show_card_llm_tongyixingchen, 'bool'),
                         "my_wenxinworkshop": (switch_webui_show_card_llm_my_wenxinworkshop, 'bool'),
                         "gemini": (switch_webui_show_card_llm_gemini, 'bool'),
-                        "koboldcpp": (switch_webui_show_card_llm_koboldcpp, 'bool'),
                         "anythingllm": (switch_webui_show_card_llm_anythingllm, 'bool'),
-                        "gpt4free": (switch_webui_show_card_llm_gpt4free, 'bool'),
                         "custom_llm": (switch_webui_show_card_llm_custom_llm, 'bool'),
                         "llm_tpu": (switch_webui_show_card_llm_llm_tpu, 'bool'),
                         "dify": (switch_webui_show_card_llm_dify, 'bool'),

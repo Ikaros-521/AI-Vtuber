@@ -147,18 +147,12 @@ class My_handle(metaclass=SingletonMeta):
             """
             self.chatgpt = None
             self.chat_with_file = None
-            self.text_generation_webui = None
-            self.sparkdesk = None
             self.langchain_chatchat = None
             self.zhipu = None
-            self.bard_api = None
             self.tongyi = None
-            self.tongyixingchen = None
             self.my_wenxinworkshop = None
             self.gemini = None
-            self.koboldcpp = None
             self.anythingllm = None
-            self.gpt4free = None
             self.custom_llm = None
             self.llm_tpu = None
             self.dify = None
@@ -166,9 +160,8 @@ class My_handle(metaclass=SingletonMeta):
 
             self.image_recognition_model = None
 
-            self.chat_type_list = ["chatgpt", "chat_with_file", "text_generation_webui", \
-                    "sparkdesk",  "langchain_chatchat", "zhipu", "bard", "tongyi", \
-                    "tongyixingchen", "my_wenxinworkshop", "gemini", "koboldcpp", "anythingllm", "gpt4free", \
+            self.chat_type_list = ["chatgpt", "chat_with_file", "langchain_chatchat", "zhipu", \
+                    "tongyi", "my_wenxinworkshop", "gemini", "anythingllm", \
                     "custom_llm", "llm_tpu", "dify", "volcengine"]
 
             # 配置加载
@@ -455,7 +448,7 @@ class My_handle(metaclass=SingletonMeta):
         return My_handle.audio.get_audio_info()
 
     def get_chat_model(self, chat_type, config):
-        if chat_type in ["chatterbot", "chat_with_file"]:
+        if chat_type == "chat_with_file":
             # 对这些类型做特殊处理
             pass
         else:
@@ -470,18 +463,7 @@ class My_handle(metaclass=SingletonMeta):
         chat_type = My_handle.config.get("chat_type")
         self.get_chat_model(chat_type, My_handle.config)
 
-        if chat_type == "chatterbot":
-            from chatterbot import ChatBot
-            self.chatterbot_config = My_handle.config.get("chatterbot")
-            try:
-                self.bot = ChatBot(
-                    self.chatterbot_config["name"],
-                    database_uri='sqlite:///' + self.chatterbot_config["db_path"]
-                )
-            except Exception as e:
-                logger.info(e)
-                exit(0)
-        elif chat_type == "chat_with_file":
+        if chat_type == "chat_with_file":
             from utils.chat_with_file.chat_with_file import Chat_with_file
             self.chat_with_file = Chat_with_file(My_handle.config.get("chat_with_file"))
         elif chat_type == "game":
@@ -1553,20 +1535,13 @@ class My_handle(metaclass=SingletonMeta):
                 # 新增LLM需要在这里追加
                 chat_model_methods = {
                     "chatgpt": lambda: self.chatgpt.get_gpt_resp(data["username"], data["content"]),
-                    "chatterbot": lambda: self.bot.get_response(data["content"]).text,
                     "chat_with_file": lambda: self.chat_with_file.get_model_resp(data["content"]),
-                    "text_generation_webui": lambda: self.text_generation_webui.get_resp(data["content"]),
-                    "sparkdesk": lambda: self.sparkdesk.get_resp(data["content"]),
                     "langchain_chatchat": lambda: self.langchain_chatchat.get_resp(data["content"]),
                     "zhipu": lambda: self.zhipu.get_resp(data["content"]),
-                    "bard": lambda: self.bard_api.get_resp(data["content"]),
                     "tongyi": lambda: self.tongyi.get_resp(data["content"]),
-                    "tongyixingchen": lambda: self.tongyixingchen.get_resp(data["content"]),
                     "my_wenxinworkshop": lambda: self.my_wenxinworkshop.get_resp(data["content"]),
                     "gemini": lambda: self.gemini.get_resp(data["content"]),
-                    "koboldcpp": lambda: self.koboldcpp.get_resp({"prompt": data["content"]}),
                     "anythingllm": lambda: self.anythingllm.get_resp({"prompt": data["content"]}),
-                    "gpt4free": lambda: self.gpt4free.get_resp({"prompt": data["content"]}),
                     "custom_llm": lambda: self.custom_llm.get_resp({"prompt": data["content"]}),
                     "llm_tpu": lambda: self.llm_tpu.get_resp({"prompt": data["content"]}),
                     "dify": lambda: self.dify.get_resp({"prompt": data["content"]}),
@@ -1681,7 +1656,6 @@ class My_handle(metaclass=SingletonMeta):
                     "chatgpt": lambda: self.chatgpt.get_gpt_resp(data["username"], data["content"], stream=True),
                     "zhipu": lambda: self.zhipu.get_resp(data["content"], stream=True),
                     "tongyi": lambda: self.tongyi.get_resp(data["content"], stream=True),
-                    "tongyixingchen": lambda: self.tongyixingchen.get_resp(data["content"], stream=True),
                     "my_wenxinworkshop": lambda: self.my_wenxinworkshop.get_resp(data["content"], stream=True),
                     "volcengine": lambda: self.volcengine.get_resp({"prompt": data["content"]}, stream=True),
                     "dify": lambda: self.dify.get_resp({"prompt": data["content"]}, stream=True),
@@ -1748,7 +1722,7 @@ class My_handle(metaclass=SingletonMeta):
                         
                         #logger.warning(f"句子生成：{tmp_content}")
 
-                        if chat_type in ["chatgpt", "zhipu", "tongyixingchen", "my_wenxinworkshop", "volcengine", "dify"]:
+                        if chat_type in ["chatgpt", "zhipu", "my_wenxinworkshop", "volcengine", "dify"]:
                             # 智谱 智能体情况特殊处理
                             if chat_type == "zhipu" and My_handle.config.get("zhipu", "model") == "智能体":
                                 # 记录 并追加切出的文本长度
@@ -1868,10 +1842,6 @@ class My_handle(metaclass=SingletonMeta):
                         # 这个是一直输出全部的内容，所以要切分掉已经处理的文本长度
                         tmp = chunk.output.choices[0].message.content[cut_len:]
                         resp_content = chunk.output.choices[0].message.content
-                    elif chat_type in ["tongyixingchen"]:
-                        # 流式的内容是追加形式的
-                        tmp += chunk.data.choices[0].messages[0].content
-                        resp_content += chunk.data.choices[0].messages[0].content
                     elif chat_type in ["volcengine"]:
                         tmp += chunk.choices[0].delta.content
                         resp_content += chunk.choices[0].delta.content
@@ -1993,7 +1963,6 @@ class My_handle(metaclass=SingletonMeta):
                     "chatgpt": lambda: self.chatgpt.add_assistant_msg_to_session(data["username"], resp_content),
                     "zhipu": lambda: self.zhipu.add_assistant_msg_to_session(content_bak, resp_content),
                     "tongyi": lambda: self.tongyi.add_assistant_msg_to_session(content_bak, resp_content),
-                    "tongyixingchen": lambda: self.tongyixingchen.add_assistant_msg_to_session(content_bak, resp_content),
                     "my_wenxinworkshop": lambda: self.my_wenxinworkshop.add_assistant_msg_to_session(content_bak, resp_content),
                     "volcengine": lambda: self.volcengine.add_assistant_msg_to_session(content_bak, resp_content),
                 }

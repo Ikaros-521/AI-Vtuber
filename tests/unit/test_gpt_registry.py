@@ -10,6 +10,43 @@ from utils.gpt_model.gpt import PROVIDERS, GPT_MODEL, GPT_Model, load_model_clas
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
+# 2026-10 一次性下线了 text_generation_webui / chatterbot / sparkdesk(讯飞星火) / bard /
+# tongyixingchen(通义星尘) / koboldcpp / gpt4free 七个方案。
+# 这张快照表就是它们的墓碑：要加回来说明是经过考虑的，得连带改这里。
+SUPPORTED_PROVIDERS = {
+    "chatgpt",
+    "langchain_chatchat",
+    "zhipu",
+    "tongyi",
+    "my_wenxinworkshop",
+    "gemini",
+    "anythingllm",
+    "custom_llm",
+    "llm_tpu",
+    "dify",
+    "volcengine",
+}
+
+RETIRED_PROVIDERS = {
+    "text_generation_webui",
+    "chatterbot",
+    "sparkdesk",
+    "bard",
+    "tongyixingchen",
+    "koboldcpp",
+    "gpt4free",
+}
+
+
+def test_registry_matches_the_supported_provider_set():
+    assert set(PROVIDERS) == SUPPORTED_PROVIDERS
+
+
+@pytest.mark.parametrize("retired", sorted(RETIRED_PROVIDERS))
+def test_retired_providers_stay_retired(retired):
+    assert load_model_class(retired) is None
+    assert not Path(f"utils/gpt_model/{retired}.py").exists(), f"{retired}.py 又被加回来了"
+
 
 def test_every_provider_points_at_a_real_module_file():
     for name, (module_name, class_name) in PROVIDERS.items():

@@ -31,7 +31,7 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
 
     if config.get("webui", "show_card", "llm", "chatgpt"):
         with ui.card().style(card_css):
-            ui.label("ChatGPT | 闻达 | ChatGLM3 | Kimi Chat | Ollama | One-API等OpenAI接口模型 ")
+            ui.label("ChatGLM3 | Kimi Chat | Ollama | One-API等OpenAI接口模型 ")
             with ui.row():
                 input_openai_api = ui.input(
                     label='API地址', 
@@ -120,101 +120,6 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
                 input_chat_with_file_local_max_query.style("width:300px")
                 switch_chat_with_file_show_token_cost = ui.switch('显示成本', value=config.get("chat_with_file", "show_token_cost")).style(switch_internal_css)
     
-    if config.get("webui", "show_card", "llm", "chatterbot"):
-        with ui.card().style(card_css):
-            ui.label("Chatterbot")
-            with ui.grid(columns=2):
-                input_chatterbot_name = ui.input(label='bot名称', placeholder='bot名称', value=config.get("chatterbot", "name"))
-                input_chatterbot_name.style("width:400px")
-                input_chatterbot_db_path = ui.input(label='数据库路径', placeholder='数据库路径（绝对或相对路径）', value=config.get("chatterbot", "db_path"))
-                input_chatterbot_db_path.style("width:400px")
-    
-    if config.get("webui", "show_card", "llm", "text_generation_webui"):
-        with ui.card().style(card_css):
-            ui.label("text_generation_webui")
-            with ui.row():
-                select_text_generation_webui_type = ui.select(
-                    label='类型', 
-                    options={"官方API": "官方API", "coyude": "coyude"}, 
-                    value=config.get("text_generation_webui", "type")
-                )
-                input_text_generation_webui_api_ip_port = ui.input(
-                    label='API地址', 
-                    placeholder='text-generation-webui开启API模式后监听的IP和端口地址', 
-                    value=config.get("text_generation_webui", "api_ip_port"),
-                    validation={
-                        '请输入正确格式的URL': lambda value: common.is_url_check(value),
-                    }
-                )
-                input_text_generation_webui_api_ip_port.style("width:300px")
-                input_text_generation_webui_max_new_tokens = ui.input(label='max_new_tokens', placeholder='自行查阅', value=config.get("text_generation_webui", "max_new_tokens"))
-                input_text_generation_webui_max_new_tokens.style("width:200px")
-                switch_text_generation_webui_history_enable = ui.switch('上下文记忆', value=config.get("text_generation_webui", "history_enable")).style(switch_internal_css)
-                input_text_generation_webui_history_max_len = ui.input(label='最大记忆长度', placeholder='最大记忆的上下文字符数量，不建议设置过大，容易爆显存，自行根据情况配置', value=config.get("text_generation_webui", "history_max_len"))
-                input_text_generation_webui_history_max_len.style("width:200px")
-            with ui.row():
-                select_text_generation_webui_mode = ui.select(
-                    label='类型', 
-                    options={"chat": "chat", "chat-instruct": "chat-instruct", "instruct": "instruct"}, 
-                    value=config.get("text_generation_webui", "mode")
-                ).style("width:150px")
-                input_text_generation_webui_character = ui.input(label='character', placeholder='自行查阅', value=config.get("text_generation_webui", "character"))
-                input_text_generation_webui_character.style("width:100px")
-                input_text_generation_webui_instruction_template = ui.input(label='instruction_template', placeholder='自行查阅', value=config.get("text_generation_webui", "instruction_template"))
-                input_text_generation_webui_instruction_template.style("width:150px")
-                input_text_generation_webui_your_name = ui.input(label='your_name', placeholder='自行查阅', value=config.get("text_generation_webui", "your_name"))
-                input_text_generation_webui_your_name.style("width:100px")
-            with ui.row():
-                input_text_generation_webui_top_p = ui.input(label='top_p', value=config.get("text_generation_webui", "top_p"), placeholder='topP生成时，核采样方法的概率阈值。例如，取值为0.8时，仅保留累计概率之和大于等于0.8的概率分布中的token，作为随机采样的候选集。取值范围为(0,1.0)，取值越大，生成的随机性越高；取值越低，生成的随机性越低。默认值 0.95。注意，取值不要大于等于1')
-                input_text_generation_webui_top_k = ui.input(label='top_k', value=config.get("text_generation_webui", "top_k"), placeholder='匹配搜索结果条数')
-                input_text_generation_webui_temperature = ui.input(label='temperature', value=config.get("text_generation_webui", "temperature"), placeholder='较高的值将使输出更加随机，而较低的值将使输出更加集中和确定。可选，默认取值0.92')
-                input_text_generation_webui_seed = ui.input(label='seed', value=config.get("text_generation_webui", "seed"), placeholder='seed生成时，随机数的种子，用于控制模型生成的随机性。如果使用相同的种子，每次运行生成的结果都将相同；当需要复现模型的生成结果时，可以使用相同的种子。seed参数支持无符号64位整数类型。默认值 1683806810')
-
-    if config.get("webui", "show_card", "llm", "sparkdesk"):    
-        with ui.card().style(card_css):
-            ui.label("讯飞星火")
-            with ui.grid(columns=1):
-                lines = ["web", "api"]
-                data_json = {}
-                for line in lines:
-                    data_json[line] = line
-                select_sparkdesk_type = ui.select(
-                    label='类型', 
-                    options=data_json, 
-                    value=config.get("sparkdesk", "type")
-                ).style("width:100px") 
-            
-            with ui.card().style(card_css):
-                ui.label("WEB")
-                with ui.row():
-                    input_sparkdesk_cookie = ui.input(label='cookie', placeholder='web抓包请求头中的cookie，参考文档教程', value=config.get("sparkdesk", "cookie"))
-                    input_sparkdesk_cookie.style("width:300px")
-                    input_sparkdesk_fd = ui.input(label='fd', placeholder='web抓包负载中的fd，参考文档教程', value=config.get("sparkdesk", "fd"))
-                    input_sparkdesk_fd.style("width:200px")      
-                    input_sparkdesk_GtToken = ui.input(label='GtToken', placeholder='web抓包负载中的GtToken，参考文档教程', value=config.get("sparkdesk", "GtToken"))
-                    input_sparkdesk_GtToken.style("width:200px")
-
-            with ui.card().style(card_css):
-                ui.label("API")
-                with ui.row():
-                    input_sparkdesk_app_id = ui.input(label='app_id', value=config.get("sparkdesk", "app_id"), placeholder='申请官方API后，云平台中提供的APPID').style("width:100px")   
-                    input_sparkdesk_api_secret = ui.input(label='api_secret', value=config.get("sparkdesk", "api_secret"), placeholder='申请官方API后，云平台中提供的APISecret').style("width:200px") 
-                    input_sparkdesk_api_key = ui.input(label='api_key', value=config.get("sparkdesk", "api_key"), placeholder='申请官方API后，云平台中提供的APIKey').style("width:200px") 
-                    
-                    select_sparkdesk_version = ui.select(
-                        label='版本', 
-                        options={
-                            "4.0": "Ultra",
-                            "3.5": "Max",
-                            "3.2": "pro-128k",
-                            "3.1": "Pro",
-                            "2.1": "V2.1",
-                            "1.1": "Lite",
-                        }, 
-                        value=str(config.get("sparkdesk", "version"))
-                    ).style("width:100px") 
-                    input_sparkdesk_assistant_id = ui.input(label='助手ID', value=config.get("sparkdesk", "assistant_id"), placeholder='助手创作中心，创建助手后助手API的接口地址最后的助手ID').style("width:100px") 
-         
     if config.get("webui", "show_card", "llm", "langchain_chatchat"):  
         with ui.card().style(card_css):
             ui.label("Langchain_ChatChat")
@@ -350,44 +255,6 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
                         value=config.get("zhipu", "assistant_api", "assistant_id")
                     ).style("width:200px").tooltip('智能体 ID，浏览器打开智能体对话页后，可通过URL地址栏查看，那一串英文数字')
 
-    if config.get("webui", "show_card", "llm", "bard"):  
-        with ui.card().style(card_css):
-            ui.label("Bard")
-            with ui.grid(columns=2):
-                input_bard_token = ui.input(label='token', placeholder='登录bard，打开F12，在cookie中获取 __Secure-1PSID 对应的值', value=config.get("bard", "token"))
-                input_bard_token.style("width:400px")
-    
-    
-    if config.get("webui", "show_card", "llm", "tongyixingchen"): 
-        with ui.card().style(card_css):
-            ui.label("通义星尘")
-            with ui.row():
-                input_tongyixingchen_access_token = ui.input(label='密钥', value=config.get("tongyixingchen", "access_token"), placeholder='官网申请开通API-KEY，然后找官方申请调用权限')
-                lines = ['固定角色']
-                data_json = {}
-                for line in lines:
-                    data_json[line] = line
-                select_tongyixingchen_type = ui.select(
-                    label='类型', 
-                    options=data_json, 
-                    value=config.get("tongyixingchen", "type")
-                ).style("width:100px")
-                switch_tongyixingchen_history_enable = ui.switch('上下文记忆', value=config.get("tongyixingchen", "history_enable")).style(switch_internal_css)
-                input_tongyixingchen_history_max_len = ui.input(label='最大记忆长度', value=config.get("tongyixingchen", "history_max_len"), placeholder='最长能记忆的问答字符串长度，超长会丢弃最早记忆的内容，请慎用！配置过大可能会有丢大米')
-                switch_tongyixingchen_stream = ui.switch('流式输出', value=config.get("tongyixingchen", "stream")).tooltip("是否开启流式输出，开启后，回答会逐句输出，关闭后，回答会一次性输出。")
-            
-            with ui.card().style(card_css):
-                ui.label("固定角色")
-                with ui.row():
-                    input_tongyixingchen_GDJS_character_id = ui.input(label='角色ID', value=config.get("tongyixingchen", "固定角色", "character_id"), placeholder='官网聊天页，创建的角色，然后点开角色的信息，可以看见ID')
-                    input_tongyixingchen_GDJS_top_p = ui.input(label='top_p', value=config.get("tongyixingchen", "固定角色", "top_p"), placeholder='topP生成时，核采样方法的概率阈值。例如，取值为0.8时，仅保留累计概率之和大于等于0.8的概率分布中的token，作为随机采样的候选集。取值范围为(0,1.0)，取值越大，生成的随机性越高；取值越低，生成的随机性越低。默认值 0.95。注意，取值不要大于等于1')
-                    input_tongyixingchen_GDJS_temperature = ui.input(label='temperature', value=config.get("tongyixingchen", "固定角色", "temperature"), placeholder='较高的值将使输出更加随机，而较低的值将使输出更加集中和确定。可选，默认取值0.92')
-                    input_tongyixingchen_GDJS_seed = ui.input(label='seed', value=config.get("tongyixingchen", "固定角色", "seed"), placeholder='seed生成时，随机数的种子，用于控制模型生成的随机性。如果使用相同的种子，每次运行生成的结果都将相同；当需要复现模型的生成结果时，可以使用相同的种子。seed参数支持无符号64位整数类型。默认值 1683806810')
-                with ui.row():
-                    input_tongyixingchen_GDJS_user_id = ui.input(label='用户ID', value=config.get("tongyixingchen", "固定角色", "user_id"), placeholder='业务系统用户唯一标识，同一用户不能并行对话，必须待上次对话回复结束后才可发起下轮对话')
-                    input_tongyixingchen_GDJS_username = ui.input(label='对话用户名称', value=config.get("tongyixingchen", "固定角色", "username"), placeholder='对话用户名称，即你的名字')
-                    input_tongyixingchen_GDJS_role_name = ui.input(label='固定角色名称', value=config.get("tongyixingchen", "固定角色", "role_name"), placeholder='角色ID对应的角色名称，自己编写的别告诉我你不知道！')
-
     if config.get("webui", "show_card", "llm", "my_wenxinworkshop"): 
         with ui.card().style(card_css):
             ui.label("千帆大模型")
@@ -473,35 +340,6 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
                 input_gemini_max_temperature = ui.input(label='temperature', value=config.get("gemini", "temperature"), placeholder='控制输出的随机性。值范围为[0.0,1.0]，包括0.0和1.0。值越接近1.0，生成的响应将更加多样化和创造性，而值越接近0.0，通常会导致模型产生更加直接的响应。')
                 input_gemini_top_p = ui.input(label='top_p', value=config.get("gemini", "top_p"), placeholder='在抽样时考虑的标记的最大累积概率。根据其分配的概率对标记进行排序，以仅考虑最可能的标记。Top-k采样直接限制要考虑的标记的最大数量，而Nucleus采样则基于累积概率限制标记的数量。')
                 input_gemini_top_k = ui.input(label='top_k', value=config.get("gemini", "top_k"), placeholder='在抽样时考虑的标记的最大数量。Top-k采样考虑一组top_k最有可能的标记。默认值为40。')
-
-    
-    if config.get("webui", "show_card", "llm", "koboldcpp"):
-        with ui.card().style(card_css):
-            ui.label("koboldcpp")
-            with ui.row():
-                input_koboldcpp_api_ip_port = ui.input(
-                    label='API地址', 
-                    value=config.get("koboldcpp", "api_ip_port"), 
-                    placeholder='koboldcpp启动后API监听的ip端口地址',
-                    validation={
-                        '请输入正确格式的URL': lambda value: common.is_url_check(value),
-                    }
-                )
-                input_koboldcpp_max_context_length = ui.input(label='max_context_length', value=config.get("koboldcpp", "max_context_length"), placeholder='max_context_length')
-                input_koboldcpp_max_length = ui.input(label='max_length', value=config.get("koboldcpp", "max_length"), placeholder='max_length')
-                switch_koboldcpp_quiet = ui.switch('quiet', value=config.get("koboldcpp", "quiet")).style(switch_internal_css)
-                input_koboldcpp_rep_pen = ui.input(label='rep_pen', value=config.get("koboldcpp", "rep_pen"), placeholder='rep_pen')
-                input_koboldcpp_rep_pen_range = ui.input(label='rep_pen_range', value=config.get("koboldcpp", "rep_pen_range"), placeholder='rep_pen_range')
-                input_koboldcpp_rep_pen_slope = ui.input(label='rep_pen_slope', value=config.get("koboldcpp", "rep_pen_slope"), placeholder='rep_pen_slope')
-            with ui.row():
-                input_koboldcpp_temperature = ui.input(label='temperature', value=config.get("koboldcpp", "temperature"), placeholder='控制输出的随机性。')
-                input_koboldcpp_tfs = ui.input(label='tfs', value=config.get("koboldcpp", "tfs"), placeholder='tfs')
-                input_koboldcpp_top_a = ui.input(label='top_a', value=config.get("koboldcpp", "top_a"), placeholder='top_a')
-                input_koboldcpp_top_p = ui.input(label='top_p', value=config.get("koboldcpp", "top_p"), placeholder='在抽样时考虑的标记的最大累积概率。根据其分配的概率对标记进行排序，以仅考虑最可能的标记。Top-k采样直接限制要考虑的标记的最大数量，而Nucleus采样则基于累积概率限制标记的数量。')
-                input_koboldcpp_top_k = ui.input(label='top_k', value=config.get("koboldcpp", "top_k"), placeholder='在抽样时考虑的标记的最大数量。Top-k采样考虑一组top_k最有可能的标记。默认值为40。')
-                input_koboldcpp_typical = ui.input(label='typical', value=config.get("koboldcpp", "typical"), placeholder='typical')
-                switch_koboldcpp_history_enable = ui.switch('上下文记忆', value=config.get("koboldcpp", "history_enable")).style(switch_internal_css)
-                input_koboldcpp_history_max_len = ui.input(label='最大记忆长度', value=config.get("koboldcpp", "history_max_len"), placeholder='最长能记忆的问答字符串长度，超长会丢弃最早记忆的内容，请慎用！配置过大可能会有丢大米')
 
     if config.get("webui", "show_card", "llm", "anythingllm"):
         with ui.card().style(card_css):
@@ -609,72 +447,6 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
                 input_tongyi_history_max_len = ui.input(label='最大记忆长度', value=config.get("tongyi", "history_max_len"), placeholder='最长能记忆的问答字符串长度，超长会丢弃最早记忆的内容，请慎用！配置过大可能会有丢大米')
                 switch_tongyi_stream = ui.switch('流式输出', value=config.get("tongyi", "stream")).tooltip("是否开启流式输出，开启后，回答会逐句输出，关闭后，回答会一次性输出。")
             
-    if config.get("webui", "show_card", "llm", "gpt4free"):
-        with ui.card().style(card_css):
-            ui.label("GPT4Free")
-            with ui.row():
-                providers = [
-                    "none",
-                    "g4f.Provider.Bing",
-                    "g4f.Provider.ChatgptAi",
-                    "g4f.Provider.Liaobots",
-                    "g4f.Provider.OpenaiChat",
-                    "g4f.Provider.Raycast",
-                    "g4f.Provider.Theb",
-                    "g4f.Provider.You",
-                    "g4f.Provider.AItianhuSpace",
-                    "g4f.Provider.ChatForAi",
-                    "g4f.Provider.Chatgpt4Online",
-                    "g4f.Provider.ChatgptNext",
-                    "g4f.Provider.ChatgptX",
-                    "g4f.Provider.FlowGpt",
-                    "g4f.Provider.GptTalkRu",
-                    "g4f.Provider.Koala",
-                ]
-                # 将用户配置的值插入list（如果不存在）
-                if config.get("gpt4free", "provider") not in providers:
-                    providers.append(config.get("gpt4free", "provider"))
-                data_json = {}
-                for line in providers:
-                    data_json[line] = line
-                select_gpt4free_provider = ui.select(
-                    label='供应商', 
-                    options=data_json, 
-                    value=config.get("gpt4free", "provider"),
-                    with_input=True,
-                    new_value_mode='add-unique',
-                    clearable=True
-                )
-                input_gpt4free_api_key = ui.input(label='API密钥', placeholder='API KEY，支持代理', value=config.get("gpt4free", "api_key")).style("width:300px;")
-                # button_gpt4free_test = ui.button('测试', on_click=lambda: test_openai_key(), color=button_bottom_color).style(button_bottom_css)
-
-                gpt4free_models = [
-                    "gpt-3.5-turbo",
-                    "gpt-4",
-                    "gpt-4-turbo",
-                ]
-                # 将用户配置的值插入list（如果不存在）
-                if config.get("gpt4free", "model") not in gpt4free_models:
-                    gpt4free_models.append(config.get("gpt4free", "model"))
-                data_json = {}
-                for line in gpt4free_models:
-                    data_json[line] = line
-                select_gpt4free_model = ui.select(
-                    label='模型', 
-                    options=data_json, 
-                    value=config.get("gpt4free", "model"),
-                    with_input=True,
-                    new_value_mode='add-unique',
-                    clearable=True
-                )
-                input_gpt4free_proxy = ui.input(label='HTTP代理地址', placeholder='HTTP代理地址', value=config.get("gpt4free", "proxy")).style("width:300px;")
-            with ui.row():
-                input_gpt4free_max_tokens = ui.input(label='最大token数', value=config.get("gpt4free", "max_tokens"), placeholder='限制生成回答的最大长度。').style("width:200px;")
-            
-                input_gpt4free_preset = ui.input(label='预设', value=config.get("gpt4free", "preset"), placeholder='用于指定一组预定义的设置，以便模型更好地适应特定的对话场景。').style("width:500px") 
-                switch_gpt4free_history_enable = ui.switch('上下文记忆', value=config.get("gpt4free", "history_enable")).style(switch_internal_css)
-                input_gpt4free_history_max_len = ui.input(label='最大记忆长度', value=config.get("gpt4free", "history_max_len"), placeholder='最长能记忆的问答字符串长度，超长会丢弃最早记忆的内容，请慎用！配置过大可能会有丢大米')
-
     if config.get("webui", "show_card", "llm", "dify"):
         with ui.card().style(card_css):
             ui.label("Dify")
@@ -792,39 +564,6 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
             "local_max_query": (input_chat_with_file_local_max_query, 'int'),
             "show_token_cost": (switch_chat_with_file_show_token_cost, 'bool'),
         }
-    if config.get("webui", "show_card", "llm", "chatterbot"):
-        mapping["chatterbot"] = {
-            "name": (input_chatterbot_name, 'str'),
-            "db_path": (input_chatterbot_db_path, 'str'),
-        }
-    if config.get("webui", "show_card", "llm", "text_generation_webui"):
-        mapping["text_generation_webui"] = {
-            "type": (select_text_generation_webui_type, 'str'),
-            "api_ip_port": (input_text_generation_webui_api_ip_port, 'str'),
-            "max_new_tokens": (input_text_generation_webui_max_new_tokens, 'int'),
-            "history_enable": (switch_text_generation_webui_history_enable, 'bool'),
-            "history_max_len": (input_text_generation_webui_history_max_len, 'int'),
-            "mode": (select_text_generation_webui_mode, 'str'),
-            "character": (input_text_generation_webui_character, 'str'),
-            "instruction_template": (input_text_generation_webui_instruction_template, 'str'),
-            "your_name": (input_text_generation_webui_your_name, 'str'),
-            "top_p": (input_text_generation_webui_top_p, 'float'),
-            "top_k": (input_text_generation_webui_top_k, 'int'),
-            "temperature": (input_text_generation_webui_temperature, 'float'),
-            "seed": (input_text_generation_webui_seed, 'float'),
-        }
-    if config.get("webui", "show_card", "llm", "sparkdesk"):
-        mapping["sparkdesk"] = {
-            "type": (select_sparkdesk_type, 'str'),
-            "cookie": (input_sparkdesk_cookie, 'str'),
-            "fd": (input_sparkdesk_fd, 'str'),
-            "GtToken": (input_sparkdesk_GtToken, 'str'),
-            "app_id": (input_sparkdesk_app_id, 'str'),
-            "api_secret": (input_sparkdesk_api_secret, 'str'),
-            "api_key": (input_sparkdesk_api_key, 'str'),
-            "version": (select_sparkdesk_version, 'float'),
-            "assistant_id": (input_sparkdesk_assistant_id, 'str'),
-        }
     if config.get("webui", "show_card", "llm", "langchain_chatchat"):
         mapping["langchain_chatchat"] = {
             "api_ip_port": (input_langchain_chatchat_api_ip_port, 'str'),
@@ -876,10 +615,6 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
                 "assistant_id": (input_zhipu_assistant_api_assistant_id, 'str'),
             },
         }
-    if config.get("webui", "show_card", "llm", "bard"):
-        mapping["bard"] = {
-            "token": (input_bard_token, 'str'),
-        }
     if config.get("webui", "show_card", "llm", "tongyi"):
         mapping["tongyi"] = {
             "type": (select_tongyi_type, 'str'),
@@ -894,23 +629,6 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
             "history_enable": (switch_tongyi_history_enable, 'bool'),
             "history_max_len": (input_tongyi_history_max_len, 'int'),
             "stream": (switch_tongyi_stream, 'bool'),
-        }
-    if config.get("webui", "show_card", "llm", "tongyixingchen"):
-        mapping["tongyixingchen"] = {
-            "access_token": (input_tongyixingchen_access_token, 'str'),
-            "type": (select_tongyixingchen_type, 'str'),
-            "history_enable": (switch_tongyixingchen_history_enable, 'bool'),
-            "history_max_len": (input_tongyixingchen_history_max_len, 'int'),
-            "stream": (switch_tongyixingchen_stream, 'bool'),
-            "固定角色": {
-                "character_id": (input_tongyixingchen_GDJS_character_id, 'str'),
-                "top_p": (input_tongyixingchen_GDJS_top_p, 'float'),
-                "temperature": (input_tongyixingchen_GDJS_temperature, 'float'),
-                "seed": (input_tongyixingchen_GDJS_seed, 'int'),
-                "user_id": (input_tongyixingchen_GDJS_user_id, 'str'),
-                "username": (input_tongyixingchen_GDJS_username, 'str'),
-                "role_name": (input_tongyixingchen_GDJS_role_name, 'str'),
-            },
         }
     if config.get("webui", "show_card", "llm", "my_wenxinworkshop"):
         mapping["my_wenxinworkshop"] = {
@@ -941,24 +659,6 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
             "top_k": (input_gemini_top_k, 'int'),
         }
     
-    if config.get("webui", "show_card", "llm", "koboldcpp"):
-        mapping["koboldcpp"] = {
-            "api_ip_port": (input_koboldcpp_api_ip_port, 'str'),
-            "max_context_length": (input_koboldcpp_max_context_length, 'int'),
-            "max_length": (input_koboldcpp_max_length, 'int'),
-            "quiet": (switch_koboldcpp_quiet, 'bool'),
-            "rep_pen": (input_koboldcpp_rep_pen, 'float'),
-            "rep_pen_range": (input_koboldcpp_rep_pen_range, 'int'),
-            "rep_pen_slope": (input_koboldcpp_rep_pen_slope, 'int'),
-            "temperature": (input_koboldcpp_temperature, 'float'),
-            "tfs": (input_koboldcpp_tfs, 'int'),
-            "top_a": (input_koboldcpp_top_a, 'int'),
-            "top_p": (input_koboldcpp_top_p, 'float'),
-            "top_k": (input_koboldcpp_top_k, 'int'),
-            "typical": (input_koboldcpp_typical, 'int'),
-            "history_enable": (switch_koboldcpp_history_enable, 'bool'),
-            "history_max_len": (input_koboldcpp_history_max_len, 'int'),
-        }
     if config.get("webui", "show_card", "llm", "anythingllm"):
         mapping["anythingllm"] = {
             "api_ip_port": (input_anythingllm_api_ip_port, 'str'),
@@ -974,17 +674,6 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
             "history_enable": (switch_dify_history_enable, 'bool'),
             "stream": (switch_dify_stream, 'bool'),
             "custom_params": (textarea_dify_custom_params, 'str'),  
-        }
-    if config.get("webui", "show_card", "llm", "gpt4free"):
-        mapping["gpt4free"] = {
-            "provider": (select_gpt4free_provider, 'str'),
-            "api_key": (input_gpt4free_api_key, 'str'),
-            "model": (select_gpt4free_model, 'str'),
-            "proxy": (input_gpt4free_proxy, 'str'),
-            "max_tokens": (input_gpt4free_max_tokens, 'int'),
-            "preset": (input_gpt4free_preset, 'str'),
-            "history_enable": (switch_gpt4free_history_enable, 'bool'),
-            "history_max_len": (input_gpt4free_history_max_len, 'int'),
         }
     if config.get("webui", "show_card", "llm", "volcengine"):
         mapping["volcengine"] = {

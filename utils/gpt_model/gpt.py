@@ -14,18 +14,12 @@ from utils.my_log import logger
 # 延迟导入的模型注册表：只有配置里真正选中的模型才会导入对应 SDK
 PROVIDERS = {
     "chatgpt": ("utils.gpt_model.chatgpt", "Chatgpt"),
-    "text_generation_webui": ("utils.gpt_model.text_generation_webui", "TEXT_GENERATION_WEBUI"),
-    "sparkdesk": ("utils.gpt_model.sparkdesk", "SPARKDESK"),
     "langchain_chatchat": ("utils.gpt_model.langchain_chatchat", "Langchain_ChatChat"),
     "zhipu": ("utils.gpt_model.zhipu", "Zhipu"),
-    "bard": ("utils.gpt_model.bard", "Bard_api"),
     "tongyi": ("utils.gpt_model.tongyi", "TongYi"),
-    "tongyixingchen": ("utils.gpt_model.tongyixingchen", "TongYiXingChen"),
     "my_wenxinworkshop": ("utils.gpt_model.my_wenxinworkshop", "My_WenXinWorkShop"),
     "gemini": ("utils.gpt_model.gemini", "Gemini"),
-    "koboldcpp": ("utils.gpt_model.koboldcpp", "Koboldcpp"),
     "anythingllm": ("utils.gpt_model.anythingllm", "AnythingLLM"),
-    "gpt4free": ("utils.gpt_model.gpt4free", "GPT4Free"),
     "custom_llm": ("utils.gpt_model.custom_llm", "Custom_LLM"),
     "llm_tpu": ("utils.gpt_model.llm_tpu", "LLM_TPU"),
     "dify": ("utils.gpt_model.dify", "Dify"),
