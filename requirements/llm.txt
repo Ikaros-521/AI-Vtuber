@@ -1,0 +1,12 @@
+# 云端/本地大模型 provider，按 config 里实际选用的模型安装
+bardapi==0.1.33
+dashscope==1.14.1
+g4f==0.3.0.6
+google-generativeai==0.7.2
+PyJWT==2.8.0
+revTongYi==0.0.1.0
+volcengine-python-sdk[ark]==1.0.99
+xingchen==1.1.5
+zhipuai==2.1.4.20230731
+wenxinworkshop @ git+https://gitee.com/ikaros-521/WenxinWorkshop-Python-SDK@12b863fca7ec1cdf969d73a04b50f66d2d24a878
+sparkdesk-api @ git+https://gitee.com/ikaros-521/sparkdesk-api@0c4994d769908708321b3598aa34de2062dd6df5

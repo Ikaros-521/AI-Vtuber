@@ -1,0 +1,35 @@
+# WebUI 与本地对话/播报主链路，最小可运行集
+nicegui==1.4.30
+fastapi==0.109.2
+starlette==0.36.3
+uvicorn==0.22.0
+httpx==0.28.1
+aiohttp==3.9.3
+requests==2.32.3
+openai==1.90.0
+packaging==23.0
+pydantic==1.10.13
+numpy==1.25.0
+loguru==0.7.0
+schedule==1.2.2
+
+# 语音合成与播放（edge-tts 为默认 TTS）
+edge-tts==6.1.15
+pydub==0.25.1
+pygame==2.5.0
+PyAudio==0.2.13
+websockets==11.0.3
+
+# 文本处理与本地工具
+langid==1.1.6
+profanity==1.1
+pyahocorasick==2.0.0
+send2trash==1.8.2
+pypinyin==0.49.0
+jieba==0.42.1
+pygtrans==1.5.3
+
+# 本地拾音/百度 ASR
+keyboard==0.13.5
+SpeechRecognition==3.10.0
+baidu-aip==4.16.11

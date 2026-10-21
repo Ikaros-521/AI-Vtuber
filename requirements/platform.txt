@@ -1,0 +1,16 @@
+# 直播平台弹幕与逆向协议（抖音/快手的 pb2 需要 protobuf）
+# bilibili-api-python 钉在 16.1.0 是历史运行版本；它声明 requests<2.32/httpx<0.25/aiohttp<3.9/brotli<1.1，
+# 与 core 冲突，因此本组暂时无法生成 lock。升到 17.4.2 可与 core 共存，但需先把
+# utils/platforms/bilibili.py 的 login.login_with_qrcode/login_with_password 迁移到 login_v2。
+bilibili-api-python==16.1.0
+blivedm @ git+https://gitee.com/ikaros-521/blivedm@8c5f6a910d9f755ef01a6b099b7da2e2d4453fa6
+TikTokLive==6.2.1.post1
+betterproto==2.0.0b1
+playwright==1.36.0
+pytchat==0.5.5
+PySocks==1.7.1
+emoji==2.14.1
+websocket-client==1.8.0
+protobuf==4.25.8
+protobuf-inspector==0.2
+rsocket==0.4.15

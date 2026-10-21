@@ -1,0 +1,4 @@
+# 额外 TTS（edge-tts 已在 core）；gradio_client 同时供 llm_tpu 使用
+elevenlabs==0.2.8
+azure-cognitiveservices-speech==1.35.0
+gradio_client==1.10.3

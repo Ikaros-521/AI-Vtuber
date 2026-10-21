@@ -1,0 +1,8 @@
+# 数字人、虚拟摄像头、Stable Diffusion、桌面自动化与串口
+opencv-python==4.9.0.80
+Pillow==10.1.0
+pyvirtualcam==0.10.2
+webuiapi==0.9.3
+pyautogui==0.9.54
+PyGetWindow==0.0.9
+pyserial==3.5

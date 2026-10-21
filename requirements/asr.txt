@@ -1,0 +1,3 @@
+# 本地 ASR 模型，会连带安装 torch / ctranslate2 等大依赖
+funasr==1.1.3
+faster-whisper==1.0.2
