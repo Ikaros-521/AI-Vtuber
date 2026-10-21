@@ -40,6 +40,7 @@ CORE_MODULES = [
     "webui_app.pages.data_analysis",
     "webui_app.pages.image_recognition",
     "webui_app.pages.integral",
+    "webui_app.pages.llm",
     "webui_app.pages.serial",
     "webui_app.pages.talk",
     "webui_app.pages.static_pages",
