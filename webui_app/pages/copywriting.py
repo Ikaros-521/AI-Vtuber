@@ -9,7 +9,7 @@ from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS, common_textarea_hand
 from webui_app.pages import PageConfig
 
 
-def build_copywriting_tab(config, common, audio, state, card_css, switch_internal_css,
+def build_copywriting_tab(config, common, audio, card_css, switch_internal_css,
                           button_internal_color, button_internal_css):
     copywriting_config_var = {}
     copywriting_config_card = ui.card()
@@ -115,24 +115,6 @@ def build_copywriting_tab(config, common, audio, state, card_css, switch_interna
         audio_copywriting.move(copywriting_audio_card)
         button_copywriting_audio_del = ui.button('删除音频', on_click=lambda: clear_copywriting_audio_card(file_path), color=button_internal_color).style(button_internal_css)
         button_copywriting_audio_del.move(copywriting_audio_card)
-
-    def copywriting_loop_play():
-        if state.running_flag != 1:
-            ui.notify(position="top", type="warning", message="请先点击“一键运行”，然后再进行播放")
-            return
-
-        logger.info("开始循环播放文案~")
-        ui.notify(position="top", type="positive", message="开始循环播放文案~")
-        audio.unpause_copywriting_play()
-
-    def copywriting_pause_play():
-        if state.running_flag != 1:
-            ui.notify(position="top", type="warning", message="请先点击“一键运行”，然后再进行暂停")
-            return
-
-        audio.pause_copywriting_play()
-        logger.info("暂停文案完毕~")
-        ui.notify(position="top", type="positive", message="暂停文案完毕~")
 
     with ui.row():
         switch_copywriting_auto_play = ui.switch('自动播放', value=config.get("copywriting", "auto_play")).style(switch_internal_css)

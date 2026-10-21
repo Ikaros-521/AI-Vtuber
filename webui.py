@@ -341,7 +341,7 @@ def goto_func_page():
 
         with ui.tab_panel(copywriting_page).style(tab_panel_css):
             page_config_mappings.append(build_copywriting_tab(
-                config, common, audio, state, card_css, switch_internal_css, button_internal_color, button_internal_css))
+                config, common, audio, card_css, switch_internal_css, button_internal_color, button_internal_css))
 
         with ui.tab_panel(integral_page).style(tab_panel_css):
             page_config_mappings.append(build_integral_tab(config, card_css, switch_internal_css))
