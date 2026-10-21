@@ -109,7 +109,9 @@ uv pip install --python .venv/Scripts/python.exe -r requirements/dev.txt
 python -m pytest
 ```
 
-用例放在 `tests/unit/`，覆盖弹幕过滤与违禁词、本地问答库匹配、限时去重、队列委托、webui 配置写回、LLM provider 注册表。`tests/` 下其余目录是各平台/模型的手工联调脚本（要真实 key 和外网），不会被 pytest 收集——`pyproject.toml` 里已把 `testpaths` 钉在 `tests/unit`。
+用例放在 `tests/unit/`，覆盖弹幕过滤与违禁词、本地问答库匹配、限时去重、队列委托、聊天回推、
+`utils/common.py` 的纯函数、webui 配置写回、LLM provider 注册表。`tests/` 下其余目录是各平台/模型的
+手工联调脚本（要真实 key 和外网），不会被 pytest 收集——`pyproject.toml` 里已把 `testpaths` 钉在 `tests/unit`。
 
 GitHub Actions 每次 push 都会跑一遍 `pytest` + 冒烟测试，见 `.github/workflows/ci.yml`。
 
