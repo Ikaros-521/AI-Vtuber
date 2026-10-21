@@ -99,6 +99,16 @@ uv pip compile requirements/core.txt requirements/llm.txt --python .venv/Scripts
 
 `platform` 组的 lock 也已生成（`requirements/core+platform.lock.txt`）：`bilibili-api-python` 升到 17.4.2 后不再钉死 `requests`/`httpx`/`aiohttp`/`brotli` 上限，可与 core 合并解析。注意 17.x 的登录 API 换成了异步的 `login_v2`，且需要极验验证码的「账号密码登录」已移除，B站登录请用 `cookie` 或 `手机扫码`。
 
+#### 几个升不动的包，以及卡住它们的原因
+
+| 包 | 现状 | 为什么钉在这里 |
+| --- | --- | --- |
+| `fastapi` / `starlette` | 0.109.2 / 0.36.3 | nicegui 1.4.30 要求 `fastapi<0.110`，fastapi 0.109.2 又要求 `starlette<0.37`。要升必须先迁到 nicegui 3.x |
+| `aiohttp` / `yarl` | 3.9.3 / 1.9.11 | blivedm 要求 `aiohttp~=3.9.0` 且 `yarl~=1.9.3`；而 aiohttp 3.14+ 要求 `yarl>=1.25.1`，直接互斥。为了 core 与 core+platform 不互相降级，只能等 blivedm 放宽 |
+| `numpy` | 1.26.4（最后一个 1.x） | 2.x 会破坏 faiss-cpu、opencv 的编译扩展 ABI |
+| `pydub` | 0.25.1 | 这就是 PyPI 上的最新版，上游多年不发布 |
+| `jieba` / `langid` / `profanity` | 各自末版 | 上游已停止维护，功能仍可用 |
+
 ### 单元测试
 
 只依赖 `core` 分组即可运行，不需要任何模型 key 或外网：

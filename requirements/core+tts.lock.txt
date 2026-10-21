@@ -27,7 +27,7 @@ attrs==26.1.0
     # via aiohttp
 azure-cognitiveservices-speech==1.35.0
     # via -r requirements/tts.txt
-baidu-aip==4.16.11
+baidu-aip==4.16.13
     # via -r requirements/core.txt
 bidict==0.23.1
     # via python-socketio
@@ -52,8 +52,7 @@ colorama==0.4.6
     #   ipython
     #   loguru
     #   tqdm
-    #   uvicorn
-colorlog==6.8.0
+colorlog==6.12.0
     # via -r requirements/core.txt
 decorator==5.3.1
     # via ipython
@@ -136,7 +135,7 @@ keyboard==0.13.5
     # via -r requirements/core.txt
 langid==1.1.6
     # via -r requirements/core.txt
-loguru==0.7.0
+loguru==0.7.3
     # via -r requirements/core.txt
 markdown2==2.5.5
     # via nicegui
@@ -150,15 +149,15 @@ multidict==6.9.1
     #   yarl
 nicegui==1.4.30
     # via -r requirements/core.txt
-numpy==1.25.0
+numpy==1.26.4
     # via
     #   -r requirements/core.txt
     #   langid
-openai==1.90.0
+openai==1.109.1
     # via -r requirements/core.txt
 orjson==3.13.0
     # via nicegui
-packaging==23.0
+packaging==26.3
     # via
     #   -r requirements/core.txt
     #   gradio-client
@@ -173,9 +172,9 @@ pscript==0.7.7
     # via vbuild
 pure-eval==0.2.4
     # via stack-data
-pyahocorasick==2.0.0
+pyahocorasick==2.3.1
     # via -r requirements/core.txt
-pyaudio==0.2.13
+pyaudio==0.2.14
     # via -r requirements/core.txt
 pydantic==2.14.1
     # via
@@ -187,15 +186,15 @@ pydantic-core==2.50.1
     # via pydantic
 pydub==0.25.1
     # via -r requirements/core.txt
-pygame==2.5.0
+pygame==2.6.1
     # via -r requirements/core.txt
 pygments==2.21.0
     # via
     #   ipython
     #   nicegui
-pygtrans==1.5.3
+pygtrans==1.6.2
     # via -r requirements/core.txt
-pypinyin==0.49.0
+pypinyin==0.55.0
     # via -r requirements/core.txt
 pysocks==1.7.1
     # via requests
@@ -211,23 +210,22 @@ pyyaml==6.0.3
     # via
     #   huggingface-hub
     #   uvicorn
-requests==2.32.3
+requests==2.34.2
     # via
     #   -r requirements/core.txt
     #   baidu-aip
     #   elevenlabs
     #   nicegui
     #   pygtrans
-    #   speechrecognition
 schedule==1.2.2
     # via -r requirements/core.txt
-send2trash==1.8.2
+send2trash==2.1.0
     # via -r requirements/core.txt
 simple-websocket==1.1.0
     # via python-engineio
 sniffio==1.3.1
     # via openai
-speechrecognition==3.10.0
+speechrecognition==3.17.0
     # via -r requirements/core.txt
 stack-data==0.6.3
     # via ipython
@@ -267,14 +265,16 @@ typing-extensions==4.16.0
     #   openai
     #   pydantic
     #   pydantic-core
+    #   speechrecognition
     #   typing-inspection
+    #   uvicorn
 typing-inspection==0.4.4
     # via pydantic
 urllib3==2.8.0
     # via
     #   nicegui
     #   requests
-uvicorn==0.22.0
+uvicorn==0.54.0
     # via
     #   -r requirements/core.txt
     #   nicegui
@@ -286,7 +286,7 @@ watchfiles==1.3.0
     #   uvicorn
 wcwidth==0.9.3
     # via prompt-toolkit
-websockets==11.0.3
+websockets==14.2
     # via
     #   -r requirements/core.txt
     #   gradio-client
