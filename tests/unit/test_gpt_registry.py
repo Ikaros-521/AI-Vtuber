@@ -70,6 +70,17 @@ def test_set_model_config_with_unknown_name_is_a_noop():
     assert getattr(model, "不存在的模型", None) is None
 
 
+def test_missing_openai_config_does_not_kill_the_process():
+    """config_load 会无条件配 chatgpt，这里绝不能 exit()——
+    否则只用 dify/gemini 的用户会因为缺 openai 段而启动即退出。"""
+    model = GPT_Model()
+    model.openai = None
+
+    model.set_model_config("chatgpt", {})
+
+    assert getattr(model, "chatgpt", None) is None
+
+
 def test_get_returns_none_for_unconfigured_model():
     assert GPT_Model().get("dify") is None
     assert GPT_MODEL.get("reread") is None

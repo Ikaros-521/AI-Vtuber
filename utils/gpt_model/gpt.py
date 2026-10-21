@@ -61,8 +61,10 @@ class GPT_Model:
 
         if model_name == "chatgpt":
             if self.openai is None:
-                logger.error("openai key 为空，无法配置chatgpt模型")
-                exit(-1)
+                # 这里不能 exit()：config_load 会无条件配 chatgpt，
+                # 用 dify/gemini 的用户会因为缺 openai 段而启动即退出。
+                logger.error("openai key 为空，跳过 chatgpt 模型配置")
+                return
             self.chatgpt = model_class(self.openai, config)
             return
 
