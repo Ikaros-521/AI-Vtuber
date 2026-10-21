@@ -65,13 +65,14 @@ https://lug.ustc.edu.cn/wiki/doc/smart-questions
 
 | 分组 | 内容 | 何时需要 |
 | --- | --- | --- |
-| `core.txt` | WebUI、本地对话、edge-tts、拾音、文本处理 | 必装（73 个包） |
+| `core.txt` | WebUI、本地对话、edge-tts、拾音、文本处理 | 必装（77 个包） |
 | `llm.txt` | 讯飞/智谱/通义/文心/Gemini/g4f 等模型 SDK | 选用对应 `chat_type` |
+| `llm-xingchen.txt` | 通义星尘 SDK | 需要该 provider，但它要求 `pydantic<2`，与核心互斥，故未收进全量入口 |
 | `tts.txt` | elevenlabs、Azure TTS、gradio_client | 选用对应 TTS |
 | `asr.txt` | FunASR、Faster-Whisper（会带 torch） | 本地语音识别 |
 | `platform.txt` | B站/抖音/快手/TikTok/YouTube 弹幕与逆向协议 | 对应直播平台 |
 | `visual.txt` | OpenCV、Pillow、虚拟摄像头、SD、pyautogui | 数字人/绘图/桌面自动化 |
-| `chat-with-file.txt` | 文档问答（langchain 旧实现，待替换） | 启用 `chat_with_file` |
+| `chat-with-file.txt` | 文档问答：OpenAI 向量化 + faiss 检索 | 启用 `chat_with_file` |
 
 ```bash
 # 最小安装：直接用锁定文件，装出来的环境和仓库验证过的一致
@@ -88,8 +89,11 @@ pip install -r requirements.txt
 `core.lock.txt` 以及 `core+<组>.lock.txt` 由 uv 生成（Python 3.10）：
 
 ```bash
-uv pip compile requirements/core.txt --python-version 3.10 -o requirements/core.lock.txt
-uv pip compile requirements/core.txt requirements/llm.txt --python-version 3.10 -o requirements/core+llm.lock.txt
+uv pip compile requirements/core.txt --python .venv/Scripts/python.exe -o requirements/core.lock.txt
+
+# 含 gitee 分叉包的分组要加 --no-build-isolation：那几个分叉的 setup.py 里直接 import 了 requests，
+# 构建隔离环境拿不到；指向一个已装好 requests 的虚拟环境即可
+uv pip compile requirements/core.txt requirements/llm.txt --python .venv/Scripts/python.exe --no-build-isolation -o requirements/core+llm.lock.txt
 ```
 
 `platform` 组暂未生成 lock：`bilibili-api-python==16.1.0` 声明了 `requests<2.32`、`httpx<0.25`、`aiohttp<3.9`、`brotli<1.1`，与核心版本冲突，需先升级到 17.4.2 并迁移 `login` → `login_v2`。
