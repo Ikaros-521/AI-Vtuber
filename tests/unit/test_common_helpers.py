@@ -256,6 +256,52 @@ def test_get_bj_time_formats(c):
     assert c.get_bj_time(4) == "2"
 
 
+def test_audio_device_enumeration_releases_the_portaudio_handle(c, monkeypatch):
+    """PyAudio() 不 terminate 就一直占着 PortAudio 实例，
+    聊天页每次打开都枚举一次设备，进几次之后枚举会开始失败。"""
+    import utils.common as common_module
+
+    closed = {"terminated": 0}
+
+    class FakePyAudio:
+        def get_device_count(self):
+            return 2
+
+        def get_device_info_by_index(self, i):
+            return {"name": f"dev{i}", "maxInputChannels": 1, "maxOutputChannels": 0}
+
+        def terminate(self):
+            closed["terminated"] += 1
+
+    monkeypatch.setattr(common_module.pyaudio, "PyAudio", FakePyAudio)
+
+    devices = c.get_all_audio_device_info("in")
+
+    assert devices == [{"device_index": 0, "device_info": "dev0"},
+                       {"device_index": 1, "device_info": "dev1"}]
+    assert closed["terminated"] == 1
+
+
+def test_audio_device_enumeration_releases_handle_even_on_error(c, monkeypatch):
+    import utils.common as common_module
+
+    closed = {"terminated": 0}
+
+    class Exploding:
+        def get_device_count(self):
+            raise RuntimeError("声卡挂了")
+
+        def terminate(self):
+            closed["terminated"] += 1
+
+    monkeypatch.setattr(common_module.pyaudio, "PyAudio", Exploding)
+
+    with pytest.raises(RuntimeError):
+        c.get_all_audio_device_info("in")
+
+    assert closed["terminated"] == 1
+
+
 def test_time_difference_in_seconds_sign(c):
     from datetime import datetime, timedelta
 

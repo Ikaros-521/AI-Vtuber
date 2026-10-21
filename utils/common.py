@@ -1261,18 +1261,23 @@ class Common:
         """
         audio = pyaudio.PyAudio()
         device_infos = []
-        device_count = audio.get_device_count()
+        try:
+            device_count = audio.get_device_count()
 
-        for device_index in range(device_count):
-            device_info = audio.get_device_info_by_index(device_index)
-            if type == "out":
-                if device_info['maxOutputChannels'] > 0:
+            for device_index in range(device_count):
+                device_info = audio.get_device_info_by_index(device_index)
+                if type == "out":
+                    if device_info['maxOutputChannels'] > 0:
+                        device_infos.append({"device_index": device_index, "device_info": device_info['name']})
+                elif type == "in":
+                    if device_info['maxInputChannels'] > 0:
+                        device_infos.append({"device_index": device_index, "device_info": device_info['name']})
+                else:
                     device_infos.append({"device_index": device_index, "device_info": device_info['name']})
-            elif type == "in":
-                if device_info['maxInputChannels'] > 0:
-                    device_infos.append({"device_index": device_index, "device_info": device_info['name']})
-            else:
-                device_infos.append({"device_index": device_index, "device_info": device_info['name']})
+        finally:
+            # 不 terminate 就会一直占着 PortAudio 实例，
+            # 聊天页每次打开都要调这里一次，进几次页面后设备枚举会开始失败
+            audio.terminate()
 
         return device_infos
 
