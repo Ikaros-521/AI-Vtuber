@@ -10,6 +10,8 @@ aiohttp==3.9.3
     #   python-socketio
 aiosignal==1.4.0
     # via aiohttp
+annotated-types==0.8.0
+    # via pydantic
 anyio==4.15.1
     # via
     #   httpx
@@ -37,9 +39,12 @@ click==8.5.0
     # via uvicorn
 colorama==0.4.6
     # via
+    #   colorlog
     #   loguru
     #   tqdm
     #   uvicorn
+colorlog==6.8.0
+    # via -r requirements/core.txt
 distro==1.9.0
     # via openai
 docutils==0.19
@@ -135,11 +140,13 @@ pyaudio==0.2.13
     # via -r requirements/core.txt
 pyautogui==0.9.54
     # via -r requirements/visual.txt
-pydantic==1.10.13
+pydantic==2.14.1
     # via
     #   -r requirements/core.txt
     #   fastapi
     #   openai
+pydantic-core==2.50.1
+    # via pydantic
 pydub==0.25.1
     # via -r requirements/core.txt
 pygame==2.5.0
@@ -214,6 +221,10 @@ typing-extensions==4.16.0
     #   nicegui
     #   openai
     #   pydantic
+    #   pydantic-core
+    #   typing-inspection
+typing-inspection==0.4.4
+    # via pydantic
 urllib3==2.8.0
     # via
     #   nicegui
