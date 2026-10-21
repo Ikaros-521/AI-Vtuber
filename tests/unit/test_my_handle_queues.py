@@ -96,8 +96,18 @@ def test_dedup_ignores_empty_arguments(configure):
     assert handle.is_data_repeat_in_limited_time("", {"username": "甲"}) is False
 
 
-def test_abnormal_alarm_counts_each_category(configure):
-    handle = configure({"abnormal_alarm": {"enable": False}})
+def test_abnormal_alarm_ignores_errors_while_disabled(configure):
+    """关掉异常报警时不能攒计数——否则用户哪天打开后，
+    第一个偶发错误就会把长期直播攒下的数直接顶过 auto_restart_error_num。"""
+    handle = configure({"abnormal_alarm": {"llm": {"enable": False}}})
+    before = My_handle.abnormal_alarm_data["llm"]["error_count"]
+
+    assert handle.abnormal_alarm_handle("llm") is True
+    assert My_handle.abnormal_alarm_data["llm"]["error_count"] == before
+
+
+def test_abnormal_alarm_counts_only_once_enabled(configure):
+    handle = configure({"abnormal_alarm": {"llm": {"enable": True, "type": "none"}}})
     before = My_handle.abnormal_alarm_data["llm"]["error_count"]
 
     assert handle.abnormal_alarm_handle("llm") is True

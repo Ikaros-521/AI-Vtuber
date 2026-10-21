@@ -2186,10 +2186,12 @@ class Audio:
         """
 
         try:
-            Audio.abnormal_alarm_data[type]["error_count"] += 1
-
             if not self.config.get("abnormal_alarm", type, "enable"):
+                # 关掉时连错都不记：否则长期直播攒下的计数会在用户某天打开后，
+                # 被第一个偶发错误直接顶过 auto_restart_error_num，直播中途无征兆重启
                 return True
+
+            Audio.abnormal_alarm_data[type]["error_count"] += 1
 
             logger.debug(f"abnormal_alarm_handle type={type}, error_count={Audio.abnormal_alarm_data[type]['error_count']}")
 

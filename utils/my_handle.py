@@ -4207,10 +4207,11 @@ class My_handle(metaclass=SingletonMeta):
         """
 
         try:
-            My_handle.abnormal_alarm_data[type]["error_count"] += 1
-
             if not My_handle.config.get("abnormal_alarm", type, "enable"):
+                # 关掉时连错都不记，避免攒下的计数在打开后被第一个偶发错误直接顶过重启阈值
                 return True
+
+            My_handle.abnormal_alarm_data[type]["error_count"] += 1
             
             if My_handle.config.get("abnormal_alarm", type, "type") == "local_audio":
                 # 是否错误数大于 自动重启错误数
