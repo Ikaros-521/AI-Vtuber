@@ -232,11 +232,8 @@ def goto_func_page():
             my_subprocesses[name] = process
 
         name = "main"
-        # 根据操作系统的不同，微调参数
-        if common.detect_os() in ['Linux', 'MacOS']:
-            process = subprocess.Popen(["python", f"main.py"], shell=False)
-        else:
-            process = subprocess.Popen(["python", f"main.py"], shell=True)
+        # 用当前解释器启动 main.py，避免走上 PATH 里的 python（可能与 webui 所在的虚拟环境不是同一个）
+        process = subprocess.Popen([sys.executable, "main.py"])
         my_subprocesses[name] = process
 
         logger.info(f"运行程序: {name}")
@@ -1676,8 +1673,6 @@ def goto_func_page():
                         "login_type": (select_bilibili_login_type, 'str'),
                         "cookie": (input_bilibili_cookie, 'str'),
                         "ac_time_value": (input_bilibili_ac_time_value, 'str'),
-                        "username": (input_bilibili_username, 'str'),
-                        "password": (input_bilibili_password, 'str'),
                         "open_live": {
                             "ACCESS_KEY_ID": (input_bilibili_open_live_ACCESS_KEY_ID, 'str'),
                             "ACCESS_KEY_SECRET": (input_bilibili_open_live_ACCESS_KEY_SECRET, 'str'),
@@ -3433,14 +3428,11 @@ def goto_func_page():
                         with ui.row():
                             select_bilibili_login_type = ui.select(
                                 label='登录方式',
-                                options={'cookie': 'cookie', '手机扫码': '手机扫码', '手机扫码-终端': '手机扫码-终端', '账号密码登录': '账号密码登录', 'open_live': '开放平台', '不登录': '不登录'},
+                                options={'cookie': 'cookie', '手机扫码': '手机扫码', '手机扫码-终端': '手机扫码-终端', 'open_live': '开放平台', '不登录': '不登录'},
                                 value=config.get("bilibili", "login_type")
                             ).style("width:100px")
                             input_bilibili_cookie = ui.input(label='cookie', placeholder='b站登录后F12抓网络包获取cookie，强烈建议使用小号！有封号风险，虽然实际上没听说有人被封过', value=config.get("bilibili", "cookie")).style("width:500px;").tooltip('b站登录后F12抓网络包获取cookie，强烈建议使用小号！有封号风险，虽然实际上没听说有人被封过')
                             input_bilibili_ac_time_value = ui.input(label='ac_time_value', placeholder='b站登录后，F12控制台，输入window.localStorage.ac_time_value获取(如果没有，请重新登录)', value=config.get("bilibili", "ac_time_value")).style("width:500px;").tooltip('仅在平台：哔哩哔哩，情况下可选填写。b站登录后，F12控制台，输入window.localStorage.ac_time_value获取(如果没有，请重新登录)')
-                        with ui.row():
-                            input_bilibili_username = ui.input(label='账号', value=config.get("bilibili", "username"), placeholder='b站账号（建议使用小号）').style("width:300px;").tooltip('仅在平台：哔哩哔哩，登录方式：账号密码登录，情况下填写。b站账号（建议使用小号）')
-                            input_bilibili_password = ui.input(label='密码', value=config.get("bilibili", "password"), placeholder='b站密码（建议使用小号）').style("width:300px;").tooltip('仅在平台：哔哩哔哩，登录方式：账号密码登录，情况下填写。b站密码（建议使用小号）')
                         with ui.row():
                             with ui.card().style(card_css):
                                 ui.label('开放平台')

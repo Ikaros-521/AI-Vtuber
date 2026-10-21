@@ -1,9 +1,47 @@
-from bilibili_api import Credential, live, sync, login
+import asyncio
 import os
+import tempfile
 import traceback
+
+from bilibili_api import Credential, live, sync
+from bilibili_api import login_v2
+from bilibili_api.login_v2 import QrCodeLoginEvents
 
 from utils.my_log import logger
 import utils.my_global as my_global
+
+
+def _login_with_qrcode(terminal: bool) -> Credential:
+    """扫码登录（bilibili-api 17.x 的 login_v2）
+
+    terminal=True 时在终端打印字符二维码；否则把二维码图片保存到临时目录并在日志中给出路径。
+    """
+
+    async def _wait_for_login():
+        qr = login_v2.QrCodeLogin()
+        await qr.generate_qrcode()
+
+        if terminal:
+            logger.info("请使用哔哩哔哩客户端扫描终端中的二维码登录")
+            print(qr.get_qrcode_terminal())
+        else:
+            qrcode_path = os.path.join(tempfile.gettempdir(), "bilibili_login_qrcode.png")
+            with open(qrcode_path, "wb") as file:
+                file.write(qr.get_qrcode_picture().content)
+            logger.info(f"请使用哔哩哔哩客户端扫描二维码登录，二维码已保存至：{qrcode_path}")
+
+        while True:
+            state = await qr.check_state()
+            if state == QrCodeLoginEvents.DONE:
+                return qr.get_credential()
+            if state == QrCodeLoginEvents.TIMEOUT:
+                logger.warning("二维码已过期，正在重新生成...")
+                await qr.generate_qrcode()
+                continue
+            await asyncio.sleep(1)
+
+    return sync(_wait_for_login())
+
 
 def start_listen(config, common, my_handle, platform: str):
     platform = "bilibili"
@@ -36,20 +74,20 @@ def start_listen(config, common, my_handle, platform: str):
                 ac_time_value=bilibili_ac_time_value,
             )
         elif config.get("bilibili", "login_type") == "手机扫码":
-            credential = login.login_with_qrcode()
+            credential = _login_with_qrcode(terminal=False)
         elif config.get("bilibili", "login_type") == "手机扫码-终端":
-            credential = login.login_with_qrcode_term()
+            credential = _login_with_qrcode(terminal=True)
         elif config.get("bilibili", "login_type") == "账号密码登录":
-            bilibili_username = config.get("bilibili", "username")
-            bilibili_password = config.get("bilibili", "password")
-
-            credential = login.login_with_password(
-                bilibili_username, bilibili_password
+            logger.error(
+                "账号密码登录需要极验验证码，bilibili-api 17.x 已不再支持，"
+                "请改用 cookie 或 手机扫码 登录"
             )
+            my_handle.abnormal_alarm_handle("platform")
+            return
         elif config.get("bilibili", "login_type") == "不登录":
             credential = None
         else:
-            credential = login.login_with_qrcode()
+            credential = _login_with_qrcode(terminal=True)
 
         # 初始化 Bilibili 直播间
         room = live.LiveDanmaku(my_handle.get_room_id(), credential=credential)

@@ -34,12 +34,12 @@
       "version": "V0.1.x",
       "api_ip_port": "http://127.0.0.1:8100",
       "type": [
-        "comment_reply", 
-        "idle_time_task", 
-        "entrance_reply", 
-        "follow_reply", 
-        "gift_reply", 
-        "reread", 
+        "comment_reply",
+        "idle_time_task",
+        "entrance_reply",
+        "follow_reply",
+        "gift_reply",
+        "reread",
         "schedule"
       ],
       "trigger_position": [
@@ -84,8 +84,6 @@
   },
   "bilibili": {
     "login_type": "手机扫码",
-    "username": "",
-    "password": "",
     "cookie": "",
     "ac_time_value": "",
     "open_live": {
@@ -365,8 +363,7 @@
     "chain_type": "stuff",
     "show_token_cost": false,
     "question_prompt": "请根据以上content信息进行归纳总结，并结合question的内容给出一个符合content和question语气、语调、背景的回答。不要出现'概括''综上''感谢'等字样，向朋友直接互相交流即可。如果发现不能content的信息与question不相符，抛弃content的提示，直接回答question即可。任何情况下都要简要地回答!",
-    "local_max_query": 3,
-    "local_vector_embedding_model": "sebastian-hofstaetter/distilbert-dot-tas_b-b256-msmarco"
+    "local_max_query": 3
   },
   "langchain_chatchat": {
     "api_ip_port": "http://127.0.0.1:7861",
@@ -771,7 +768,7 @@
     "model": "F5-TTS",
     "remove_silence": false,
     "cross_fade_duration": 0.15,
-    "speed": 1
+    "speed": 1.0
   },
   "multitts": {
     "api_ip_port": "http://192.168.31.180:8774",
@@ -791,7 +788,7 @@
     "sdp_ratio": 0.2,
     "noise_scale": 0.6,
     "noise_scale_w": 0.8,
-    "speed": 1
+    "speed": 1.0
   },
   "index_tts": {
     "api_ip_port": "http://127.0.0.1:6008",
@@ -968,7 +965,7 @@
     "model": "gemini",
     "img_save_path": "./out/图像识别",
     "prompt": "请讲解一下图片里的内容",
-    "screenshot_window_title": null,
+    "screenshot_window_title": "None",
     "screenshot_delay": 3.0,
     "loop_screenshot_enable": false,
     "loop_screenshot_delay": 15,
@@ -1234,15 +1231,15 @@
         ],
         "serial_name": "",
         "serial_send_data": [],
-        "local_audio": [
-          "data/闲时任务/音频/ikaros/主人，你刚才是不是说我们会永远在一起.wav",
-          "data/闲时任务/音频/ikaros/好想赶快见到主人.wav"
-        ],
         "img_path": [
           "ui/bg.png",
           "ui/icon.png",
           "C:/Users/Administrator/Pictures/aivtb/1.png",
           "C:/Users/Administrator/Pictures/aivtb/2.png"
+        ],
+        "local_audio": [
+          "data/闲时任务/音频/ikaros/主人，你刚才是不是说我们会永远在一起.wav",
+          "data/闲时任务/音频/ikaros/好想赶快见到主人.wav"
         ]
       },
       {
@@ -1263,8 +1260,8 @@
         ],
         "serial_name": "",
         "serial_send_data": [],
-        "local_audio": [],
-        "img_path": []
+        "img_path": [],
+        "local_audio": []
       },
       {
         "keywords": [
@@ -1300,8 +1297,8 @@
         ],
         "serial_name": "",
         "serial_send_data": [],
-        "local_audio": [],
-        "img_path": []
+        "img_path": [],
+        "local_audio": []
       },
       {
         "keywords": [
@@ -1329,8 +1326,8 @@
         "copywriting": [],
         "serial_name": "",
         "serial_send_data": [],
-        "local_audio": [],
-        "img_path": []
+        "img_path": [],
+        "local_audio": []
       },
       {
         "keywords": [
@@ -1359,8 +1356,8 @@
         "copywriting": [],
         "serial_name": "",
         "serial_send_data": [],
-        "local_audio": [],
-        "img_path": []
+        "img_path": [],
+        "local_audio": []
       },
       {
         "keywords": [
@@ -1377,8 +1374,8 @@
         "copywriting": [],
         "serial_name": "",
         "serial_send_data": [],
-        "local_audio": [],
-        "img_path": []
+        "img_path": [],
+        "local_audio": []
       },
       {
         "keywords": [
@@ -1396,8 +1393,8 @@
         "copywriting": [],
         "serial_name": "",
         "serial_send_data": [],
-        "local_audio": [],
-        "img_path": []
+        "img_path": [],
+        "local_audio": []
       },
       {
         "keywords": [
@@ -1427,8 +1424,8 @@
         "copywriting": [],
         "serial_name": "",
         "serial_send_data": [],
-        "local_audio": [],
-        "img_path": []
+        "img_path": [],
+        "local_audio": []
       },
       {
         "keywords": [
@@ -1443,8 +1440,8 @@
         "copywriting": [],
         "serial_name": "",
         "serial_send_data": [],
-        "local_audio": [],
-        "img_path": []
+        "img_path": [],
+        "local_audio": []
       },
       {
         "keywords": [
@@ -1459,8 +1456,8 @@
         "copywriting": [],
         "serial_name": "",
         "serial_send_data": [],
-        "local_audio": [],
-        "img_path": []
+        "img_path": [],
+        "local_audio": []
       },
       {
         "keywords": [
@@ -1477,8 +1474,8 @@
         "copywriting": [],
         "serial_name": "",
         "serial_send_data": [],
-        "local_audio": [],
-        "img_path": []
+        "img_path": [],
+        "local_audio": []
       }
     ]
   },
