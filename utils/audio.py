@@ -685,7 +685,7 @@ class Audio:
                     "content": message["content"]
                 }
 
-                if "insert_index" in data_json:
+                if "insert_index" in message:
                     data_json["insert_index"] = message["insert_index"]
 
                 # 是否开启了音频播放 
@@ -702,7 +702,7 @@ class Audio:
                     "content": message["content"]
                 }
 
-                if "insert_index" in data_json:
+                if "insert_index" in message:
                     data_json["insert_index"] = message["insert_index"]
 
                 # 是否开启了音频播放 
@@ -719,7 +719,7 @@ class Audio:
                     "content": message["content"]
                 }
 
-                if "insert_index" in data_json:
+                if "insert_index" in message:
                     data_json["insert_index"] = message["insert_index"]
 
                 # 是否开启了音频播放
@@ -736,7 +736,7 @@ class Audio:
                     "content": message["content"]
                 }
 
-                if "insert_index" in data_json:
+                if "insert_index" in message:
                     data_json["insert_index"] = message["insert_index"]
 
                 # 是否开启了音频播放
@@ -757,7 +757,7 @@ class Audio:
                         "content": message["content"]
                     }
 
-                    if "insert_index" in data_json:
+                    if "insert_index" in message:
                         data_json["insert_index"] = message["insert_index"]
                     
                     self.data_priority_insert("等待合成消息", data_json)
@@ -773,7 +773,7 @@ class Audio:
                     "content": message["content"]
                 }
 
-                if "insert_index" in data_json:
+                if "insert_index" in message:
                     data_json["insert_index"] = message["insert_index"]
 
                 # 是否开启了音频播放
