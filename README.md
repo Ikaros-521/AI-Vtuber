@@ -59,6 +59,52 @@ https://lug.ustc.edu.cn/wiki/doc/smart-questions
 
 [![][github-codespace-shield]][github-codespace-link]  
 
+### 依赖分层
+
+`requirements/` 按功能分组，跑起来只需要核心组，其余按用到的功能加装：
+
+| 分组 | 内容 | 何时需要 |
+| --- | --- | --- |
+| `core.txt` | WebUI、本地对话、edge-tts、拾音、文本处理 | 必装（73 个包） |
+| `llm.txt` | 讯飞/智谱/通义/文心/Gemini/g4f 等模型 SDK | 选用对应 `chat_type` |
+| `tts.txt` | elevenlabs、Azure TTS、gradio_client | 选用对应 TTS |
+| `asr.txt` | FunASR、Faster-Whisper（会带 torch） | 本地语音识别 |
+| `platform.txt` | B站/抖音/快手/TikTok/YouTube 弹幕与逆向协议 | 对应直播平台 |
+| `visual.txt` | OpenCV、Pillow、虚拟摄像头、SD、pyautogui | 数字人/绘图/桌面自动化 |
+| `chat-with-file.txt` | 文档问答（langchain 旧实现，待替换） | 启用 `chat_with_file` |
+
+```bash
+# 最小安装：直接用锁定文件，装出来的环境和仓库验证过的一致
+uv venv --python 3.10 .venv
+uv pip install --python .venv/Scripts/python.exe -r requirements/core.lock.txt
+
+# 需要某个功能时，在核心之上追加
+uv pip install --python .venv/Scripts/python.exe -r requirements/llm.txt
+
+# 全量安装（等价于以前的 requirements.txt）
+pip install -r requirements.txt
+```
+
+`core.lock.txt` 以及 `core+<组>.lock.txt` 由 uv 生成（Python 3.10）：
+
+```bash
+uv pip compile requirements/core.txt --python-version 3.10 -o requirements/core.lock.txt
+uv pip compile requirements/core.txt requirements/llm.txt --python-version 3.10 -o requirements/core+llm.lock.txt
+```
+
+`platform` 组暂未生成 lock：`bilibili-api-python==16.1.0` 声明了 `requests<2.32`、`httpx<0.25`、`aiohttp<3.9`、`brotli<1.1`，与核心版本冲突，需先升级到 17.4.2 并迁移 `login` → `login_v2`。
+
+### 冒烟测试
+
+改完依赖或核心代码后，先跑这个确认主链路没被改坏：
+
+```bash
+python tools/smoke_test.py               # 配置检查 + 核心模块导入 + 启动 WebUI 并请求首页
+python tools/smoke_test.py --skip-webui   # 只做静态检查
+```
+
+测试用 `LUNA_CONFIG_PATH` 指向临时副本并把端口换成空闲端口，不会动你的 `config.json`，也不需要先关掉正在运行的实例。
+
 ### 简易流程图
 
 ![image](./docs/simple_flowchart.png)
