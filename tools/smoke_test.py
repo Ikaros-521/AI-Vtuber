@@ -53,6 +53,9 @@ CORE_MODULES = [
     "webui_app.pages.translate",
     "webui_app.pages.visual_body",
     "webui_app.state",
+    "webui_app.processes",
+    "webui_app.login",
+    "webui_app.api",
 ]
 REQUIRED_CONFIG_KEYS = ["webui", "platform", "chat_type", "filter", "openai"]
 
