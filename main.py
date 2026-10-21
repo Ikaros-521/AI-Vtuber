@@ -28,6 +28,7 @@ from utils.my_log import logger
 from utils.common import Common
 from utils.config import Config
 from utils.my_handle import My_handle
+from utils.platforms import start_platform_listen
 import utils.my_global as my_global
 
 """
@@ -1073,6 +1074,7 @@ def start_server():
             # time.sleep(1)  # 控制每次循环的间隔时间，避免过多占用 CPU 资源
 
     # 创建定时任务子线程并启动 在平台是 dy的情况下，默认启动定时任务用于阻塞
+    schedule_thread = None
     if any(item["enable"] for item in config.get("schedule")) or platform == "dy":
         # 创建定时任务子线程并启动
         schedule_thread = threading.Thread(target=run_schedule)
@@ -1659,57 +1661,17 @@ def start_server():
     
     logger.info(f"当前平台：{platform}")
 
-    if platform == "bilibili":
-        from utils.platforms.bilibili import start_listen
-
-        start_listen(config, common, my_handle, platform)
-    elif platform == "bilibili2":
-        from utils.platforms.bilibili2 import start_listen
-
-        start_listen(config, common, my_handle, platform)   
-    elif platform == "dy":
-        from utils.platforms.dy import start_listen
-
-        start_listen(config, common, my_handle, platform, schedule_thread)    
-    elif platform == "dy2":
-        from utils.platforms.dy2 import start_listen
-
-        start_listen(config, common, my_handle, platform)
-    elif platform == "ks":
-        from utils.platforms.ks import start_listen
-
-        start_listen(config, common, my_handle, platform)
-    elif platform in ["ks2", "pdd", "douyu", "1688", "taobao"]:
-        from utils.platforms.lx_live_monitor_assistant import start_listen
-
-        start_listen(config, common, my_handle, platform)
-    elif platform == "tiktok":
-        from utils.platforms.tiktok import start_listen
-
-        start_listen(config, common, my_handle, platform)
-    elif platform == "twitch":
-        from utils.platforms.twitch import start_listen
-
-        start_listen(config, common, my_handle, platform)
-    elif platform == "wxlive":
-        from utils.platforms.wxlive import start_listen
-
-        start_listen(config, common, my_handle, platform)
-    elif platform == "youtube":
-        from utils.platforms.youtube import start_listen
-
-        start_listen(config, common, my_handle, platform)
-    elif platform == "hntv":
-        from utils.platforms.hntv import start_listen
-
-        start_listen(config, common, my_handle, platform)
-    elif platform == "ordinaryroad_barrage_fly":
-        from utils.platforms.ordinaryroad_barrage_fly import start_listen
-
-        start_listen(config, common, my_handle, platform)
-            
-    elif platform == "talk":
+    # 聊天模式下靠按键监听线程阻塞主线程
+    if platform == "talk":
         thread.join()
+        return
+
+    # 平台监听模块按需导入（注册表见 utils/platforms/__init__.py）
+    started, message = start_platform_listen(
+        platform, config, common, my_handle, schedule_thread
+    )
+    if not started:
+        logger.error(message)
 
 
 # 退出程序

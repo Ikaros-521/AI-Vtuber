@@ -6,6 +6,7 @@
     python tools/smoke_test.py --skip-webui
 """
 import argparse
+import ast
 import importlib
 import json
 import os
@@ -28,6 +29,7 @@ CORE_MODULES = [
     "utils.audio_handle.audio_player",
     "utils.audio_handle.my_tts",
     "utils.gpt_model.gpt",
+    "utils.platforms",
     "utils.db",
     "utils.my_translate",
     "utils.my_handle",
@@ -62,6 +64,27 @@ def check_imports():
             traceback.print_exc()
     if failures:
         raise AssertionError(f"核心模块导入失败：{', '.join(failures)}")
+
+
+def check_platform_registry():
+    """平台注册表里的每个模块都要存在且暴露 start_listen（只做静态检查，不导入平台 SDK）。"""
+    from utils.platforms import PLATFORM_LISTENERS
+
+    failures = []
+    for platform, module_name in PLATFORM_LISTENERS.items():
+        path = ROOT / Path(*module_name.split(".")).with_suffix(".py")
+        if not path.is_file():
+            failures.append(f"{platform} -> {module_name}：文件不存在")
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        if not any(
+            isinstance(node, ast.FunctionDef) and node.name == "start_listen"
+            for node in tree.body
+        ):
+            failures.append(f"{platform} -> {module_name}：没有定义 start_listen")
+    print(f"  已登记平台：{', '.join(sorted(PLATFORM_LISTENERS))}")
+    if failures:
+        raise AssertionError("平台注册表有问题：\n  " + "\n  ".join(failures))
 
 
 def find_free_port():
@@ -152,17 +175,20 @@ def main():
     parser.add_argument("--timeout", type=float, default=60, help="WebUI 启动超时秒数")
     args = parser.parse_args()
 
-    print("[1/3] 配置检查")
+    print("[1/4] 配置检查")
     load_config()
     print("  OK   config.json")
 
-    print("[2/3] 核心模块导入")
+    print("[2/4] 核心模块导入")
     check_imports()
 
+    print("[3/4] 平台注册表")
+    check_platform_registry()
+
     if args.skip_webui:
-        print("[3/3] 已跳过 WebUI 启动")
+        print("[4/4] 已跳过 WebUI 启动")
     else:
-        print("[3/3] WebUI 启动")
+        print("[4/4] WebUI 启动")
         check_webui(args.timeout)
 
     print("SMOKE OK")
