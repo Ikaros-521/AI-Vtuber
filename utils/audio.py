@@ -9,7 +9,7 @@ import traceback
 
 from pydub import AudioSegment
 
-from .common import Common
+from .common import Common, SUPPORTED_AUDIO_EXTENSIONS
 from .my_log import logger
 from .config import Config
 from utils.audio_handle.my_tts import MY_TTS
@@ -261,7 +261,7 @@ class Audio:
             audio_files = []
             for root, dirs, files in os.walk(audio_path):
                 for file in files:
-                    if file.endswith(('.mp3', '.wav', '.MP3', '.WAV', '.flac', '.aac', '.ogg', '.m4a')):
+                    if file.lower().endswith(SUPPORTED_AUDIO_EXTENSIONS):
                         audio_files.append(os.path.join(root, file))
 
             # 提取文件名或保留完整文件名

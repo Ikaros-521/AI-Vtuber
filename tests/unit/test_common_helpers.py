@@ -210,11 +210,20 @@ def test_remove_extension_from_list(c):
 
 
 def test_is_audio_file(c):
-    for name in ("a.mp3", "a.wav", "a.MP3", "a.WAV", "a.ogg"):
+    for name in ("a.mp3", "a.wav", "a.MP3", "a.WAV", "a.ogg", "a.flac", "a.m4a", "a.AAC"):
         assert c.is_audio_file(name) is True, name
-    # 当前只认这几种扩展名，flac 会被拒
-    assert c.is_audio_file("a.flac") is False
     assert c.is_audio_file("a.txt") is False
+    assert c.is_audio_file("没有扩展名") is False
+
+
+def test_audio_extension_list_has_a_single_source(c):
+    """Common.is_audio_file 与 Audio.get_dir_audios_filename 以前各有一份列表，
+    纯 flac/m4a 曲库走随机点歌时一首都找不到。现在都指向同一个常量。"""
+    from utils.common import SUPPORTED_AUDIO_EXTENSIONS
+
+    for ext in SUPPORTED_AUDIO_EXTENSIONS:
+        assert c.is_audio_file(f"song{ext}") is True
+        assert c.is_audio_file(f"song{ext.upper()}") is True
 
 
 def test_get_filename_from_path_reports_errors_in_dict(c, tmp_path):

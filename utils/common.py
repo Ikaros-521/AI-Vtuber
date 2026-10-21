@@ -26,6 +26,11 @@ import pyaudio
 from .my_log import logger
 
 
+# 项目认作「可播放音频」的扩展名，全仓唯一来源。
+# 之前 Common.is_audio_file 与 Audio.get_dir_audios_filename 各有一份列表且大小写处理不同，
+# 导致纯 flac/m4a 曲库走随机点歌时一首都找不到。
+SUPPORTED_AUDIO_EXTENSIONS = ('.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a')
+
 
 class Common:
     def __init__(self):  
@@ -990,9 +995,6 @@ class Common:
         Returns:
             bool: True / False
         """
-        # List of supported audio file extensions
-        SUPPORTED_AUDIO_EXTENSIONS = ['.mp3', '.wav', '.MP3', '.WAV', '.ogg']
-
         _, extension = os.path.splitext(file_path)
         return extension.lower() in SUPPORTED_AUDIO_EXTENSIONS
 
