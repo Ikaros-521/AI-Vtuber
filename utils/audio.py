@@ -1483,7 +1483,7 @@ class Audio:
         else:
             Audio.mixer_normal.music.fadeout(1000)
 
-    """
+    r"""
                                                      ./@\]                    
                    ,@@@@\*                             \@@^ ,]]]              
                       [[[*                      /@@]@@@@@/[[\@@@@/            

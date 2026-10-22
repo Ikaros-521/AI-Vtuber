@@ -22,12 +22,11 @@ from .my_translate import My_Translate
 from .luoxi_project.live_comment_assistant import send_msg_to_live_comment_assistant
 
 
-"""
+r"""
 	___ _                       
 	|_ _| | ____ _ _ __ ___  ___ 
 	 | || |/ / _` | '__/ _ \/ __|
-	 | ||   < (_| | | | (_) \__ \
-	|___|_|\_\__,_|_|  \___/|___/
+	 | ||   < (_| | | | (_) \__ 	|___|_|\_\__,_|_|  \___/|___/
 
 """
 class SingletonMeta(type):
@@ -492,7 +491,7 @@ class My_handle(metaclass=SingletonMeta):
                 f.write('')
                 logger.info(f'{self.comment_file_path} 弹幕文件已创建')
 
-        """                                                                                                                
+        r"""                                                                                                                
                                                                                                                                         
             .............  '>)xcn)I                                                                                 
             }}}}}}}}}}}}](v0kaaakad\..                                                                              
@@ -502,7 +501,7 @@ class My_handle(metaclass=SingletonMeta):
             [[[[[[[}UhkbhZ]fbhkkkhb<                                                                                
             1{1{1{1ChkkaXicohkkkhk]                                                                                 
             ))))))JhkkhrICakkkkap-                                                                                  
-            \\\\|ckkkat;0akkkka0>                                                                                   
+            \\|ckkkat;0akkkka0>                                                                                   
             ttt/fpkka/;Oakhhaku"                                                                                    
             jjjjUmkau^QabwQX\< '!<++~>iI       .;>++++<>I'     :+}}{?;                                              
             xxxcpdkO"capmmZ/^ +Y-;,,;-Lf     ItX/+l:",;>1cx>  .`"x#d>`        .`.                                   
@@ -1151,7 +1150,7 @@ class My_handle(metaclass=SingletonMeta):
         return False
 
 
-    """
+    r"""
     
          ]@@@@@               =@@       @@^              =@@@@@@].  .@@` ./@@@ ,@@@^                /@^                     
         @@^      @@*          =@@       @@^              =@@   ,@@\      =@@   @@^                                          
@@ -2902,7 +2901,7 @@ class My_handle(metaclass=SingletonMeta):
             logger.error(f"联网搜索报错: {e}")
             return content
 
-    """                                                              
+    r"""                                                              
                                                                            
                                                          ,`                
                              @@@@`               =@@\`   /@@/              
