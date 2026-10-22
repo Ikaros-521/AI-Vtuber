@@ -47,8 +47,8 @@ class FakeAudio:
     def stop_audio(self, type, mixer_normal, mixer_copywriting):
         return self._guard("stop_audio", type, mixer_normal, mixer_copywriting)
 
-    def is_audio_queue_empty(self):
-        self.calls.append(("is_audio_queue_empty", ()))
+    def is_playback_busy(self):
+        self.calls.append(("is_playback_busy", ()))
         return False
 
     def is_queue_less_or_greater_than(self, type, less, greater):

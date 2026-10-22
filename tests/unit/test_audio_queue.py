@@ -7,6 +7,7 @@ import json
 
 import pytest
 
+from utils import my_global
 from utils.audio import Audio
 
 CONFIG = {
@@ -140,3 +141,66 @@ def test_no_threshold_means_no_trigger(audio):
     Audio.message_queue.append(msg("comment", "你好"))
 
     assert audio.is_queue_less_or_greater_than("message_queue") is False
+
+
+class _StubMusic:
+    def __init__(self, busy):
+        self._busy = busy
+
+    def get_busy(self):
+        return self._busy
+
+
+class _StubMixer:
+    def __init__(self, busy):
+        self.music = _StubMusic(busy)
+
+
+@pytest.fixture(autouse=True)
+def restore_mixers():
+    normal, copywriting = Audio.mixer_normal, Audio.mixer_copywriting
+    yield
+    Audio.mixer_normal, Audio.mixer_copywriting = normal, copywriting
+
+
+def _audio_with(tmp_path, player):
+    cfg = json.loads(json.dumps(CONFIG))
+    cfg["play_audio"]["player"] = player
+    path = tmp_path / ("cfg_" + player + ".json")
+    path.write_text(json.dumps(cfg), encoding="utf-8")
+    Audio.message_queue = []
+    Audio.voice_tmp_path_queue = []
+    return Audio(str(path), type=2)
+
+
+def test_any_queued_audio_counts_as_busy(tmp_path):
+    audio = _audio_with(tmp_path, "audio_player")
+    Audio.message_queue.append({"type": "comment", "content": "你好"})
+
+    assert audio.is_playback_busy() is True
+
+
+def test_pygame_asks_the_mixers_directly(tmp_path):
+    audio = _audio_with(tmp_path, "pygame")
+    Audio.mixer_normal, Audio.mixer_copywriting = _StubMixer(False), _StubMixer(False)
+    assert audio.is_playback_busy() is False
+
+    Audio.mixer_copywriting = _StubMixer(True)
+    assert audio.is_playback_busy() is True
+
+
+def test_non_pygame_player_can_reach_idle(tmp_path, monkeypatch):
+    """回归点：旧实现是个 0-15 位标志，第 4、8 位只有 pygame 才加，
+    所以换成 audio_player 时永远凑不满 15，main.py 的 != 15 恒判"忙"，
+    语音输入彻底录不了。"""
+    audio = _audio_with(tmp_path, "audio_player_v2")
+    monkeypatch.setattr(my_global, "wait_play_audio_num", 0)
+
+    assert audio.is_playback_busy() is False
+
+
+def test_external_player_backlog_counts_as_busy(tmp_path, monkeypatch):
+    audio = _audio_with(tmp_path, "audio_player")
+    monkeypatch.setattr(my_global, "wait_play_audio_num", 2)
+
+    assert audio.is_playback_busy() is True

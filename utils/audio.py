@@ -16,6 +16,7 @@ from .message import build_playback
 from . import alarm
 from utils.audio_handle.my_tts import MY_TTS
 from utils.audio_handle.audio_player import AUDIO_PLAYER
+import utils.my_global as my_global
 
 
 class Audio:
@@ -159,39 +160,27 @@ class Audio:
         }
 
     # 判断等待合成和已经合成的队列是否为空
-    def is_audio_queue_empty(self):
-        """判断等待合成和已经合成的队列是否为空
+    def is_playback_busy(self):
+        """还有没有要播、或正在播的音频（录音闸门用）。
 
-        Returns:
-            int: 0 都不为空 | 1 message_queue 为空 | 2 voice_tmp_path_queue 为空 | 3 message_queue和voice_tmp_path_queue 为空 |
-                 4 mixer_normal 不在播放 | 5 message_queue 为空、mixer_normal 不在播放 | 6 voice_tmp_path_queue 为空、mixer_normal 不在播放 |
-                 7 message_queue和voice_tmp_path_queue 为空、mixer_normal 不在播放 | 8 mixer_copywriting 不在播放 | 9 message_queue 为空、mixer_copywriting 不在播放 |
-                 10 voice_tmp_path_queue 为空、mixer_copywriting 不在播放 | 11 message_queue和voice_tmp_path_queue 为空、mixer_copywriting 不在播放 |
-                 12 message_queue 为空、voice_tmp_path_queue 为空、mixer_normal 不在播放 | 13 message_queue 为空、voice_tmp_path_queue 为空、mixer_copywriting 不在播放 |
-                 14 voice_tmp_path_queue为空、mixer_normal 不在播放、mixer_copywriting 不在播放 | 15 message_queue和voice_tmp_path_queue 为空、mixer_normal 不在播放、mixer_copywriting 不在播放 |
-       
+        以前这个判断返回一个 0-15 的位标志，调用方写的是 != 15，而第 4、8 位
+        只有 pygame 才会加——换成别的播放器就永远凑不满 15，于是「播放中不录音」
+        变成「永远不录音」。改成按播放器各问各的：
+
+        - pygame：本机 mixer 是直接可问的，照旧问它。
+        - audio_player / audio_player_v2：音频 POST 给本地播放器服务就没人管了，
+          那个服务只暴露 play/pause/resume/skip/get_list/clear，没有「在不在播」，
+          所以只能退化成看队列（外加外接项目报回来的 wait_play_audio_num）。
         """
+        if len(Audio.message_queue) or len(Audio.voice_tmp_path_queue):
+            return True
 
-        flag = 0
-
-        # 判断队列是否为空
-        if len(Audio.message_queue) == 0:
-            flag += 1
-        
-        if len(Audio.voice_tmp_path_queue) == 0:
-            flag += 2
-        
-        # TODO: 这一块仅在pygame播放下有效，但会对其他播放器模式下的功能造成影响，待优化
         if self.config.get("play_audio", "player") in ["pygame"]:
-            # 检查mixer_normal是否正在播放
-            if not Audio.mixer_normal.music.get_busy():
-                flag += 4
+            return bool(Audio.mixer_normal.music.get_busy()
+                        or Audio.mixer_copywriting.music.get_busy())
 
-            # 检查mixer_copywriting是否正在播放
-            if not Audio.mixer_copywriting.music.get_busy():
-                flag += 8
+        return my_global.wait_play_audio_num > 0
 
-        return flag
 
 
     # 重载config

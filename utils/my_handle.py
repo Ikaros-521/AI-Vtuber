@@ -413,9 +413,9 @@ class My_handle(metaclass=SingletonMeta):
         return My_handle.is_handleing
 
 
-    # 音频队列、播放相关情况
-    def is_audio_queue_empty(self):
-        return My_handle.audio.is_audio_queue_empty()
+    # 有没有要播/正在播的音频
+    def is_playback_busy(self):
+        return My_handle.audio.is_playback_busy()
 
     # 判断 等待合成消息队列|待播放音频队列 数是否小于或大于某个值，就返回True
     def is_queue_less_or_greater_than(self, type: str="message_queue", less: int=None, greater: int=None):

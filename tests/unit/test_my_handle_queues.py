@@ -26,11 +26,11 @@ def test_queue_predicates_delegate(configure):
     handle = configure({"filter": {}})
     My_handle.audio = FakeAudio()
 
-    assert handle.is_audio_queue_empty() is False
+    assert handle.is_playback_busy() is False
     assert handle.is_queue_less_or_greater_than("message_queue", less=5) is True
     assert handle.get_audio_info() == {"message_queue": 0}
     assert [c[0] for c in My_handle.audio.calls] == [
-        "is_audio_queue_empty", "is_queue_less_or_greater_than", "get_audio_info",
+        "is_playback_busy", "is_queue_less_or_greater_than", "get_audio_info",
     ]
 
 
