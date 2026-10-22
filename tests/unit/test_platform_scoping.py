@@ -21,6 +21,15 @@ DUNDER = {'__file__', '__name__', '__doc__', '__package__', '__spec__',
           '__loader__', '__builtins__', '__debug__'}
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+
+
+def _production_files():
+    out = [str(p) for d in ('utils', 'webui_app') for p in (ROOT / d).rglob('*.py')]
+    out += [str(ROOT / 'main.py'), str(ROOT / 'webui.py')]
+    return sorted(f for f in out if '__pycache__' not in f)
+
+
+PRODUCTION_FILES = _production_files()
 LISTENERS = sorted(str(p) for p in (ROOT / 'utils' / 'platforms').glob('*.py'))
 
 
@@ -62,20 +71,48 @@ def module_scope(path, tree):
 
 
 def top_level_names(tree):
-    """模块顶层赋值产生的名字（global 声明必须指向它们）"""
+    """模块作用域里绑定的名字。
+
+    要下钻模块层的 if/try/for/with —— `if __name__ == '__main__':` 里的赋值同样是
+    模块级绑定（main.py 的语音状态标志就在那里初始化）。函数体和类体是另一层作用域，
+    不算进来。
+    """
     names = set()
-    for node in tree.body:
-        if isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign)):
-            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            for t in targets:
-                if isinstance(t, ast.Name):
-                    names.add(t.id)
-        elif isinstance(node, (ast.Import, ast.ImportFrom)):
-            for alias in node.names:
-                if alias.name != '*':
-                    names.add((alias.asname or alias.name).split('.')[0])
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            names.add(node.name)
+
+    def add_target(t):
+        for inner in ast.walk(t):
+            if isinstance(inner, ast.Name):
+                names.add(inner.id)
+
+    def walk(nodes):
+        for node in nodes:
+            if isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign)):
+                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                for t in targets:
+                    add_target(t)
+            elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                for alias in node.names:
+                    if alias.name != '*':
+                        names.add((alias.asname or alias.name).split('.')[0])
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                names.add(node.name)
+            elif isinstance(node, ast.With):
+                for item in node.items:
+                    if item.optional_vars is not None:
+                        add_target(item.optional_vars)
+                walk(node.body)
+            elif isinstance(node, ast.Try):
+                for body in (node.body, node.orelse, node.finalbody):
+                    walk(body)
+                for handler in node.handlers:
+                    if handler.name:
+                        names.add(handler.name)
+                    walk(handler.body)
+            elif isinstance(node, (ast.If, ast.For, ast.While)):
+                walk(node.body)
+                walk(node.orelse)
+
+    walk(tree.body)
     return names
 
 
@@ -144,20 +181,44 @@ def globals_without_module_binding(path):
     return sorted(bad)
 
 
-@pytest.mark.parametrize('path', LISTENERS)
+@pytest.mark.parametrize('path', PRODUCTION_FILES)
 def test_no_name_used_without_any_binding(path):
     assert unbound_names(path) == []
 
 
-@pytest.mark.parametrize('path', LISTENERS)
+@pytest.mark.parametrize('path', PRODUCTION_FILES)
 def test_no_read_of_outer_name_before_local_assignment(path):
     assert reads_before_assignment(path) == []
 
 
-@pytest.mark.parametrize('path', LISTENERS)
+@pytest.mark.parametrize('path', PRODUCTION_FILES)
 def test_global_declares_only_module_level_names(path):
     assert globals_without_module_binding(path) == []
 
+
+def process_types_without_idle_reset(path):
+    """收到消息就要把闲时计时清零，否则闲时自动讲话会在观众正聊得欢时插进来。
+
+    每个 my_handle.process_data(data, "X") 的类型 X，都该在同文件里有一次
+    my_global.idle_time_auto_clear(config, "X")。
+    """
+    tree = ast.parse(read(path))
+    sent, cleared = set(), set()
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)):
+            continue
+        if len(node.args) < 2 or not isinstance(node.args[1], ast.Constant):
+            continue
+        if node.func.attr == 'process_data':
+            sent.add(node.args[1].value)
+        elif node.func.attr == 'idle_time_auto_clear':
+            cleared.add(node.args[1].value)
+    return sorted(sent - cleared)
+
+
+@pytest.mark.parametrize('path', LISTENERS)
+def test_every_message_type_also_resets_the_idle_timer(path):
+    assert process_types_without_idle_reset(path) == []
 
 # ---------- websockets handler 契约 ----------
 

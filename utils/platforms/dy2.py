@@ -258,6 +258,9 @@ def start_listen(new_config, common, my_handle, platform: str):
 
             data = {"platform": platform, "username": username, "content": content}
 
+            # 闲时计数清零
+            my_global.idle_time_auto_clear(config, "comment")
+
             my_handle.process_data(data, "comment")
 
         def _parseGiftMsg(self, payload):
@@ -301,6 +304,9 @@ def start_listen(new_config, common, my_handle, platform: str):
                 "total_price": combo_total_coin / 10,
             }
 
+            # 闲时计数清零
+            my_global.idle_time_auto_clear(config, "gift")
+
             my_handle.process_data(data, "gift")
 
         def _parseLikeMsg(self, payload):
@@ -327,6 +333,9 @@ def start_listen(new_config, common, my_handle, platform: str):
             # 添加用户名到最新的用户名列表
             my_global.add_username_to_last_username_list(username)
 
+            # 闲时计数清零
+            my_global.idle_time_auto_clear(config, "entrance")
+
             my_handle.process_data(data, "entrance")
 
         def _parseSocialMsg(self, payload):
@@ -337,6 +346,9 @@ def start_listen(new_config, common, my_handle, platform: str):
             logger.info(f"【关注msg】[{user_id}]{username} 关注了主播")
 
             data = {"platform": platform, "username": username}
+
+            # 闲时计数清零
+            my_global.idle_time_auto_clear(config, "follow")
 
             my_handle.process_data(data, "follow")
 

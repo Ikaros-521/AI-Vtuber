@@ -1,3 +1,4 @@
+import utils.my_global as my_global
 import requests
 import time
 import traceback
@@ -29,6 +30,9 @@ def start_listen(config, common, my_handle, platform: str):
                             "username": username,
                             "content": content,
                         }
+
+                        # 闲时计数清零
+                        my_global.idle_time_auto_clear(config, "comment")
 
                         my_handle.process_data(data, "comment")
             else:

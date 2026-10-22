@@ -61,6 +61,9 @@ def start_listen(config, common, my_handle, platform: str):
                         "content": content,
                     }
 
+                    # 闲时计数清零
+                    my_global.idle_time_auto_clear(config, "comment")
+
                     my_handle.process_data(data, "comment")
                 elif msg_type == "GIFT":
                     msg = msg_dto['msg']
@@ -87,6 +90,9 @@ def start_listen(config, common, my_handle, platform: str):
                         "total_price": combo_total_coin,
                     }
 
+                    # 闲时计数清零
+                    my_global.idle_time_auto_clear(config, "gift")
+
                     my_handle.process_data(data, "gift")
                 elif msg_type == "ENTER_ROOM":
                     msg = msg_dto['msg']
@@ -101,6 +107,9 @@ def start_listen(config, common, my_handle, platform: str):
 
                     # 添加用户名到最新的用户名列表
                     my_global.add_username_to_last_username_list(username)
+
+                    # 闲时计数清零
+                    my_global.idle_time_auto_clear(config, "entrance")
 
                     my_handle.process_data(data, "entrance")
                 elif msg_type == "LIKE":
