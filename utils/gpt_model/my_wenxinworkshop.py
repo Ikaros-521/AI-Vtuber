@@ -1,7 +1,6 @@
 import json, traceback, requests
 from wenxinworkshop import LLMAPI
 from wenxinworkshop import Message, Messages
-import traceback
 
 from utils.common import Common
 from utils.my_log import logger

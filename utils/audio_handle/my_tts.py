@@ -55,18 +55,6 @@ class MY_TTS:
         # 返回指定范围内的随机浮点数
         return random.uniform(min, max)
 
-    # 音频文件base64编码 传入文件路径
-    def encode_audio_to_base64(self, file_path):
-        import base64
-
-        if file_path == "" or file_path is None:
-            return None
-
-        with open(file_path, "rb") as audio_file:
-            audio_data = audio_file.read()
-            encoded_audio = base64.b64encode(audio_data).decode('utf-8')
-        return encoded_audio
-
     async def download_audio(self, type: str, file_url: str, timeout: int=30, request_type: str="get", data=None, json_data=None, audio_suffix: str="wav"):
         async with aiohttp.ClientSession() as session:
             try:
@@ -467,24 +455,7 @@ class MY_TTS:
 
 
     async def gpt_sovits_api(self, data):
-        import base64
-        import mimetypes
 
-        def file_to_data_url(file_path):
-            # 根据文件扩展名确定 MIME 类型
-            mime_type, _ = mimetypes.guess_type(file_path)
-
-            # 读取文件内容
-            with open(file_path, "rb") as file:
-                file_content = file.read()
-
-            # 转换为 Base64 编码
-            base64_encoded_data = base64.b64encode(file_content).decode('utf-8')
-
-            # 构造完整的 Data URL
-            return f"data:{mime_type};base64,{base64_encoded_data}"
-
-               
         try:
             logger.debug(f"data={data}")
             

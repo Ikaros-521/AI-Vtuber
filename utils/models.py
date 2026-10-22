@@ -19,13 +19,6 @@ class LLMMessage(BaseModel):
     username: str
     content: str
 
-class TTSMessage(BaseModel):
-    type: str
-    tts_type: str
-    data: Dict[str, Any]
-    username: str
-    content: str
-
 class CallbackMessage(BaseModel):
     type: str
     data: Dict[str, Any]

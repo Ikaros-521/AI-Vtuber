@@ -7,7 +7,6 @@ import traceback
 import asyncio
 import os
 from PIL import Image
-import numpy as np
 
 from .common import Common
 from .my_log import logger
