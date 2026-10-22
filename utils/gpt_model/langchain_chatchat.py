@@ -43,7 +43,7 @@ class Langchain_ChatChat:
     def get_list_knowledge_base(self):
         url = urljoin(self.api_ip_port, "/knowledge_base/list_knowledge_bases")
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=(10, 300))
             response.raise_for_status()  # 检查响应的状态码
 
             result = response.content
@@ -95,7 +95,7 @@ class Langchain_ChatChat:
             data_json["query"] = prompt
             data_json["history"] = self.history
 
-            response = requests.post(url=url, json=data_json)
+            response = requests.post(url=url, json=data_json, timeout=(10, 300))
             response.raise_for_status()  # 检查响应的状态码
 
             result = response.content

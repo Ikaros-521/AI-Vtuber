@@ -84,7 +84,7 @@ class My_Translate:
 
         try:
             # Send request
-            r = requests.post(url, params=payload, headers=headers)
+            r = requests.post(url, params=payload, headers=headers, timeout=(10, 300))
             result = r.json()
 
             logger.info(f"百度翻译结果={result}")

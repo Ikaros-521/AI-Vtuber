@@ -23,7 +23,7 @@ class AnythingLLM:
             url = urljoin(self.config_data["api_ip_port"], "/api/v1/auth")
         
 
-            response = requests.get(url, headers=self.headers)
+            response = requests.get(url, headers=self.headers, timeout=(10, 300))
             response.raise_for_status()  # 检查响应的状态码
 
             result = response.content
@@ -45,7 +45,7 @@ class AnythingLLM:
             url = urljoin(self.config_data["api_ip_port"], "/api/v1/workspaces")
         
 
-            response = requests.get(url, headers=self.headers)
+            response = requests.get(url, headers=self.headers, timeout=(10, 300))
             response.raise_for_status()  # 检查响应的状态码
 
             result = response.content
@@ -84,7 +84,7 @@ class AnythingLLM:
                 "mode": mode
             }
 
-            response = requests.post(url=url, json=data_json, headers=self.headers)
+            response = requests.post(url=url, json=data_json, headers=self.headers, timeout=(10, 300))
             response.raise_for_status()  # 检查响应的状态码
 
             result = response.content

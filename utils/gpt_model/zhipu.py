@@ -57,7 +57,7 @@ class Zhipu:
                 }
 
                 # get请求
-                response = requests.get(url=url, data=data, headers=self.headers)
+                response = requests.get(url=url, data=data, headers=self.headers, timeout=(10, 300))
 
                 logger.debug(response.json())
 
@@ -92,7 +92,7 @@ class Zhipu:
             # logger.debug(f"url={url}, data={data}")
 
             # get请求
-            response = requests.post(url=url, json=data)
+            response = requests.post(url=url, json=data, timeout=(10, 300))
 
             # 获取状态码
             status_code = response.status_code
@@ -232,7 +232,7 @@ class Zhipu:
                         # "document_ids": []
                     }
 
-                    response = requests.post(url=url, json=data, headers=self.headers)
+                    response = requests.post(url=url, json=data, headers=self.headers, timeout=(10, 300))
 
                     try:
                         resp_json = response.json()
@@ -303,7 +303,7 @@ class Zhipu:
                         # "document_ids": []
                     }
 
-                    response = requests.post(url=url, json=data, headers=self.headers)
+                    response = requests.post(url=url, json=data, headers=self.headers, timeout=(10, 300))
 
                     try:
                         resp_json = response.json()
@@ -355,7 +355,7 @@ class Zhipu:
                     if stream:
                         url = urljoin("https://chatglm.cn", "/chatglm/assistant-api/v1/stream")
 
-                        response = requests.post(url, json=data, headers=headers)
+                        response = requests.post(url, json=data, headers=headers, timeout=(10, 300))
 
                         if response is None:
                             return None
@@ -363,7 +363,7 @@ class Zhipu:
                     else:
                         url = urljoin("https://chatglm.cn", "/chatglm/assistant-api/v1/stream_sync")
 
-                        response = requests.post(url=url, json=data, headers=headers)
+                        response = requests.post(url=url, json=data, headers=headers, timeout=(10, 300))
                         status_code = response.status_code
                         # print(status_code)
 

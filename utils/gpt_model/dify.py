@@ -68,7 +68,7 @@ class Dify:
                     'Authorization': f'Bearer {self.config_data["api_key"]}'
                 }
                 
-                response = requests.request("POST", API_URL, headers=headers, json=data_json)
+                response = requests.request("POST", API_URL, headers=headers, json=data_json, timeout=(10, 300))
 
                 if response is None:
                     return None
@@ -125,7 +125,7 @@ class Dify:
                     'Authorization': f'Bearer {self.config_data["api_key"]}'
                 }
                 
-                response = requests.request("POST", API_URL, headers=headers, json=data_json)
+                response = requests.request("POST", API_URL, headers=headers, json=data_json, timeout=(10, 300))
 
                 if response is None:
                     return None

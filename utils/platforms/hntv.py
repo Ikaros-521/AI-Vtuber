@@ -12,7 +12,7 @@ def start_listen(config, common, my_handle, platform: str):
     def fetch_comments():
         try:
             url = f"https://pubmod.hntv.tv/dx-bridge/get-comment-with-article-super-v2?limit=40&typeId=1&appFusionId=1390195608019869697&page=1&objectId={my_handle.get_room_id()}"
-            response = requests.get(url)
+            response = requests.get(url, timeout=(10, 300))
             if response.status_code == 200:
                 data = response.json()
                 items = data.get("result", {}).get("items", [])

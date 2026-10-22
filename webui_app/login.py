@@ -38,7 +38,7 @@ def check_expiration(config, common):
         }
 
         # 发送 POST 请求
-        response = requests.post(API_URL, headers=headers)
+        response = requests.post(API_URL, headers=headers, timeout=(10, 300))
 
         # 判断状态码
         if response.status_code == 200:

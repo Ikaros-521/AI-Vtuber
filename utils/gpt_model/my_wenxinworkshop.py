@@ -75,7 +75,7 @@ class My_WenXinWorkShop:
 
             logger.debug(f'payload={payload}\nheaders={headers}')
             
-            response = requests.request("POST", url, headers=headers, data=payload)
+            response = requests.request("POST", url, headers=headers, data=payload, timeout=(10, 300))
             resp_json = json.loads(response.content)
             if "conversation_id" in resp_json:
                 self.conversation_id = resp_json["conversation_id"]
@@ -161,7 +161,7 @@ class My_WenXinWorkShop:
                     'X-Appbuilder-Authorization': f'Bearer {self.config_data["app_token"]}'
                 }
                 
-                response = requests.request("POST", url, headers=headers, data=payload)
+                response = requests.request("POST", url, headers=headers, data=payload, timeout=(10, 300))
                 if stream:
                     return response
                 

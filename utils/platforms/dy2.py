@@ -52,7 +52,7 @@ def start_listen(new_config, common, my_handle, platform: str):
             "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         }
         try:
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, timeout=(10, 300))
             response.raise_for_status()
         except Exception as err:
             logger.info("【X】request the live url error: ", err)
@@ -108,7 +108,7 @@ def start_listen(new_config, common, my_handle, platform: str):
                 "User-Agent": self.user_agent,
             }
             try:
-                response = requests.get(self.live_url, headers=headers)
+                response = requests.get(self.live_url, headers=headers, timeout=(10, 300))
                 response.raise_for_status()
             except Exception as err:
                 logger.info("【X】Request the live url error: ", err)
@@ -130,7 +130,7 @@ def start_listen(new_config, common, my_handle, platform: str):
                 "cookie": f"ttwid={self.ttwid}&msToken={generateMsToken()}; __ac_nonce=0123407cc00a9e438deb4",
             }
             try:
-                response = requests.get(url, headers=headers)
+                response = requests.get(url, headers=headers, timeout=(10, 300))
                 response.raise_for_status()
             except Exception as err:
                 logger.error("【X】Request the live room url error: ", err)

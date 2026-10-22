@@ -1365,7 +1365,7 @@ class Common:
         # 记录数据库):
         try:
             # TODO: 换成异步请求
-            response = requests.get(url=api_ip_port + f'/send_message?content={content}')
+            response = requests.get(url=api_ip_port + f'/send_message?content={content}', timeout=(10, 300))
             response.raise_for_status()  # 检查响应的状态码
 
             result = response.content
@@ -1415,7 +1415,7 @@ class Common:
                         "frequency_penalty": data_json["frequency_penalty"]
                     }
 
-                    response = requests.post(url, headers=headers, json=data)
+                    response = requests.post(url, headers=headers, json=data, timeout=(10, 300))
                     response_data = response.json()
 
                     logger.debug(response_data)
