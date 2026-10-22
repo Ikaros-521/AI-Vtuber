@@ -32,7 +32,13 @@ def build_talk_tab(config, common, state, chat_log, card_css, switch_internal_cs
         switch_talk_key_listener_enable = ui.switch('启用按键监听', value=config.get("talk", "key_listener_enable")).style(switch_internal_css).tooltip("启用后，可以通过键盘单击下放配置的录音按键，启动语音识别对话功能")
         switch_talk_direct_run_talk = ui.switch('直接语音对话', value=config.get("talk", "direct_run_talk")).style(switch_internal_css).tooltip("如果启用了，将在首次运行时直接进行语音识别，而不需手动点击开始按键。针对有些系统按键无法触发的情况下，配合连续对话和唤醒词使用")
 
-        audio_device_info_list = common.get_all_audio_device_info("in")
+        # 无声卡的机器（CI、裸服务器、被禁用的音频驱动）上 PyAudio 会直接抛异常，
+        # 不兜住的话整个 webui 都打不开，而不是只有这一页不能用
+        try:
+            audio_device_info_list = common.get_all_audio_device_info("in")
+        except Exception as e:
+            logger.warning(f"声卡输入设备枚举失败，声卡下拉将为空：{e}")
+            audio_device_info_list = []
         logger.info(f"声卡输入设备={audio_device_info_list}")
         audio_device_info_dict = {str(device['device_index']): device['device_info'] for device in audio_device_info_list}
 
