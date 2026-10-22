@@ -1692,6 +1692,9 @@ class Audio:
                             else:
                                 # 重载播放列表
                                 reload_tmp_play_list(index, play_list_arr)
+                                # reload 换掉的是 play_list_arr[index] 这个位置上的对象，
+                                # 循环变量还指着刚播空的那个，不重新绑定就一条也播不出来
+                                play_list = play_list_arr[index]
 
                         # 放在这一级别，只有这一索引的播放列表的音频播放完后才会记录最后一次的播放索引位置
                         last_index = index if index < (len(play_list_arr) - 1) else -1
