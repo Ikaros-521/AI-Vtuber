@@ -32,6 +32,19 @@ def listen_addr(config):
     return (ip or DEFAULT_WS_IP), port
 
 
+def gift_name_from(data_json):
+    """从助手推的礼物消息里取礼物名，新旧两种脚本的形状都认。
+
+    旧脚本：``{"type": "gift", "username": ..., "gift": "小心心"}``
+    新脚本：``{"type": "gift", "username": ..., "content": ..., "data": {"gift": ...}}``
+    """
+    extra = data_json.get("data")
+    if isinstance(extra, dict) and extra.get("gift"):
+        return extra["gift"]
+
+    return data_json.get("gift") or data_json.get("content") or ""
+
+
 def start_listen(config, common, my_handle, platform: str):
     # websockets 14 起 handler 只收一个 connection 参数，多写一个 path 会在每次客户端
     # 连上时抛 TypeError，而走这个助手的平台（统一项 + 5 个旧别名）全靠它，
@@ -45,8 +58,6 @@ def start_listen(config, common, my_handle, platform: str):
             try:
                 data_json = json.loads(message)
                 # logger.debug(data_json)
-                # 助手那边还会推 gift（礼物）和 like（点赞），这里没接、直接丢掉。
-                # 不是助手没推，是本程序这一路只接弹幕——排查「收不到礼物」时别去查助手。
                 if data_json["type"] == "comment":
                     # logger.info(data_json)
                     # 闲时计数清零
@@ -67,6 +78,39 @@ def start_listen(config, common, my_handle, platform: str):
 
                     # 添加用户名到最新的用户名列表
                     my_global.add_username_to_last_username_list(username)
+
+                elif data_json["type"] == "gift":
+                    # 闲时计数清零
+                    my_global.idle_time_auto_clear(config, "gift")
+
+                    username = data_json["username"]
+                    gift_name = gift_name_from(data_json)
+                    if not gift_name:
+                        # 名字都取不到就别往积分表里塞一条「礼物」，跳过并说清楚
+                        logger.warning(f"礼物消息里没解析出礼物名，跳过：{data_json}")
+                        continue
+
+                    logger.info(f"[🎁直播间礼物消息] {username} 送出 {gift_name}")
+
+                    data = {
+                        "platform": platform,
+                        "username": username,
+                        "gift_name": gift_name,
+                        # 助手是从直播间网页上扒的文字，既没数量也没价格。
+                        # 价格记 0，所以「感谢最低值」大于 0 时这条路不会播报礼物感谢，
+                        # 要用就把 thanks.lowest_price 设成 0；积分/按键映射/自定义命令
+                        # 这些按礼物名走的逻辑不受影响。
+                        "num": 1,
+                        "unit_price": 0,
+                        "total_price": 0,
+                    }
+
+                    my_handle.process_data(data, "gift")
+
+                else:
+                    # like（点赞）也在推，但本程序没有点赞这条流水线：
+                    # 没有对应的 timer_flag、感谢文案和配置项，接进来只能瞎报一句
+                    logger.debug(f"助手推来的消息类型暂不处理：{data_json}")
 
             except Exception as e:
                 logger.error(traceback.format_exc())
