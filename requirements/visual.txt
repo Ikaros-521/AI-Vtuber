@@ -1,6 +1,6 @@
 # 数字人、虚拟摄像头、Stable Diffusion、桌面自动化与串口
-# opencv 5.x 要求 numpy>=2，而 faiss-cpu 等编译扩展还在 numpy 1.x 上，故停在 4.x 末版
-opencv-python==4.11.0.86
+# opencv 5.x 要求 numpy>=2，core 已升到 2.2.6，这里可以跟上
+opencv-python==5.0.0.93
 Pillow==12.3.0
 pyvirtualcam==0.15.0
 webuiapi==0.9.3

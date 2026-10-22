@@ -65,7 +65,7 @@ https://lug.ustc.edu.cn/wiki/doc/smart-questions
 
 | 分组 | 内容 | 何时需要 |
 | --- | --- | --- |
-| `core.txt` | WebUI（nicegui 3）、本地对话、edge-tts、拾音、文本处理 | 必装（82 个包） |
+| `core.txt` | WebUI（nicegui 3）、本地对话、edge-tts、拾音、文本处理 | 必装（83 个包） |
 | `llm.txt` | 智谱/通义/千帆/Gemini/火山引擎/Dify 等模型 SDK | 选用对应 `chat_type` |
 | `tts.txt` | elevenlabs、Azure TTS、gradio_client | 选用对应 TTS |
 | `asr.txt` | FunASR、Faster-Whisper（会带 torch） | 本地语音识别 |
@@ -89,28 +89,29 @@ uv pip install --python .venv/Scripts/python.exe -r requirements/llm.txt
 pip install -r requirements.txt
 ```
 
-`core.lock.txt` 以及 `core+<组>.lock.txt` 由 uv 生成（Python 3.10）：
+`core.lock.txt` 以及 `core+<组>.lock.txt` 由 uv 生成（Python 3.10）。**解析要用一个空的虚拟环境**：`uv pip compile --python <venv>` 会优先沿用该环境里已经装好的版本，拿一个装过东西的环境去解析，传递依赖会被悄悄压在旧版上。
 
 ```bash
-uv pip compile requirements/core.txt --python .venv/Scripts/python.exe -o requirements/core.lock.txt
+# 每次重解析前重建一个干净的解释器环境
+uv venv --python 3.10 .venv-res
 
-# 含 gitee 分叉包的分组要加 --no-build-isolation：那几个分叉的 setup.py 里直接 import 了 requests，
-# 构建隔离环境拿不到；指向一个已装好 requests 的虚拟环境即可
-uv pip compile requirements/core.txt requirements/llm.txt --python .venv/Scripts/python.exe --no-build-isolation -o requirements/core+llm.lock.txt
+uv pip compile requirements/core.txt --python .venv-res/Scripts/python.exe -o requirements/core.lock.txt
+
+# 含 gitee 分叉包的分组加 --no-build-isolation（那几个分叉的 setup.py 里直接 import 了 requests）
+uv pip compile requirements/core.txt requirements/llm.txt --python .venv-res/Scripts/python.exe --no-build-isolation -o requirements/core+llm.lock.txt
 ```
 
 `platform` 组的 lock 也已生成（`requirements/core+platform.lock.txt`）：`bilibili-api-python` 升到 17.4.2 后不再钉死 `requests`/`httpx`/`aiohttp`/`brotli` 上限，可与 core 合并解析。注意 17.x 的登录 API 换成了异步的 `login_v2`，且需要极验验证码的「账号密码登录」已移除，B站登录请用 `cookie` 或 `手机扫码`。
 
-#### 仍受约束的包，以及卡住它们的原因
+#### 仍受约束的包
 
 | 包 | 现状 | 为什么钉在这里 |
 | --- | --- | --- |
-| `numpy` | 1.26.4（最后一个 1.x） | 2.x 会破坏 faiss-cpu、opencv 的编译扩展 ABI |
-| `opencv-python` | 4.11.0.86（4.x 末版） | 5.x 要求 `numpy>=2`，与上一行冲突 |
 | `pydub` | 0.25.1 | 这就是 PyPI 上的最新版，上游多年不发布 |
 | `jieba` / `langid` / `profanity` | 各自末版 | 上游已停止维护，功能仍可用 |
+| `grpclib` | 0.3.2 | 被 `betterproto 2.0.0b1` 钉住，升 0.4 需要 betterproto 出正式版 |
 
-曾经卡住 `fastapi`/`starlette`（nicegui 1.x 钉 `fastapi<0.110`）和 `aiohttp`/`yarl`（blivedm 钉 `~=3.9`/`~=1.9`）的两条约束已经解除：前者随 nicegui 升到 3.18.0 解锁到 0.159.1 / 1.7.0，后者随 blivedm 改为内置源码而消失。
+历史上卡住过的几条约束都已解除，别再当限制：`fastapi`/`starlette`（nicegui 1.x 钉 `fastapi<0.110`，随 nicegui 3.18 解锁）、`aiohttp`/`yarl`（blivedm 钉 `~=3.9`/`~=1.9`，随其改为内置源码消失）、`numpy`/`opencv`（曾以为 numpy 2 会破坏 faiss-cpu/opencv 的编译扩展 ABI，实测 faiss 1.15.1 只要 `numpy>=1.25`、opencv 5 与 numpy 2.2.6 一起可用，已双双升上去）。`websockets` 16 则要求 `gradio_client>=2.7`（1.10.3 钉 `<16`）。
 
 ### 单元测试
 

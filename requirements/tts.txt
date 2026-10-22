@@ -1,4 +1,6 @@
-# 额外 TTS（edge-tts 已在 core）；gradio_client 同时供 llm_tpu 使用
+# 额外 TTS（edge-tts 已在 core）；gradio_client 同时供 llm_tpu 使用。
+# gradio_client 1.10.3 要求 websockets<16，与 core 的 16.1.1 冲突；2.7.2 放开了。
+# my_tts.py 里 predict(fn_index=...) 的老写法在 2.7.2 中仍被接受（已废弃），暂不需改
 elevenlabs==0.2.8
 azure-cognitiveservices-speech==1.35.0
-gradio_client==1.10.3
+gradio_client==2.7.2

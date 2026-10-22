@@ -22,17 +22,17 @@ httpx = "==0.28.1"
 aiohttp = "==3.14.5"
 yarl = "==1.25.1"
 requests = "==2.34.2"
-openai = "==1.109.1"
+openai = "==3.36.1"
 packaging = "==26.3"
 pydantic = ">=2.11,<3"
-numpy = "==1.26.4"
+numpy = "==2.2.6"
 loguru = "==0.7.3"
 schedule = "==1.2.2"
 edge-tts = ">=7.3.1"
 pydub = "==0.25.1"
 pygame = "==2.6.1"
 PyAudio = "==0.2.14"
-websockets = "==14.2"
+websockets = "==16.1.1"
 langid = "==1.1.6"
 profanity = "==1.1"
 pyahocorasick = "==2.3.1"
@@ -44,7 +44,11 @@ colorlog = "==6.12.0"
 keyboard = "==0.13.5"
 SpeechRecognition = "==3.17.0"
 baidu-aip = "==4.16.13"
-chardet = "==5.2.0"
+chardet = "==7.7.0"
+# aiohttp/nicegui 的传递依赖，父约束只有下限，显式抬到最新
+multidict = "==7.1.0"
+async-timeout = "==5.0.1"
+docutils = "==0.23"
 
 # --- llm：云端/本地大模型 provider（requirements/llm.txt） ---
 [tool.poetry.group.llm]
@@ -66,7 +70,7 @@ optional = true
 [tool.poetry.group.tts.dependencies]
 elevenlabs = "==0.2.8"
 azure-cognitiveservices-speech = "==1.35.0"
-gradio_client = "==1.10.3"
+gradio_client = "==2.7.2"
 
 # --- asr：本地语音识别（requirements/asr.txt） ---
 [tool.poetry.group.asr]
@@ -104,7 +108,7 @@ rsocket = "==0.4.20"
 optional = true
 
 [tool.poetry.group.visual.dependencies]
-opencv-python = "==4.11.0.86"
+opencv-python = "==5.0.0.93"
 Pillow = "==12.3.0"
 pyvirtualcam = "==0.15.0"
 webuiapi = "==0.9.3"
@@ -117,7 +121,7 @@ pyserial = "==3.5"
 optional = true
 
 [tool.poetry.group.chat-with-file.dependencies]
-faiss-cpu = "==1.7.4"
+faiss-cpu = "==1.15.1"
 PyPDF2 = "==3.0.1"
 
 [build-system]

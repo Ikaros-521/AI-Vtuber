@@ -1,4 +1,5 @@
 # 文档问答（chat_with_file）。原先靠 langchain 0.0.142，连带把 pydantic 钉在 1.x、
 # 并经由 sentence-transformers 拖进 torch；改成 OpenAI 兼容接口 + faiss 直连后只剩这两个依赖。
-faiss-cpu==1.7.4
+# 只用到 IndexFlatIP / normalize_L2 这些稳定 API，1.15.x 与 numpy 2 已实测可用
+faiss-cpu==1.15.1
 PyPDF2==3.0.1
