@@ -1,4 +1,9 @@
 from protobuf.douyin import *
+import gzip
+import re
+import time
+import threading
+import websocket
 import json
 import random
 import traceback
@@ -7,8 +12,16 @@ import requests
 
 from utils.my_log import logger
 import utils.my_global as my_global
+from utils.config import Config
 
-def start_listen(config, common, my_handle, platform: str):
+# 配置文件路径：和 utils/platforms/dy.py 一样用模块级变量，配置模板热切换要靠它记住当前用的是哪份
+config_path = "config.json"
+config = None
+
+def start_listen(new_config, common, my_handle, platform: str):
+    global config
+    config = new_config
+
     # 支持 wss 连接
     if config.get("dy2", {}).get("use_wss", False):
         ws_url = "wss://127.0.0.1:5001"
@@ -329,6 +342,7 @@ def start_listen(config, common, my_handle, platform: str):
 
         def _parseRoomUserSeqMsg(self, payload):
             """直播间统计"""
+            global config, config_path
             message = RoomUserSeqMessage().parse(payload)
             OnlineUserCount = message.total
             total = message.total_pv_for_anchor

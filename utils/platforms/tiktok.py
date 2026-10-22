@@ -105,6 +105,11 @@ def start_listen(config, common, my_handle, platform: str):
                 # 礼物重复数量
                 repeat_count = 1
 
+            # 连击还在进行中：这一下不播报，等 streaking 变 False 的那条事件带总个数，
+            # 否则 repeat_count 根本没被赋值，下面一用就是 UnboundLocalError，礼物整条丢掉
+            else:
+                return
+
             gift_name = event.gift.info.name
             username = event.user.nickname
             # 礼物数量

@@ -7,7 +7,9 @@ from utils.my_log import logger
 import utils.my_global as my_global
 
 def start_listen(config, common, my_handle, platform: str):
-    async def on_message(websocket, path):
+    # websockets 14 起 handler 只收一个 connection 参数，多写一个 path 会在每次客户端
+    # 连上时抛 TypeError，douyu/ks2/pdd/1688/taobao 全靠这个监听器，一个弹幕都进不来
+    async def on_message(websocket):
 
         async for message in websocket:
             # logger.info(f"收到消息: {message}")

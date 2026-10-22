@@ -252,13 +252,13 @@ def start_listen(config, common, my_handle, platform: str):
             # logger.info(f'[{client.room_id}] 醒目留言 ¥{message.price} {message.uname}：{message.message}')
             my_global.idle_time_auto_clear(config, "gift")
 
-            message = message.message
+            content = message.message
             uname = message.uname
             # 检查是否存在 face 属性
             user_face = message.face if hasattr(message, "face") else None
             price = message.price
 
-            logger.info(f"用户：{uname} 发送 {price}元 SC：{message}")
+            logger.info(f"用户：{uname} 发送 {price}元 SC：{content}")
 
             data = {
                 "platform": platform,
@@ -268,7 +268,7 @@ def start_listen(config, common, my_handle, platform: str):
                 "num": 1,
                 "unit_price": price,
                 "total_price": price,
-                "content": message,
+                "content": content,
             }
 
             my_handle.process_data(data, "gift")
@@ -358,13 +358,13 @@ def start_listen(config, common, my_handle, platform: str):
                 f"[{message.room_id}] 醒目留言 ¥{message.rmb} {message.uname}：{message.message}"
             )
 
-            message = message.message
+            content = message.message
             uname = message.uname
             # 检查是否存在 face 属性
             user_face = message.face if hasattr(message, "face") else None
             price = message.rmb
 
-            logger.info(f"用户：{uname} 发送 {price}元 SC：{message}")
+            logger.info(f"用户：{uname} 发送 {price}元 SC：{content}")
 
             data = {
                 "platform": platform,
@@ -374,7 +374,7 @@ def start_listen(config, common, my_handle, platform: str):
                 "num": 1,
                 "unit_price": price,
                 "total_price": price,
-                "content": message,
+                "content": content,
             }
 
             my_handle.process_data(data, "gift")

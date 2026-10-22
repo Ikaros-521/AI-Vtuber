@@ -15,7 +15,7 @@ def start_listen(new_config, common, my_handle, platform: str, schedule_thread):
     config = new_config
 
     def on_message(ws, message):
-        global config
+        global config, config_path
         
         message_json = json.loads(message)
         # logger.debug(message_json)

@@ -13,8 +13,8 @@ import utils.my_global as my_global
 def start_listen(config, common, my_handle, platform: str):
     class kslive(object):
         def __init__(self):
-            global config, common, my_handle
-
+            # 这里不能写 global：config/common/my_handle 是外层 start_listen 的形参，
+            # 声明成全局后读不到闭包里的值，构造第一行就 NameError，监听线程直接死
             self.path = os.path.abspath("")
             self.chrome_path = r"\firefox-1419\firefox\firefox.exe"
             self.ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0"
