@@ -93,10 +93,6 @@
       "ROOM_OWNER_AUTH_CODE": ""
     }
   },
-  "ordinaryroad_barrage_fly": {
-    "ws_ip_port": "ws://127.0.0.1:9898",
-    "taskIds": []
-  },
   "twitch": {
     "token": "oauth:xxxx",
     "user": "love_ikaros",

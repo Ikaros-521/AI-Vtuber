@@ -274,8 +274,6 @@ requests==2.34.2
     #   -r requirements/core.txt
     #   baidu-aip
     #   pygtrans
-rsocket==0.4.20
-    # via -r requirements/platform.txt
 schedule==1.2.2
     # via -r requirements/core.txt
 simple-websocket==1.1.0

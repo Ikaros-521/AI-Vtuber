@@ -30,7 +30,6 @@ PLATFORM_OPTIONS = {
     'taobao': '淘宝',
     '1688': '1688',
     'douyu': '斗鱼',
-    'ordinaryroad_barrage_fly': '让弹幕飞',
     'youtube': 'YouTube', 
     'twitch': 'twitch', 
     'tiktok': 'tiktok',

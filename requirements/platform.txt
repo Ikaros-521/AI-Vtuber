@@ -19,4 +19,3 @@ websocket-client==1.8.0
 # 7.x 仍支持 protoc 3.19+ 生成的 _builder 风格代码；kuaishou_pb2.py 已重新生成为该风格
 protobuf==7.36.2
 protobuf-inspector==0.2
-rsocket==0.4.20

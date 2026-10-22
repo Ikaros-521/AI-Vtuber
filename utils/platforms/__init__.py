@@ -24,7 +24,6 @@ PLATFORM_LISTENERS = {
     "wxlive": "utils.platforms.wxlive",
     "youtube": "utils.platforms.youtube",
     "hntv": "utils.platforms.hntv",
-    "ordinaryroad_barrage_fly": "utils.platforms.ordinaryroad_barrage_fly",
 }
 
 # 这些平台的 start_listen 额外接收定时任务线程（dy 靠它阻塞）

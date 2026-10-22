@@ -333,15 +333,6 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                             input_bilibili_open_live_APP_ID = ui.input(label='项目ID', value=config.get("bilibili", "open_live", "APP_ID"), placeholder='开放平台 创作者服务中心 项目ID').style("width:100px;").tooltip('仅在平台：哔哩哔哩2，登录方式：开放平台，情况下填写。开放平台 创作者服务中心 项目ID')
                             input_bilibili_open_live_ROOM_OWNER_AUTH_CODE = ui.input(label='身份码', value=config.get("bilibili", "open_live", "ROOM_OWNER_AUTH_CODE"), placeholder='直播中心用户 身份码').style("width:100px;").tooltip('仅在平台：哔哩哔哩2，登录方式：开放平台，情况下填写。直播中心用户 身份码')
             with ui.card().style(card_css):
-                ui.label('让弹幕飞')
-                with ui.row():
-                    input_ordinaryroad_barrage_fly_ws_ip_port = ui.input(label='WebSocket地址', value=config.get("ordinaryroad_barrage_fly", "ws_ip_port"), placeholder='默认：ws://127.0.0.1:9898').style("width:300px;").tooltip('根据实际服务配置，填写WebSocket地址')
-                    textarea_ordinaryroad_barrage_fly_taskIds = ui.textarea(
-                        label='任务ID', 
-                        placeholder='成功监听的任务在页面中可以复制对应的任务ID，可以自定义编辑多个（换行分隔）', 
-                        value=textarea_data_change(config.get("ordinaryroad_barrage_fly", "taskIds"))
-                    ).style("width:500px;").tooltip('成功监听的任务在页面中可以复制对应的任务ID，可以自定义编辑多个（换行分隔）')
-            with ui.card().style(card_css):
                 ui.label('twitch')
                 with ui.row():
                     input_twitch_token = ui.input(label='token', value=config.get("twitch", "token"), placeholder='访问 https://twitchapps.com/tmi/ 获取，格式为：oauth:xxx').style("width:300px;")
@@ -1313,10 +1304,6 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                     "APP_ID": (input_bilibili_open_live_APP_ID, 'int'),
                     "ROOM_OWNER_AUTH_CODE": (input_bilibili_open_live_ROOM_OWNER_AUTH_CODE, 'str'),
                 },
-            },
-            "ordinaryroad_barrage_fly": {
-                "ws_ip_port": (input_ordinaryroad_barrage_fly_ws_ip_port, 'str'),
-                "taskIds": (textarea_ordinaryroad_barrage_fly_taskIds, 'textarea'),
             },
             "twitch": {
                 "token": (input_twitch_token, 'str'),

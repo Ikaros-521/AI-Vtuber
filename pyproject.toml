@@ -99,7 +99,6 @@ emoji = "==2.16.0"
 websocket-client = "==1.8.0"
 protobuf = "==7.36.2"
 protobuf-inspector = "==0.2"
-rsocket = "==0.4.20"
 
 # --- visual：数字人/绘图/桌面自动化（requirements/visual.txt） ---
 # opencv 5.x 要求 numpy>=2，与 core 的 numpy 1.26 互斥，故停在 4.x 末版
