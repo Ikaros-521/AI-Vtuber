@@ -49,7 +49,20 @@ spec = importlib.util.spec_from_file_location('webui_app_under_test', 'webui.py'
 mod = importlib.util.module_from_spec(spec)
 sys.modules['webui_app_under_test'] = mod
 spec.loader.exec_module(mod)
-root = Client.auto_index_client.layout
+
+def find_root():
+    # nicegui 1.x 把模块级 UI 挂在 Client.auto_index_client 上；
+    # 3.x 删掉了 auto_index 这个概念，元素落在 Client.instances 里唯一的那个 client。
+    # 两种都支持，这份基线才能在同一份测试下跨版本比对。
+    auto = getattr(Client, 'auto_index_client', None)
+    if auto is not None:
+        return auto.layout
+    instances = getattr(Client, 'instances', None) or {{}}
+    if len(instances) != 1:
+        raise SystemExit(f'期望恰好一个 client，实际 {{len(instances)}} 个')
+    return next(iter(instances.values())).layout
+
+root = find_root()
 
 def kids(e):
     for slot in getattr(e, 'slots', {{}}).values():
