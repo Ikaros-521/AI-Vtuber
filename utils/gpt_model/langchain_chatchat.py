@@ -75,19 +75,21 @@ class Langchain_ChatChat:
         """
         try:
             if self.chat_type == "模型":
-                data_json = self.config_data["llm"]
+                # 拷一份再填请求字段（浅拷贝）。
+                # 不拷的话 query/history 会留在已加载的配置字典里，把整段对话一起带活
+                data_json = dict(self.config_data["llm"])
                 
                 url = self.api_ip_port + "/chat/chat"
             elif self.chat_type == "知识库":
-                data_json = self.config_data["knowledge_base"]
+                data_json = dict(self.config_data["knowledge_base"])
 
                 url = self.api_ip_port + "/chat/knowledge_base_chat"
             elif self.chat_type == "搜索引擎":
-                data_json = self.config_data["search_engine"]
+                data_json = dict(self.config_data["search_engine"])
 
                 url = self.api_ip_port + "/chat/search_engine_chat"
             else:
-                data_json = self.config_data["llm"]
+                data_json = dict(self.config_data["llm"])
                 url = self.api_ip_port + "/chat"
 
             data_json["query"] = prompt
