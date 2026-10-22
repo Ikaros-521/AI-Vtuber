@@ -1,4 +1,4 @@
-import os, sys, threading, json, random
+import os, threading, json, random
 import difflib
 from datetime import datetime
 import traceback

@@ -1,6 +1,5 @@
 from playwright.sync_api import sync_playwright, TimeoutError
 from google.protobuf.json_format import MessageToDict
-from configparser import ConfigParser
 import kuaishou_pb2
 
 import os

@@ -2,14 +2,13 @@ import os
 import threading
 import schedule
 import random
-import asyncio, aiohttp
+import asyncio
 import traceback
 import copy
-import json, re
+import re
 
 from functools import partial
 
-from typing import *
 
 # 按键监听语音聊天板块
 import keyboard
@@ -327,49 +326,6 @@ def start_server():
     """
     按键监听板块
     """
-
-    # 录音功能(录音时间过短进入openai的语音转文字会报错，请一定注意)
-    def record_audio():
-        pressdown_num = 0
-        CHUNK = 1024
-        FORMAT = pyaudio.paInt16
-        CHANNELS = 1
-        RATE = 44100
-        WAVE_OUTPUT_FILENAME = "out/record.wav"
-        p = pyaudio.PyAudio()
-        stream = p.open(
-            format=FORMAT,
-            channels=CHANNELS,
-            rate=RATE,
-            input=True,
-            frames_per_buffer=CHUNK,
-        )
-        frames = []
-        logger.info("Recording...")
-        flag = 0
-        while 1:
-            while keyboard.is_pressed("RIGHT_SHIFT"):
-                flag = 1
-                data = stream.read(CHUNK)
-                frames.append(data)
-                pressdown_num = pressdown_num + 1
-            if flag:
-                break
-        logger.info("Stopped recording.")
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
-        wf = wave.open(WAVE_OUTPUT_FILENAME, "wb")
-        wf.setnchannels(CHANNELS)
-        wf.setsampwidth(p.get_sample_size(FORMAT))
-        wf.setframerate(RATE)
-        wf.writeframes(b"".join(frames))
-        wf.close()
-        if pressdown_num >= 5:  # 粗糙的处理手段
-            return 1
-        else:
-            logger.info("杂鱼杂鱼，好短好短(录音时间过短,按右shift重新录制)")
-            return 0
 
     # THRESHOLD 设置音量阈值,默认值800.0,根据实际情况调整  silence_threshold 设置沉默阈值，根据实际情况调整
     def audio_listen(volume_threshold=800.0, silence_threshold=15):

@@ -352,8 +352,6 @@ scipy==1.15.3
     #   pynndescent
     #   scikit-learn
     #   umap-learn
-send2trash==2.1.0
-    # via -r requirements/core.txt
 sentencepiece==0.2.2
     # via funasr
 setuptools==84.2.1

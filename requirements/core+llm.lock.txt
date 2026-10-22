@@ -270,8 +270,6 @@ revtongyi==0.0.1.0
     # via -r requirements/llm.txt
 schedule==1.2.2
     # via -r requirements/core.txt
-send2trash==2.1.0
-    # via -r requirements/core.txt
 simple-websocket==1.1.0
     # via python-engineio
 six==1.17.0

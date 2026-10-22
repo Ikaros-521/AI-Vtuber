@@ -65,7 +65,7 @@ https://lug.ustc.edu.cn/wiki/doc/smart-questions
 
 | 分组 | 内容 | 何时需要 |
 | --- | --- | --- |
-| `core.txt` | WebUI（nicegui 3）、本地对话、edge-tts、拾音、文本处理 | 必装（83 个包） |
+| `core.txt` | WebUI（nicegui 3）、本地对话、edge-tts、拾音、文本处理 | 必装（82 个包） |
 | `llm.txt` | 智谱/通义/千帆/Gemini/火山引擎/Dify 等模型 SDK | 选用对应 `chat_type` |
 | `tts.txt` | elevenlabs、Azure TTS、gradio_client | 选用对应 TTS |
 | `asr.txt` | FunASR、Faster-Whisper（会带 torch） | 本地语音识别 |

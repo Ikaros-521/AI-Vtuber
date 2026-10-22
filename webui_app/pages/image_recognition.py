@@ -55,23 +55,6 @@ def build_image_recognition_tab(config, common, state, card_css, switch_internal
                 logger.error(traceback.format_exc())
                 return None
 
-        async def loop_screenshot_toggle_timer(interval_time: float):
-            async def image_recognition_screenshot_and_send():
-                if state.running_flag != 1:
-                    ui.notify(position="top", type="warning", message="请先点击“一键运行”，然后再进行截图识别")
-                    return
-
-                logger.info(f"触发截图识别")
-                screenshot_path = common.capture_window_by_title(input_image_recognition_img_save_path.value, select_image_recognition_screenshot_window_title.value)
-                await get_llm_resp(screenshot_path)
-
-            if state.loop_screenshot_timer_running:
-                state.loop_screenshot_timer.cancel()
-            else:
-                state.loop_screenshot_timer = ui.timer(interval=interval_time, callback=lambda: image_recognition_screenshot_and_send())
-                state.loop_screenshot_timer.activate()
-            state.loop_screenshot_timer_running = not state.loop_screenshot_timer_running
-
         async def image_recognition_screenshot_and_send(sleep_time: float):
             if state.running_flag != 1:
                 ui.notify(position="top", type="warning", message="请先点击“一键运行”，然后再进行截图识别")

@@ -1,7 +1,6 @@
 import socks
 from emoji import demojize
 
-import json
 import re
 import traceback
 

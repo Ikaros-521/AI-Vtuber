@@ -466,8 +466,6 @@ class MY_TTS:
     async def gpt_sovits_api(self, data):
         import base64
         import mimetypes
-        import websockets
-        import asyncio
 
         def file_to_data_url(file_path):
             # 根据文件扩展名确定 MIME 类型

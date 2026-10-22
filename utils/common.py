@@ -17,7 +17,6 @@ import ahocorasick
 import difflib
 
 import shutil
-from send2trash import send2trash
 
 from pypinyin import pinyin, Style
 
@@ -1036,9 +1035,6 @@ class Common:
         """
         logger.debug(f"source_path={source_path},destination_path={destination_path},rename={rename}")
 
-        # if os.path.exists(destination_path):
-        #     # 如果目标位置已存在同名文件，则先将其移动到回收站
-        #     send2trash(destination_path)
         
         # if rename is not None:
         #     destination_path = os.path.join(os.path.dirname(destination_path), rename)

@@ -1,5 +1,4 @@
 import requests
-import json, threading
 import traceback
 
 from utils.my_log import logger

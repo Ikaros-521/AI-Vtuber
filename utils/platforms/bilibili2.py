@@ -13,7 +13,6 @@ import blivedm.models.web as web_models
 import blivedm.models.open_live as open_models
 
 import http.cookies
-import json
 import aiohttp
 import asyncio
 import traceback

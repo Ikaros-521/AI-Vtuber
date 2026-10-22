@@ -1,11 +1,6 @@
 import websocket
 import json
-import aiohttp
-import random
 import traceback
-import string
-import requests
-from typing import Optional
 
 from utils.my_log import logger
 import utils.my_global as my_global

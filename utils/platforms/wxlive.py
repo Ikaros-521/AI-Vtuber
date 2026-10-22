@@ -7,7 +7,6 @@ import traceback
 
 from utils.my_log import logger
 import utils.my_global as my_global
-from utils.config import Config
 
 def start_listen(config, common, my_handle, platform: str):
     # 定义FastAPI应用

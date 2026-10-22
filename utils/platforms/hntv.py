@@ -1,10 +1,8 @@
 import requests
 import time
-import re
 import traceback
 
 from utils.my_log import logger
-import utils.my_global as my_global
 
 def start_listen(config, common, my_handle, platform: str):
     # 初始化已获取的commentId集合

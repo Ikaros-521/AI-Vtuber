@@ -1,6 +1,5 @@
 import zhipuai
 import traceback
-import re
 import json
 
 import time
@@ -143,17 +142,6 @@ class Zhipu:
 
         return response
 
-    def async_invoke_example(self, prompt):
-        response = zhipuai.model_api.async_invoke(
-            model="chatglm_pro",
-            prompt=prompt,
-            top_p=float(self.config_data["top_p"]),
-            temperature=float(self.config_data["temperature"]),
-        )
-        logger.info(response)
-
-        return response
-
     '''
     说明：
     add: 事件流开启
@@ -161,32 +149,6 @@ class Zhipu:
     interrupted: 中断事件，例如：触发敏感词
     finish: 数据接收完毕，关闭事件流
     '''
-
-    def sse_invoke_example(self, prompt):
-        response = zhipuai.model_api.sse_invoke(
-            model="chatglm_pro",
-            # [{"role": "user", "content": "人工智能"}]
-            prompt=prompt,
-            top_p=float(self.config_data["top_p"]),
-            temperature=float(self.config_data["temperature"]),
-        )
-
-        for event in response.events():
-            if event.event == "add":
-                logger.info(event.data)
-            elif event.event == "error" or event.event == "interrupted":
-                logger.info(event.data)
-            elif event.event == "finish":
-                logger.info(event.data)
-                logger.info(event.meta)
-            else:
-                logger.info(event.data)
-
-    def query_async_invoke_result_example(self):
-        response = zhipuai.model_api.query_async_invoke_result("your task_id")
-        logger.info(response)
-
-        return response
 
     # 非SDK鉴权
     def generate_token(self, apikey: str, exp_seconds: int):
@@ -209,35 +171,6 @@ class Zhipu:
         )
 
         return token
-
-    # 使用正则表达式替换多个反斜杠为一个反斜杠
-    def remove_extra_backslashes(self, input_string):
-        """使用正则表达式替换多个反斜杠为一个反斜杠
-
-        Args:
-            input_string (str): 原始字符串
-
-        Returns:
-            str: 替换多个反斜杠为一个反斜杠后的字符串
-        """
-        cleaned_string = re.sub(r'\\+', r'\\', input_string)
-        return cleaned_string
-
-
-    def remove_useless_and_contents(self, input_string):
-        """使用正则表达式替换括号及其内部内容为空字符串、特殊字符
-
-        Args:
-            input_string (str): 原始字符串
-
-        Returns:
-            str: 替换完后的字符串
-        """
-        result = re.sub(r'\（.*?\）', '', input_string)
-        result = re.sub(r'\(.*?\)', '', result)
-        result = result.replace('"', '').replace('“', '').replace('”', '').replace('\\', '')
-
-        return result
 
     # 同步调用zhipu api
     def get_zhipu_resp(self, data):

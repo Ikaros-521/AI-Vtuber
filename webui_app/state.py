@@ -9,8 +9,6 @@ class AppState:
         # main.py 子进程是否在运行（一键运行/停止）
         self.running_flag = False
         # 图像识别页的循环截图定时器
-        self.loop_screenshot_timer = None
-        self.loop_screenshot_timer_running = False
 
 
 state = AppState()

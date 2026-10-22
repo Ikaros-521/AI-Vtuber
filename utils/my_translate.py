@@ -1,6 +1,5 @@
 import requests
 import random
-import json
 from hashlib import md5
 import traceback
 from pygtrans import Translate
