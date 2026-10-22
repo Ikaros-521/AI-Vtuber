@@ -16,6 +16,15 @@ PATCHED = ("config", "common", "audio", "my_translate", "live_data", "task_data"
            "abnormal_alarm_data", "is_handleing")
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--update-ui-baseline",
+        action="store_true",
+        default=False,
+        help="重新生成 tests/unit/webui_render_baseline.json（确认差异是有意的之后再用）",
+    )
+
+
 @pytest.fixture
 def handle():
     """返回一个跳过 __init__ 的 My_handle 实例，并把类属性还原干净。"""
