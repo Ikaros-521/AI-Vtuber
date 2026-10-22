@@ -119,11 +119,6 @@ class My_handle(metaclass=SingletonMeta):
 
             self.db = None
 
-            # 设置会话初始值
-            self.session_config = None
-            self.sessions = {}
-            self.current_key_index = 0
-
             # 点歌模块
             self.choose_song_song_lists = None
 
@@ -462,8 +457,6 @@ class My_handle(metaclass=SingletonMeta):
 
     # 配置加载
     def config_load(self):
-        self.session_config = {'msg': [{"role": "system", "content": My_handle.config.get('chatgpt', 'preset')}]}
-
         # 设置GPT_Model全局模型列表
         GPT_MODEL.set_model_config("openai", My_handle.config.get("openai"))
         GPT_MODEL.set_model_config("chatgpt", My_handle.config.get("chatgpt"))

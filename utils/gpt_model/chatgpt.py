@@ -1,4 +1,6 @@
+import threading
 import traceback
+from collections import OrderedDict
 from copy import deepcopy
 import openai
 from packaging import version
@@ -11,7 +13,11 @@ class Chatgpt:
     # 设置会话初始值
     # session_config = {'msg': [{"role": "system", "content": config_data['chatgpt']['preset']}]}
     session_config = {}
-    sessions = {}
+    # sessionid 用的是观众名，一场直播下来会有几万个不同的 key，每个 key 还挂着
+    # 一条只会变长的 msg 历史。装不下时按「最久没开口」丢一条，不掉线的观众不受影响。
+    MAX_SESSIONS = 10000
+    sessions = OrderedDict()
+    sessions_lock = threading.Lock()
     current_key_index = 0
     data_openai = {}
     data_chatgpt = {}
@@ -83,12 +89,23 @@ class Chatgpt:
         :return: 指定 ID 的会话
         """
         sessionid = str(sessionid)
-        if sessionid not in self.sessions:
+        # sessions 是类属性、跨实例共享，聊天页和弹幕处理会同时碰它
+        with Chatgpt.sessions_lock:
+            session = Chatgpt.sessions.get(sessionid)
+            if session is not None:
+                # 用过就挪到末尾，淘汰时丢的是最久没开口的观众，不是最早进直播间的那个
+                Chatgpt.sessions.move_to_end(sessionid)
+                return session
+
             config = deepcopy(self.session_config)
             config['id'] = sessionid
             config['msg'].append({"role": "system", "content": "current time is:" + self.common.get_bj_time()})
-            self.sessions[sessionid] = config
-        return self.sessions[sessionid]
+            Chatgpt.sessions[sessionid] = config
+
+            while len(Chatgpt.sessions) > self.MAX_SESSIONS:
+                Chatgpt.sessions.popitem(last=False)
+
+            return Chatgpt.sessions[sessionid]
 
 
     def chat_with_gpt(self, messages):
