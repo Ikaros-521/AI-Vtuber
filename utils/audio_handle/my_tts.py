@@ -95,7 +95,7 @@ class MY_TTS:
                             logger.error(f'{type} 下载音频失败: {response.status}')
                             return None
             except asyncio.TimeoutError:
-                logger.error("{type} 下载音频超时")
+                logger.error(f"{type} 下载音频超时")
                 return None
 
     # 请求vits的api
@@ -188,9 +188,12 @@ class MY_TTS:
 
                         # 以二进制读取模式打开音频文件，并添加到表单数据中
                         # 'reference_audio' 是字段名称，应与服务器端接收的名称一致
-                        form_data.add_field('reference_audio',
-                                    open(data["gpt_sovits"]["reference_audio"], 'rb'),
-                                    content_type='audio/mpeg')  # 内容类型根据文件类型修改
+                        # 先读进内存再交给表单：以前是把 open() 的结果直接塞进去，
+                        # 这个句柄谁都不关，每合成一条语音漏一个文件描述符
+                        with open(data["gpt_sovits"]["reference_audio"], 'rb') as reference_audio:
+                            form_data.add_field('reference_audio',
+                                                reference_audio.read(),
+                                                content_type='audio/mpeg')
                             
                         logger.debug(f"data_json={data_json}")
 
@@ -627,11 +630,22 @@ class MY_TTS:
                     elif params["version"] == "1.4":
                         async with aiohttp.ClientSession() as session:
                             async with session.get(data["webtts"]["api_ip_port"], params=params, timeout=self.timeout) as response:
+                                # 服务端 5xx 时响应体往往是错误信息而不是 {"url": ...}，
+                                # 不看状态码就取 resp_json['url'] 会抛 KeyError，被下面的
+                                # 兜底 except 记成"未知错误"，现象是没有声音
+                                if response.status != 200:
+                                    logger.error(f'gpt_sovits(webtts 1.4) 下载音频失败: {response.status}')
+                                    return None
+
                                 resp_json = await response.json()
 
                                 url = urljoin(data["webtts"]["api_ip_port"], resp_json['url'])
 
                                 return await self.download_audio("gpt_sovits", url, self.timeout, "get", params)
+                    else:
+                        # version 填错时以前什么都不做，函数直接返回 None：
+                        # 表现是「TTS 没声音」但日志里一条线索都没有
+                        logger.error(f'webtts 不支持的 version：{params["version"]}，可选 1 / 2 / 1.4')
                 except aiohttp.ClientError as e:
                     logger.error(traceback.format_exc())
                     logger.error(f'gpt_sovits请求失败: {e}')
@@ -872,12 +886,14 @@ class MY_TTS:
             form_data.add_field('temperature', str(data['index_tts']["temperature"]))
             
             # 添加音频文件
-            form_data.add_field(
-                'prompt_audio',
-                open(data['index_tts']["prompt_audio"], 'rb'),
-                filename=os.path.basename(data['index_tts']["prompt_audio"]),
-                content_type='audio/wav'
-            )
+            # 同上：句柄交给表单就再也拿不到，改成读完再传字节
+            with open(data['index_tts']["prompt_audio"], 'rb') as prompt_audio:
+                form_data.add_field(
+                    'prompt_audio',
+                    prompt_audio.read(),
+                    filename=os.path.basename(data['index_tts']["prompt_audio"]),
+                    content_type='audio/wav'
+                )
             
             logger.debug(f"Index-tts 请求参数: text={data['content']}, temperature={data['index_tts']['temperature']}")
             
