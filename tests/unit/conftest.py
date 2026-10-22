@@ -13,7 +13,8 @@ from utils.my_handle import My_handle  # noqa: E402
 
 # 这些是类属性（My_handle 用类当全局状态袋），测试期间会被改写，必须逐个还原
 PATCHED = ("config", "common", "audio", "my_translate", "live_data", "task_data",
-           "abnormal_alarm_data", "is_handleing")
+           "abnormal_alarm_data", "is_handleing",
+           "thanks_gift_copy", "thanks_entrance_copy", "thanks_follow_copy")
 
 
 def pytest_addoption(parser):
