@@ -1,4 +1,5 @@
 import sys
+import threading
 from pathlib import Path
 
 import pytest
@@ -37,9 +38,15 @@ def handle():
 
     # __init__ 会拉起 Audio/DB/定时器，单元测试不需要，直接绕过
     instance = My_handle.__new__(My_handle)
+    # 绕过 __init__ 之后，缓冲那一套要自己补上，否则 process_data 一进来就 AttributeError
+    instance.data_lock = threading.Lock()
+    instance.handle_lock = threading.Lock()
+    instance.timers = {}
     try:
         yield instance
     finally:
+        for timer in instance.timers.values():
+            timer.cancel()
         for name, value in saved.items():
             setattr(My_handle, name, value)
 

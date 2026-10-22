@@ -112,6 +112,9 @@ class My_handle(metaclass=SingletonMeta):
             
             # 数据丢弃部分相关的实现
             self.data_lock = threading.Lock()
+            # data_lock 只护住 timers/last_data 那一小段，处理消息（含 LLM HTTP）
+            # 用这把单独的锁串行，见 process_last_data
+            self.handle_lock = threading.Lock()
             self.timers = {}
 
             self.db = None
@@ -3870,51 +3873,59 @@ class My_handle(metaclass=SingletonMeta):
                 self.timers[timer_flag].last_data = [data]
 
     def process_last_data(self, timer_flag):
+        # 锁内只做「把这一批取走并清空」。处理一条弹幕要跑 LLM（默认 60s 超时）
+        # 和音频合成，以前整段都压在 data_lock 里，而各平台回调线程往缓冲追加数据
+        # 用的是同一把锁——一条慢回复能把整个直播间的弹幕接收卡住。
         with self.data_lock:
             timer = self.timers.get(timer_flag)
-            if timer and timer.last_data is not None and timer.last_data != []:
-                logger.debug(f"预处理定时器触发 type={timer_flag}，data={timer.last_data}")
+            batch = list(timer.last_data) if timer is not None and timer.last_data else []
+            if timer is not None:
+                timer.last_data = []
 
-                My_handle.is_handleing = 1
+        if not batch:
+            return
 
+        logger.debug(f"预处理定时器触发 type={timer_flag}，data={batch}")
+
+        # handle_lock 把各 timer_flag 的处理互相串行。handler 要写 live_data、
+        # task_data、感谢文案轮转、去重计数这些共享状态，以前是靠 data_lock 顺带
+        # 串起来的，拆锁之后得显式保住，不然就是新引入的竞态。
+        with self.handle_lock:
+            My_handle.is_handleing = 1
+            try:
                 if timer_flag == "comment":
-                    for data in timer.last_data:
+                    for data in batch:
                         self.comment_handle(data)
                 elif timer_flag == "gift":
-                    for data in timer.last_data:
+                    for data in batch:
                         self.gift_handle(data)
-                    #self.gift_handle(timer.last_data)
                 elif timer_flag == "entrance":
-                    for data in timer.last_data:
+                    for data in batch:
                         self.entrance_handle(data)
-                    #self.entrance_handle(timer.last_data)
                 elif timer_flag == "follow":
-                    for data in timer.last_data:
+                    for data in batch:
                         self.follow_handle(data)
                 elif timer_flag == "talk":
                     # 聊天暂时共用弹幕处理逻辑
-                    for data in timer.last_data:
+                    for data in batch:
                         self.talk_handle(data)
-                    #self.comment_handle(timer.last_data)
                 elif timer_flag == "schedule":
-                    # 定时任务处理
-                    for data in timer.last_data:
+                    for data in batch:
                         self.schedule_handle(data)
-                    #self.schedule_handle(timer.last_data)
                 elif timer_flag == "idle_time_task":
-                    # 定时任务处理
-                    for data in timer.last_data:
+                    for data in batch:
                         self.idle_time_task_handle(data)
-                    #self.idle_time_task_handle(timer.last_data)
                 elif timer_flag == "image_recognition_schedule":
-                    # 定时任务处理
-                    for data in timer.last_data:
+                    for data in batch:
                         self.image_recognition_schedule_handle(data)
-
+            except Exception:
+                # 抛出线程外只会打印在 stderr，而且这一批再也没人管；留一条带上下文的
+                # 日志。（范围仍是整批，跟单条出错就丢掉后面几条的旧行为一致）
+                logger.error(traceback.format_exc())
+            finally:
+                # is_handleing 卡在 1 的话，main.py 的录音闸门永远认为「正在处理」，
+                # 语音输入再也开不了——这句必须在 finally
                 My_handle.is_handleing = 0
-
-                # 清空数据
-                timer.last_data = []
 
     def get_interval(self, timer_flag):
         # 根据标志定义不同计时器的间隔
