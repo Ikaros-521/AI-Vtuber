@@ -7,9 +7,9 @@
   },
   "api_ip": "127.0.0.1",
   "api_port": 8082,
-  "platform": "talk",
+  "platform": "live_monitor_assistant",
   "room_display_id": "278333",
-  "chat_type": "reread",
+  "chat_type": "chatgpt",
   "need_lang": "none",
   "before_prompt": "请简要回复:",
   "after_prompt": "",
@@ -298,13 +298,13 @@
     "name": "Hiyori"
   },
   "openai": {
-    "api": "https://api.openai.com/v1",
+    "api": "http://124.223.187.198:13000/v1",
     "api_key": [
-      "api-key"
+      "sk-clW6uvSCGqN7KHSOjPIwAsXAn4STF4eqqEsrM52NlUZoBChb"
     ]
   },
   "chatgpt": {
-    "model": "gpt-3.5-turbo-0613",
+    "model": "glm-4.5-flash",
     "temperature": 0.9,
     "max_tokens": 4096,
     "top_p": 1.0,
@@ -798,8 +798,8 @@
         ]
       }
     ],
-    "audio_interval": 5.0,
-    "switching_interval": 5.0,
+    "audio_interval": "5.0",
+    "switching_interval": "5.0",
     "random_play": true,
     "auto_play": false
   },
