@@ -73,3 +73,18 @@ class FakeSender:
 
     def get_bj_time(self, type=0):
         return "2026-01-01 00:00:00"
+
+
+class FakeAlarmCommon(FakeSender):
+    """异常报警用的 Common 替身：只提供列目录和取文件名。"""
+
+    def __init__(self, path_list=()):
+        super().__init__()
+        self.path_list = list(path_list)
+
+    def get_all_file_paths(self, folder_path):
+        return list(self.path_list)
+
+    def extract_filename(self, file_path, with_extension=False):
+        name = file_path.rsplit("/", 1)[-1]
+        return name if with_extension else name.rsplit(".", 1)[0]
