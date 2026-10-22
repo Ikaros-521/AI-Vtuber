@@ -1,3 +1,4 @@
+from utils.history import total_chars as history_chars
 import traceback
 from gradio_client import Client
 import re
@@ -47,8 +48,8 @@ class LLM_TPU:
             # 启用历史就给我记住！
             if self.history_enable:
                 while True:
-                    # 获取嵌套列表中所有字符串的字符数
-                    total_chars = sum(len(string) for sublist in self.history for string in sublist)
+                    # 按条目里真正的内容算长度：历史存的是字典，直接遍历字典拿到的是键名
+                    total_chars = history_chars(self.history)
                     # 如果大于限定最大历史数，就剔除第一个元素
                     if total_chars > self.history_max_len:
                         self.history.pop(0)

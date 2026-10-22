@@ -1,3 +1,4 @@
+from utils.history import total_chars as history_chars
 import zhipuai
 import traceback
 import json
@@ -246,8 +247,8 @@ class Zhipu:
                             self.history.append({"role": "assistant", "content": resp_content})
 
                             while True:
-                                # 获取嵌套列表中所有字符串的字符数
-                                total_chars = sum(len(string) for sublist in self.history for string in sublist)
+                                # 按条目里真正的内容算长度：历史存的是字典，直接遍历字典拿到的是键名
+                                total_chars = history_chars(self.history)
                                 # 如果大于限定最大历史数，就剔除第1 2个元素
                                 if total_chars > int(self.config_data["history_max_len"]):
                                     self.history.pop(0)
@@ -280,8 +281,8 @@ class Zhipu:
                 # 启用历史就给我记住！
                 if self.config_data["history_enable"]:
                     while True:
-                        # 获取嵌套列表中所有字符串的字符数
-                        total_chars = sum(len(string) for sublist in self.history for string in sublist)
+                        # 按条目里真正的内容算长度：历史存的是字典，直接遍历字典拿到的是键名
+                        total_chars = history_chars(self.history)
                         # 如果大于限定最大历史数，就剔除第一个元素
                         if total_chars > int(self.config_data["history_max_len"]):
                             self.history.pop(0)
@@ -317,8 +318,8 @@ class Zhipu:
                             self.history.append({"role": "assistant", "content": resp_content})
 
                             while True:
-                                # 获取嵌套列表中所有字符串的字符数
-                                total_chars = sum(len(string) for sublist in self.history for string in sublist)
+                                # 按条目里真正的内容算长度：历史存的是字典，直接遍历字典拿到的是键名
+                                total_chars = history_chars(self.history)
                                 # 如果大于限定最大历史数，就剔除第1 2个元素
                                 if total_chars > int(self.config_data["history_max_len"]):
                                     self.history.pop(0)
@@ -461,8 +462,8 @@ class Zhipu:
                     # 启用历史就给我记住！
                     if self.config_data["history_enable"]:
                         while True:
-                            # 获取嵌套列表中所有字符串的字符数
-                            total_chars = sum(len(string) for sublist in self.history for string in sublist)
+                            # 按条目里真正的内容算长度：历史存的是字典，直接遍历字典拿到的是键名
+                            total_chars = history_chars(self.history)
                             # 如果大于限定最大历史数，就剔除第1 2个元素
                             if total_chars > int(self.config_data["history_max_len"]):
                                 self.history.pop(0)
@@ -530,8 +531,8 @@ class Zhipu:
             # 启用历史就给我记住！
             if self.config_data["history_enable"]:
                 while True:
-                    # 获取嵌套列表中所有字符串的字符数
-                    total_chars = sum(len(string) for sublist in self.history for string in sublist)
+                    # 按条目里真正的内容算长度：历史存的是字典，直接遍历字典拿到的是键名
+                    total_chars = history_chars(self.history)
                     # 如果大于限定最大历史数，就剔除第1 2个元素
                     if total_chars > int(self.config_data["history_max_len"]):
                         self.history.pop(0)

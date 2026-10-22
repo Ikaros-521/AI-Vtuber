@@ -23,7 +23,9 @@ class Custom_LLM:
 
     def replace_variables(self, text, variables):
         for key, value in variables.items():
-            text = re.sub(f'{{{{{key}}}}}', value, text)
+            # value 是观众发的内容或用户名，直接当 re.sub 的替换串会被当模板解析：
+            # 里面出现 \1 或 \g<0> 就抛 re.error，整条回复没了。用函数返回原样文本绕开
+            text = re.sub(r'\{\{' + re.escape(key) + r'\}\}', lambda _match, value=value: value, text)
         return text
 
     def send_request(self, url="", method='GET', headers=None, body_type="json", body=None, resp_data_type="json", proxies=None, timeout=60):

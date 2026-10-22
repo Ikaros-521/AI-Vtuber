@@ -20,7 +20,9 @@ class Dify:
         import re
 
         for key, value in variables.items():
-            text = re.sub(f'{{{{{key}}}}}', value, text)
+            # 同 utils/gpt_model/custom_llm.py：替换串来自观众输入，
+            # 不能交给 re.sub 当模板解析，否则 \1 这种内容直接抛 re.error
+            text = re.sub(r'\{\{' + re.escape(key) + r'\}\}', lambda _match, value=value: value, text)
         return text
 
     def get_resp(self, data: dict, stream: bool = False):
