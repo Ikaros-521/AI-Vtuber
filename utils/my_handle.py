@@ -16,6 +16,7 @@ from .audio import Audio
 from .gpt_model.gpt import GPT_MODEL
 from .my_log import logger
 from . import alarm
+from .message import build as build_message
 from .db import SQLiteDB
 from .my_translate import My_Translate
 
@@ -721,14 +722,7 @@ class My_handle(metaclass=SingletonMeta):
                     # 将 AI 回复记录到日志文件中
                     self.write_to_comment_log(resp_content, {"username": My_handle.config.get("assistant_anchor", "username"), "content": data_json["content"]})
                     
-                    message = {
-                        "type": "assistant_anchor_text",
-                        "tts_type": My_handle.config.get("assistant_anchor", "audio_synthesis_type"),
-                        "data": My_handle.config.get(My_handle.config.get("assistant_anchor", "audio_synthesis_type")),
-                        "config": My_handle.config.get("filter"),
-                        "username": My_handle.config.get("assistant_anchor", "username"),
-                        "content": resp_content
-                    }
+                    message = build_message(My_handle.config, "assistant_anchor_text", My_handle.config.get("assistant_anchor", "username"), resp_content, tts_type=My_handle.config.get("assistant_anchor", "audio_synthesis_type"))
 
                     if "insert_index" in data_json:
                         message["insert_index"] = data_json["insert_index"]
@@ -771,15 +765,7 @@ class My_handle(metaclass=SingletonMeta):
                             # 拼接音频文件路径
                             resp_content = f'{My_handle.config.get("assistant_anchor", "local_qa", "audio", "file_path")}/{resp_content[0]}'
                             logger.info(f"匹配到的音频路径：{resp_content}")
-                            message = {
-                                "type": "assistant_anchor_audio",
-                                "tts_type": My_handle.config.get("assistant_anchor", "audio_synthesis_type"),
-                                "data": My_handle.config.get(My_handle.config.get("assistant_anchor", "audio_synthesis_type")),
-                                "config": My_handle.config.get("filter"),
-                                "username": My_handle.config.get("assistant_anchor", "username"),
-                                "content": data_json["content"],
-                                "file_path": resp_content
-                            }
+                            message = build_message(My_handle.config, "assistant_anchor_audio", My_handle.config.get("assistant_anchor", "username"), data_json["content"], tts_type=My_handle.config.get("assistant_anchor", "audio_synthesis_type"), file_path=resp_content)
 
                             if "insert_index" in data_json:
                                 message["insert_index"] = data_json["insert_index"]
@@ -947,14 +933,7 @@ class My_handle(metaclass=SingletonMeta):
                 # 将 AI 回复记录到日志文件中
                 self.write_to_comment_log(resp_content, {"username": username, "content": content})
                 
-                message = {
-                    "type": "comment",
-                    "tts_type": My_handle.config.get("audio_synthesis_type"),
-                    "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                    "config": My_handle.config.get("filter"),
-                    "username": username,
-                    "content": resp_content
-                }
+                message = build_message(My_handle.config, "comment", username, resp_content)
 
                 # 洛曦 直播弹幕助手
                 if My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable") and \
@@ -999,15 +978,7 @@ class My_handle(metaclass=SingletonMeta):
                     # 拼接音频文件路径
                     resp_content = f'{My_handle.config.get("local_qa", "audio", "file_path")}/{resp_content[0]}'
                     logger.info(f"匹配到的音频路径：{resp_content}")
-                    message = {
-                        "type": "local_qa_audio",
-                        "tts_type": My_handle.config.get("audio_synthesis_type"),
-                        "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                        "config": My_handle.config.get("filter"),
-                        "username": username,
-                        "content": content,
-                        "file_path": resp_content
-                    }
+                    message = build_message(My_handle.config, "local_qa_audio", username, content, file_path=resp_content)
 
                     # 是否启用了周期性触发功能，启用此功能后，数据会被缓存，之后周期到了才会触发
                     if My_handle.config.get("local_qa", "periodic_trigger", "enable"):
@@ -1054,14 +1025,7 @@ class My_handle(metaclass=SingletonMeta):
                 
                 logger.info(f"随机到的音频路径：{resp_content}")
 
-                message = {
-                    "type": "song",
-                    "tts_type": My_handle.config.get("audio_synthesis_type"),
-                    "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                    "config": My_handle.config.get("filter"),
-                    "username": username,
-                    "content": resp_content
-                }
+                message = build_message(My_handle.config, "song", username, resp_content)
 
                 
                 self.audio_synthesis_handle(message)
@@ -1082,14 +1046,7 @@ class My_handle(metaclass=SingletonMeta):
                 # 说明用户仅发送命令，没有发送歌名，说明用户不会用
                 if content == "":
                     resp_content = f'点歌命令错误，命令为 {My_handle.config.get("choose_song", "start_cmd")}+歌名'
-                    message = {
-                        "type": "comment",
-                        "tts_type": My_handle.config.get("audio_synthesis_type"),
-                        "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                        "config": My_handle.config.get("filter"),
-                        "username": username,
-                        "content": resp_content
-                    }
+                    message = build_message(My_handle.config, "comment", username, resp_content)
 
                     self.audio_synthesis_handle(message)
 
@@ -1105,14 +1062,7 @@ class My_handle(metaclass=SingletonMeta):
                     resp_content = My_handle.config.get("choose_song", "match_fail_copy").format(content=content)
                     logger.info(f"[AI回复{username}]：{resp_content}")
 
-                    message = {
-                        "type": "comment",
-                        "tts_type": My_handle.config.get("audio_synthesis_type"),
-                        "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                        "config": My_handle.config.get("filter"),
-                        "username": username,
-                        "content": resp_content
-                    }
+                    message = build_message(My_handle.config, "comment", username, resp_content)
 
                     
                     self.audio_synthesis_handle(message)
@@ -1132,14 +1082,7 @@ class My_handle(metaclass=SingletonMeta):
                 resp_content = os.path.abspath(resp_content)
                 logger.info(f"点歌成功！匹配到的音频路径：{resp_content}")
                 
-                message = {
-                    "type": "song",
-                    "tts_type": My_handle.config.get("audio_synthesis_type"),
-                    "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                    "config": My_handle.config.get("filter"),
-                    "username": username,
-                    "content": resp_content
-                }
+                message = build_message(My_handle.config, "song", username, resp_content)
 
                 self.webui_show_chat_log_callback("点歌", data, resp_content)
                 
@@ -1381,14 +1324,7 @@ class My_handle(metaclass=SingletonMeta):
                     return
             
             # 音频合成时需要用到的重要数据
-            message = {
-                "type": type,
-                "tts_type": My_handle.config.get("audio_synthesis_type"),
-                "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                "config": My_handle.config.get("filter"),
-                "username": username,
-                "content": content
-            }
+            message = build_message(My_handle.config, type, username, content)
 
             # 音频插入的索引（适用于audio_player_v2）
             if "insert_index" in data:
@@ -1765,14 +1701,7 @@ class My_handle(metaclass=SingletonMeta):
                             
 
                         # 音频合成时需要用到的重要数据
-                        message = {
-                            "type": "comment",
-                            "tts_type": My_handle.config.get("audio_synthesis_type"),
-                            "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                            "config": My_handle.config.get("filter"),
-                            "username": data['username'],
-                            "content": tmp_content
-                        }
+                        message = build_message(My_handle.config, "comment", data["username"], tmp_content)
 
                         # 洛曦 直播弹幕助手
                         if My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable") and \
@@ -2030,14 +1959,7 @@ class My_handle(metaclass=SingletonMeta):
                                     resp_content = My_handle.common.brackets_text_randomize(resp_content)
                                     
                                     # 生成回复内容
-                                    message = {
-                                        "type": "integral",
-                                        "tts_type": My_handle.config.get("audio_synthesis_type"),
-                                        "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                                        "config": My_handle.config.get("filter"),
-                                        "username": username,
-                                        "content": resp_content
-                                    }
+                                    message = build_message(My_handle.config, "integral", username, resp_content)
 
                                     # 洛曦 直播弹幕助手
                                     if My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable") and \
@@ -2080,14 +2002,7 @@ class My_handle(metaclass=SingletonMeta):
                             # 获取日期部分（前10个字符），并与当前日期字符串比较
                             if date_string[:10] == datetime.now().date().strftime("%Y-%m-%d"):
                                 resp_content = f"{username}您今天已经签到过了，不能重复打卡哦~"
-                                message = {
-                                    "type": "integral",
-                                    "tts_type": My_handle.config.get("audio_synthesis_type"),
-                                    "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                                    "config": My_handle.config.get("filter"),
-                                    "username": username,
-                                    "content": resp_content
-                                }
+                                message = build_message(My_handle.config, "integral", username, resp_content)
 
                                 # 洛曦 直播弹幕助手
                                 if My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable") and \
@@ -2162,14 +2077,7 @@ class My_handle(metaclass=SingletonMeta):
                                 resp_content = My_handle.common.dynamic_variable_replacement(resp_content, data_json)
                                 
                                 # 生成回复内容
-                                message = {
-                                    "type": "integral",
-                                    "tts_type": My_handle.config.get("audio_synthesis_type"),
-                                    "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                                    "config": My_handle.config.get("filter"),
-                                    "username": username,
-                                    "content": resp_content
-                                }
+                                message = build_message(My_handle.config, "integral", username, resp_content)
 
                                 # 洛曦 直播弹幕助手
                                 if My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable") and \
@@ -2265,14 +2173,7 @@ class My_handle(metaclass=SingletonMeta):
                                 resp_content = My_handle.common.brackets_text_randomize(resp_content)
 
                                 # 生成回复内容
-                                message = {
-                                    "type": "integral",
-                                    "tts_type": My_handle.config.get("audio_synthesis_type"),
-                                    "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                                    "config": My_handle.config.get("filter"),
-                                    "username": username,
-                                    "content": resp_content
-                                }
+                                message = build_message(My_handle.config, "integral", username, resp_content)
 
                                 # 洛曦 直播弹幕助手
                                 if My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable") and \
@@ -2372,14 +2273,7 @@ class My_handle(metaclass=SingletonMeta):
                             resp_content = My_handle.common.brackets_text_randomize(resp_content)
 
                             # 生成回复内容
-                            message = {
-                                "type": "integral",
-                                "tts_type": My_handle.config.get("audio_synthesis_type"),
-                                "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                                "config": My_handle.config.get("filter"),
-                                "username": username,
-                                "content": resp_content
-                            }
+                            message = build_message(My_handle.config, "integral", username, resp_content)
 
                             # 洛曦 直播弹幕助手
                             if My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable") and \
@@ -2445,14 +2339,7 @@ class My_handle(metaclass=SingletonMeta):
                 tmp = My_handle.common.dynamic_variable_replacement(tmp, data_json)
 
                 # 音频合成时需要用到的重要数据
-                message = {
-                    "type": "key_mapping",
-                    "tts_type": My_handle.config.get("audio_synthesis_type"),
-                    "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                    "config": My_handle.config.get("filter"),
-                    "username": data["username"],
-                    "content": tmp
-                }
+                message = build_message(My_handle.config, "key_mapping", data["username"], tmp)
 
                 logger.info(f'【触发按键映射】触发文案：{tmp}')
 
@@ -2477,15 +2364,7 @@ class My_handle(metaclass=SingletonMeta):
                 tmp = random.choice(key_mapping_config["local_audio"])
 
                 # 音频合成时需要用到的重要数据
-                message = {
-                    "type": "key_mapping",
-                    "tts_type": My_handle.config.get("audio_synthesis_type"),
-                    "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                    "config": My_handle.config.get("filter"),
-                    "username": data["username"],
-                    "content": tmp,
-                    "file_path": tmp
-                }
+                message = build_message(My_handle.config, "key_mapping", data["username"], tmp, file_path=tmp)
 
                 logger.info(f'【触发映射】播放本地音频：{tmp}')
 
@@ -2758,14 +2637,7 @@ class My_handle(metaclass=SingletonMeta):
                                         resp_content = tmp.format(**{var: value for var, value in variables.items() if var in tmp})
                                     
                                     # 音频合成时需要用到的重要数据
-                                    message = {
-                                        "type": "reread",
-                                        "tts_type": My_handle.config.get("audio_synthesis_type"),
-                                        "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                                        "config": My_handle.config.get("filter"),
-                                        "username": username,
-                                        "content": resp_content
-                                    }
+                                    message = build_message(My_handle.config, "reread", username, resp_content)
 
                                     logger.debug(message)
                                     
@@ -3045,14 +2917,7 @@ class My_handle(metaclass=SingletonMeta):
                     logger.debug(f"念弹幕 content:{content}")
 
                     # 音频合成时需要用到的重要数据
-                    message = {
-                        "type": "read_comment",
-                        "tts_type": My_handle.config.get("audio_synthesis_type"),
-                        "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                        "config": My_handle.config.get("filter"),
-                        "username": username,
-                        "content": content
-                    }
+                    message = build_message(My_handle.config, "read_comment", username, content)
 
                     # 判断是否需要念用户名
                     if My_handle.config.get("read_comment", "read_username_enable"):
@@ -3200,14 +3065,7 @@ class My_handle(metaclass=SingletonMeta):
                 
 
             # 音频合成时需要用到的重要数据
-            message = {
-                "type": "comment",
-                "tts_type": My_handle.config.get("audio_synthesis_type"),
-                "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                "config": My_handle.config.get("filter"),
-                "username": username,
-                "content": resp_content
-            }
+            message = build_message(My_handle.config, "comment", username, resp_content)
 
             # 洛曦 直播弹幕助手
             if My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable") and \
@@ -3306,15 +3164,7 @@ class My_handle(metaclass=SingletonMeta):
             resp_content = My_handle.common.dynamic_variable_replacement(resp_content, data_json)
 
 
-            message = {
-                "type": "gift",
-                "tts_type": My_handle.config.get("audio_synthesis_type"),
-                "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                "config": My_handle.config.get("filter"),
-                "username": data["username"],
-                "content": resp_content,
-                "gift_info": data
-            }
+            message = build_message(My_handle.config, "gift", data["username"], resp_content, gift_info=data)
 
             # 洛曦 直播弹幕助手
             if My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable") and \
@@ -3387,14 +3237,7 @@ class My_handle(metaclass=SingletonMeta):
             # 括号语法替换
             resp_content = My_handle.common.brackets_text_randomize(resp_content)
 
-            message = {
-                "type": "entrance",
-                "tts_type": My_handle.config.get("audio_synthesis_type"),
-                "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                "config": My_handle.config.get("filter"),
-                "username": data['username'],
-                "content": resp_content
-            }
+            message = build_message(My_handle.config, "entrance", data["username"], resp_content)
 
             # 洛曦 直播弹幕助手
             if My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable") and \
@@ -3452,14 +3295,7 @@ class My_handle(metaclass=SingletonMeta):
             # 括号语法替换
             resp_content = My_handle.common.brackets_text_randomize(resp_content)
 
-            message = {
-                "type": "follow",
-                "tts_type": My_handle.config.get("audio_synthesis_type"),
-                "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                "config": My_handle.config.get("filter"),
-                "username": data['username'],
-                "content": resp_content
-            }
+            message = build_message(My_handle.config, "follow", data["username"], resp_content)
 
             # 洛曦 直播弹幕助手
             if My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable") and \
@@ -3484,14 +3320,7 @@ class My_handle(metaclass=SingletonMeta):
         try:
             content = data["content"]
 
-            message = {
-                "type": "schedule",
-                "tts_type": My_handle.config.get("audio_synthesis_type"),
-                "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                "config": My_handle.config.get("filter"),
-                "username": data['username'],
-                "content": content
-            }
+            message = build_message(My_handle.config, "schedule", data["username"], content)
 
             # 洛曦 直播弹幕助手
             if My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable") and \
@@ -3557,15 +3386,7 @@ class My_handle(metaclass=SingletonMeta):
                         return None
 
                 # 音频合成时需要用到的重要数据
-                message = {
-                    "type": "idle_time_task",
-                    "tts_type": My_handle.config.get("audio_synthesis_type"),
-                    "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                    "config": My_handle.config.get("filter"),
-                    "username": username,
-                    "content": content,
-                    "content_type": type
-                }
+                message = build_message(My_handle.config, "idle_time_task", username, content, content_type=type)
 
                 # 洛曦 直播弹幕助手
                 if My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable") and \
@@ -3679,15 +3500,7 @@ class My_handle(metaclass=SingletonMeta):
                     
 
                 # 音频合成时需要用到的重要数据
-                message = {
-                    "type": "idle_time_task",
-                    "tts_type": My_handle.config.get("audio_synthesis_type"),
-                    "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                    "config": My_handle.config.get("filter"),
-                    "username": username,
-                    "content": resp_content,
-                    "content_type": type
-                }
+                message = build_message(My_handle.config, "idle_time_task", username, resp_content, content_type=type)
 
                 # 洛曦 直播弹幕助手
                 if My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable") and \
@@ -3702,16 +3515,7 @@ class My_handle(metaclass=SingletonMeta):
             elif type == "local_audio":
                 logger.info(f'[{username}]: {data["file_path"]}')
 
-                message = {
-                    "type": "idle_time_task",
-                    "tts_type": My_handle.config.get("audio_synthesis_type"),
-                    "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                    "config": My_handle.config.get("filter"),
-                    "username": username,
-                    "content": content,
-                    "content_type": type,
-                    "file_path": os.path.abspath(data["file_path"])
-                }
+                message = build_message(My_handle.config, "idle_time_task", username, content, content_type=type, file_path=os.path.abspath(data["file_path"]))
 
                 self.audio_synthesis_handle(message)
 
@@ -3790,14 +3594,7 @@ class My_handle(metaclass=SingletonMeta):
                 
 
             # 音频合成时需要用到的重要数据
-            message = {
-                "type": "image_recognition_schedule",
-                "tts_type": My_handle.config.get("audio_synthesis_type"),
-                "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                "config": My_handle.config.get("filter"),
-                "username": username,
-                "content": resp_content
-            }
+            message = build_message(My_handle.config, "image_recognition_schedule", username, resp_content)
 
             
             self.audio_synthesis_handle(message)
@@ -3900,14 +3697,7 @@ class My_handle(metaclass=SingletonMeta):
                     logger.debug(f"念弹幕 content:{content}")
 
                     # 音频合成时需要用到的重要数据
-                    message = {
-                        "type": "read_comment",
-                        "tts_type": My_handle.config.get("audio_synthesis_type"),
-                        "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                        "config": My_handle.config.get("filter"),
-                        "username": username,
-                        "content": content
-                    }
+                    message = build_message(My_handle.config, "read_comment", username, content)
 
                     # 判断是否需要念用户名
                     if My_handle.config.get("read_comment", "read_username_enable"):
@@ -4049,14 +3839,7 @@ class My_handle(metaclass=SingletonMeta):
                 
 
             # 音频合成时需要用到的重要数据
-            message = {
-                "type": "talk",
-                "tts_type": My_handle.config.get("audio_synthesis_type"),
-                "data": My_handle.config.get(My_handle.config.get("audio_synthesis_type")),
-                "config": My_handle.config.get("filter"),
-                "username": username,
-                "content": resp_content
-            }
+            message = build_message(My_handle.config, "talk", username, resp_content)
 
             self.audio_synthesis_handle(message)
 

@@ -12,6 +12,7 @@ from pydub import AudioSegment
 from .common import Common, SUPPORTED_AUDIO_EXTENSIONS
 from .my_log import logger
 from .config import Config
+from .message import build_playback
 from . import alarm
 from utils.audio_handle.my_tts import MY_TTS
 from utils.audio_handle.audio_player import AUDIO_PLAYER
@@ -652,15 +653,7 @@ class Audio:
             # 判断是否是点歌模式
             if message['type'] == "song":
                 # 拼接json数据，存入队列
-                data_json = {
-                    "type": message['type'],
-                    "tts_type": "none",
-                    "voice_path": message['content'],
-                    "content": message["content"]
-                }
-
-                if "insert_index" in message:
-                    data_json["insert_index"] = message["insert_index"]
+                data_json = build_playback(message, message['content'])
 
                 # 是否开启了音频播放 
                 if self.config.get("play_audio", "enable"):
@@ -669,15 +662,7 @@ class Audio:
             # 异常报警
             elif message['type'] == "abnormal_alarm":
                 # 拼接json数据，存入队列
-                data_json = {
-                    "type": message['type'],
-                    "tts_type": "none",
-                    "voice_path": message['content'],
-                    "content": message["content"]
-                }
-
-                if "insert_index" in message:
-                    data_json["insert_index"] = message["insert_index"]
+                data_json = build_playback(message, message['content'])
 
                 # 是否开启了音频播放 
                 if self.config.get("play_audio", "enable"):
@@ -686,15 +671,7 @@ class Audio:
             # 是否为本地问答音频
             elif message['type'] == "local_qa_audio":
                 # 拼接json数据，存入队列
-                data_json = {
-                    "type": message['type'],
-                    "tts_type": "none",
-                    "voice_path": message['file_path'],
-                    "content": message["content"]
-                }
-
-                if "insert_index" in message:
-                    data_json["insert_index"] = message["insert_index"]
+                data_json = build_playback(message, message['file_path'])
 
                 # 是否开启了音频播放
                 if self.config.get("play_audio", "enable"):
@@ -703,15 +680,7 @@ class Audio:
             # 是否为助播-本地问答音频
             elif message['type'] == "assistant_anchor_audio":
                 # 拼接json数据，存入队列
-                data_json = {
-                    "type": message['type'],
-                    "tts_type": "none",
-                    "voice_path": message['file_path'],
-                    "content": message["content"]
-                }
-
-                if "insert_index" in message:
-                    data_json["insert_index"] = message["insert_index"]
+                data_json = build_playback(message, message['file_path'])
 
                 # 是否开启了音频播放
                 if self.config.get("play_audio", "enable"):
@@ -724,31 +693,14 @@ class Audio:
                     pass
                 elif message['content_type'] == "local_audio":
                     # 拼接json数据，存入队列
-                    data_json = {
-                        "type": message['type'],
-                        "tts_type": "none",
-                        "voice_path": message['file_path'],
-                        "content": message["content"]
-                    }
-
-                    if "insert_index" in message:
-                        data_json["insert_index"] = message["insert_index"]
-                    
+                    data_json = build_playback(message, message['file_path'])
                     self.data_priority_insert("等待合成消息", data_json)
 
                     return
             # 按键映射 本地音频
             elif message['type'] == "key_mapping" and "file_path" in message:
                 # 拼接json数据，存入队列
-                data_json = {
-                    "type": message['type'],
-                    "tts_type": "none",
-                    "voice_path": message['file_path'],
-                    "content": message["content"]
-                }
-
-                if "insert_index" in message:
-                    data_json["insert_index"] = message["insert_index"]
+                data_json = build_playback(message, message['file_path'])
 
                 # 是否开启了音频播放
                 if self.config.get("play_audio", "enable"):

@@ -6,6 +6,7 @@ import threading
 import time
 import traceback
 
+from .message import build
 from .my_log import logger
 
 # 只统计「窗口内的连续错误」。用累计值的话，一次偶发错误会继承几小时前的历史错误，
@@ -78,14 +79,10 @@ def report_error(state, type, config, common, synthesize):
         # 随机选择列表中的一个元素
         audio_path = random.choice(path_list)
 
-        message = {
-            "type": "abnormal_alarm",
-            "tts_type": config.get("audio_synthesis_type"),
-            "data": config.get(config.get("audio_synthesis_type")),
-            "config": config.get("filter"),
-            "username": "系统",
-            "content": os.path.join(local_audio_path, common.extract_filename(audio_path, True))
-        }
+        message = build(
+            config, "abnormal_alarm", "系统",
+            os.path.join(local_audio_path, common.extract_filename(audio_path, True)),
+        )
 
         logger.warning(f"【异常报警-{type}】 {common.extract_filename(audio_path, False)}")
 

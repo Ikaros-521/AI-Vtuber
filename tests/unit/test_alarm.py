@@ -41,6 +41,7 @@ def make_config(**overrides):
         "abnormal_alarm": {"llm": alarm_cfg},
         "webui": {"ip": "0.0.0.0", "port": "8846"},
         "audio_synthesis_type": "edge_tts",
+        "edge_tts": {"speaker": "xiaoxiao"},
         "filter": {"username_convert_digits_to_chinese": True},
     })
 
@@ -102,7 +103,7 @@ def test_alarm_message_carries_the_chosen_audio_file(ctx):
     assert message["type"] == "abnormal_alarm"
     assert message["username"] == "系统"
     assert message["tts_type"] == "edge_tts"
-    assert message["data"] == config.get("edge_tts")
+    assert message["data"] == {"speaker": "xiaoxiao"}
     assert message["config"] == config.get("filter")
     assert message["content"] == os.path.join("data/异常报警/llm", "a.mp3")
 
