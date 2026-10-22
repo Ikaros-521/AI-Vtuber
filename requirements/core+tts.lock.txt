@@ -2,7 +2,9 @@
 #    uv pip compile requirements/core.txt requirements/tts.txt --python .venv/Scripts/python.exe --no-build-isolation -o requirements/core+tts.lock.txt
 aiofiles==25.1.0
     # via nicegui
-aiohttp==3.9.3
+aiohappyeyeballs==2.7.1
+    # via aiohttp
+aiohttp==3.14.5
     # via
     #   -r requirements/core.txt
     #   edge-tts
@@ -10,12 +12,15 @@ aiohttp==3.9.3
     #   python-socketio
 aiosignal==1.4.0
     # via aiohttp
+annotated-doc==0.0.5
+    # via fastapi
 annotated-types==0.8.0
     # via pydantic
 anyio==4.15.1
     # via
     #   httpx
     #   httpx2
+    #   nicegui
     #   openai
     #   starlette
     #   watchfiles
@@ -70,7 +75,7 @@ exceptiongroup==1.3.1
     #   ipython
 executing==2.3.0
     # via stack-data
-fastapi==0.109.2
+fastapi==0.159.1
     # via
     #   -r requirements/core.txt
     #   nicegui
@@ -90,6 +95,7 @@ h11==0.16.0
     # via
     #   httpcore
     #   httpcore2
+    #   nicegui
     #   uvicorn
     #   wsproto
 hf-xet==1.7.0
@@ -115,6 +121,7 @@ idna==3.20
     #   anyio
     #   httpx
     #   httpx2
+    #   nicegui
     #   requests
     #   yarl
 ifaddr==0.2.0
@@ -146,8 +153,9 @@ matplotlib-inline==0.2.2
 multidict==6.9.1
     # via
     #   aiohttp
+    #   nicegui
     #   yarl
-nicegui==1.4.30
+nicegui==3.18.0
     # via -r requirements/core.txt
 numpy==1.26.4
     # via
@@ -155,6 +163,8 @@ numpy==1.26.4
     #   langid
 openai==1.109.1
     # via -r requirements/core.txt
+opentelemetry-api==1.45.1
+    # via fastapi
 orjson==3.13.0
     # via nicegui
 packaging==26.3
@@ -168,8 +178,10 @@ profanity==1.1
     # via -r requirements/core.txt
 prompt-toolkit==3.0.53
     # via ipython
-pscript==0.7.7
-    # via vbuild
+propcache==0.5.4
+    # via
+    #   aiohttp
+    #   yarl
 pure-eval==0.2.4
     # via stack-data
 pyahocorasick==2.3.1
@@ -183,7 +195,9 @@ pydantic==2.14.1
     #   fastapi
     #   openai
 pydantic-core==2.50.1
-    # via pydantic
+    # via
+    #   nicegui
+    #   pydantic
 pydub==0.25.1
     # via -r requirements/core.txt
 pygame==2.6.1
@@ -199,7 +213,9 @@ pypinyin==0.55.0
 pysocks==1.7.1
     # via requests
 python-dotenv==1.2.4
-    # via uvicorn
+    # via
+    #   nicegui
+    #   uvicorn
 python-engineio==4.14.0
     # via python-socketio
 python-multipart==0.0.32
@@ -215,7 +231,6 @@ requests==2.34.2
     #   -r requirements/core.txt
     #   baidu-aip
     #   elevenlabs
-    #   nicegui
     #   pygtrans
 schedule==1.2.2
     # via -r requirements/core.txt
@@ -229,12 +244,15 @@ speechrecognition==3.17.0
     # via -r requirements/core.txt
 stack-data==0.6.3
     # via ipython
-starlette==0.36.3
+starlette==1.7.0
     # via
     #   -r requirements/core.txt
     #   fastapi
+    #   nicegui
 tabulate==0.10.0
     # via edge-tts
+tinycss2==1.5.1
+    # via nicegui
 tomli==2.5.0
     # via huggingface-hub
 tqdm==4.70.1
@@ -251,6 +269,7 @@ truststore==0.10.5
     #   httpx2
 typing-extensions==4.16.0
     # via
+    #   aiohttp
     #   aiosignal
     #   anyio
     #   edge-tts
@@ -263,29 +282,29 @@ typing-extensions==4.16.0
     #   multidict
     #   nicegui
     #   openai
+    #   opentelemetry-api
     #   pydantic
     #   pydantic-core
     #   speechrecognition
+    #   starlette
     #   typing-inspection
     #   uvicorn
 typing-inspection==0.4.4
-    # via pydantic
-urllib3==2.8.0
     # via
-    #   nicegui
-    #   requests
+    #   fastapi
+    #   pydantic
+urllib3==2.8.0
+    # via requests
 uvicorn==0.54.0
     # via
     #   -r requirements/core.txt
     #   nicegui
-vbuild==0.8.2
-    # via nicegui
 watchfiles==1.3.0
-    # via
-    #   nicegui
-    #   uvicorn
+    # via uvicorn
 wcwidth==0.9.3
     # via prompt-toolkit
+webencodings==0.6.1
+    # via tinycss2
 websockets==14.2
     # via
     #   -r requirements/core.txt
@@ -295,7 +314,7 @@ win32-setctime==1.2.0
     # via loguru
 wsproto==1.3.2
     # via simple-websocket
-yarl==1.9.11
+yarl==1.25.1
     # via
     #   -r requirements/core.txt
     #   aiohttp

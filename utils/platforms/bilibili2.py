@@ -1,3 +1,13 @@
+import sys
+from pathlib import Path
+
+# blivedm 上游 1.1.2 把 aiohttp/yarl 钉死在 ~=3.9/~=1.9，与 nicegui 3 要求的 aiohttp>=3.14.3
+# 在依赖解析层面互斥；它实际只用到多年未变的 aiohttp API，所以内置源码而不是装 pip 包。
+# 来源与许可见 vendor/blivedm/README.md
+_VENDOR_BLIVEDM = str(Path(__file__).resolve().parents[2] / "vendor" / "blivedm")
+if _VENDOR_BLIVEDM not in sys.path:
+    sys.path.insert(0, _VENDOR_BLIVEDM)
+
 import blivedm
 import blivedm.models.web as web_models
 import blivedm.models.open_live as open_models

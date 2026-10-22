@@ -3,7 +3,10 @@
 # 并移除了需要极验验证码的「账号密码登录」；17.x 也不再钉死 httpx/requests 上限，
 # 因此本组现在可与 core 合并生成 lock（见 core+platform.lock.txt）。
 bilibili-api-python==17.4.2
-blivedm @ git+https://gitee.com/ikaros-521/blivedm@8c5f6a910d9f755ef01a6b099b7da2e2d4453fa6
+# blivedm 不再作为 pip 依赖：上游 1.1.2 钉死 aiohttp~=3.9.0 / yarl~=1.9.3 / Brotli~=1.1.0，
+# 与 nicegui 3 要求的 aiohttp>=3.14.3 在解析层面互斥。源码已内置到 vendor/blivedm/，
+# 由 utils/platforms/bilibili2.py 直接引用，这里只补它运行时真正需要的 brotli。
+brotli>=1.1.0
 # TikTokLive 7 起 client.on() 只接受事件类（内部调 event.get_type()），传字符串会 AttributeError；
 # utils/platforms/tiktok.py 已改为 @client.on(ConnectEvent) 这种写法
 TikTokLive==7.0.1

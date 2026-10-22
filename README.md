@@ -65,13 +65,15 @@ https://lug.ustc.edu.cn/wiki/doc/smart-questions
 
 | 分组 | 内容 | 何时需要 |
 | --- | --- | --- |
-| `core.txt` | WebUI、本地对话、edge-tts、拾音、文本处理 | 必装（78 个包） |
+| `core.txt` | WebUI（nicegui 3）、本地对话、edge-tts、拾音、文本处理 | 必装（82 个包） |
 | `llm.txt` | 智谱/通义/千帆/Gemini/火山引擎/Dify 等模型 SDK | 选用对应 `chat_type` |
 | `tts.txt` | elevenlabs、Azure TTS、gradio_client | 选用对应 TTS |
 | `asr.txt` | FunASR、Faster-Whisper（会带 torch） | 本地语音识别 |
 | `platform.txt` | B站/抖音/快手/TikTok/YouTube 弹幕与逆向协议 | 对应直播平台 |
 | `visual.txt` | OpenCV、Pillow、虚拟摄像头、SD、pyautogui | 数字人/绘图/桌面自动化 |
 | `chat-with-file.txt` | 文档问答：OpenAI 向量化 + faiss 检索 | 启用 `chat_with_file` |
+
+B站弹幕库 `blivedm` 不走 pip：上游 1.1.2 把 `aiohttp`/`yarl` 钉死在 `~=3.9`/`~=1.9`，与 nicegui 3 要求的 `aiohttp>=3.14.3` 在依赖解析层面互斥，而它实际只用到多年未变的 aiohttp API，所以源码内置在 `vendor/blivedm/`（MIT，含原许可声明，代码未改动）。详见该目录下的 README。
 
 `pyproject.toml` 只是把上述分组镜像成 Poetry 依赖组（`[tool.poetry.group.*]`），方便用 Poetry 工具链查看；实际安装仍以 `requirements/` 为准，两处不一致时同理。
 
@@ -99,15 +101,16 @@ uv pip compile requirements/core.txt requirements/llm.txt --python .venv/Scripts
 
 `platform` 组的 lock 也已生成（`requirements/core+platform.lock.txt`）：`bilibili-api-python` 升到 17.4.2 后不再钉死 `requests`/`httpx`/`aiohttp`/`brotli` 上限，可与 core 合并解析。注意 17.x 的登录 API 换成了异步的 `login_v2`，且需要极验验证码的「账号密码登录」已移除，B站登录请用 `cookie` 或 `手机扫码`。
 
-#### 几个升不动的包，以及卡住它们的原因
+#### 仍受约束的包，以及卡住它们的原因
 
 | 包 | 现状 | 为什么钉在这里 |
 | --- | --- | --- |
-| `fastapi` / `starlette` | 0.109.2 / 0.36.3 | nicegui 1.4.30 要求 `fastapi<0.110`，fastapi 0.109.2 又要求 `starlette<0.37`。要升必须先迁到 nicegui 3.x |
-| `aiohttp` / `yarl` | 3.9.3 / 1.9.11 | blivedm 要求 `aiohttp~=3.9.0` 且 `yarl~=1.9.3`；而 aiohttp 3.14+ 要求 `yarl>=1.25.1`，直接互斥。为了 core 与 core+platform 不互相降级，只能等 blivedm 放宽 |
 | `numpy` | 1.26.4（最后一个 1.x） | 2.x 会破坏 faiss-cpu、opencv 的编译扩展 ABI |
+| `opencv-python` | 4.11.0.86（4.x 末版） | 5.x 要求 `numpy>=2`，与上一行冲突 |
 | `pydub` | 0.25.1 | 这就是 PyPI 上的最新版，上游多年不发布 |
 | `jieba` / `langid` / `profanity` | 各自末版 | 上游已停止维护，功能仍可用 |
+
+曾经卡住 `fastapi`/`starlette`（nicegui 1.x 钉 `fastapi<0.110`）和 `aiohttp`/`yarl`（blivedm 钉 `~=3.9`/`~=1.9`）的两条约束已经解除：前者随 nicegui 升到 3.18.0 解锁到 0.159.1 / 1.7.0，后者随 blivedm 改为内置源码而消失。
 
 ### 单元测试
 

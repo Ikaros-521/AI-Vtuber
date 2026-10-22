@@ -1,16 +1,13 @@
 # WebUI 与本地对话/播报主链路，最小可运行集
-nicegui==1.4.30
-# nicegui 1.4.30 硬钉 fastapi<0.110，而 fastapi 0.109.2 又钉 starlette<0.37，
-# 所以这两个升不动，除非整体迁到 nicegui 3.x
-fastapi==0.109.2
-starlette==0.36.3
+nicegui==3.18.0
+fastapi==0.159.1
+starlette==1.7.0
 uvicorn==0.54.0
 httpx==0.28.1
-# blivedm（platform 组）要求 aiohttp~=3.9.0 且 yarl~=1.9.3，
-# 而 aiohttp 3.14 起要求 yarl>=1.25.1，两者互斥；为了 core 与 core+platform 不互相降级，
-# 这里保持 aiohttp 3.9.x。要升 aiohttp 得先让 blivedm 放宽约束。
-aiohttp==3.9.3
-yarl==1.9.11
+# nicegui 3 要求 aiohttp>=3.14.3，后者要求 yarl>=1.25.1。
+# 原先卡住这两个的 blivedm 已改为内置源码（见 vendor/blivedm/README.md），不再约束这里。
+aiohttp==3.14.5
+yarl==1.25.1
 requests==2.34.2
 openai==1.109.1
 packaging==26.3
