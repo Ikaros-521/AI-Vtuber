@@ -14,6 +14,10 @@ PLATFORM_LISTENERS = {
     "dy": "utils.platforms.dy",
     "dy2": "utils.platforms.dy2",
     "ks": "utils.platforms.ks",
+    # 直播弹幕监听助手：本机起一个 websocket 服务端，由助手把弹幕推过来。
+    # 后面 5 个别名是历史上各占一个平台项时留下的，注册表继续认，
+    # 免得老 config.json 里选了这些平台的用户直接收不到弹幕。
+    "live_monitor_assistant": "utils.platforms.lx_live_monitor_assistant",
     "ks2": "utils.platforms.lx_live_monitor_assistant",
     "pdd": "utils.platforms.lx_live_monitor_assistant",
     "douyu": "utils.platforms.lx_live_monitor_assistant",

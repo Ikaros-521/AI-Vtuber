@@ -7,7 +7,12 @@ from nicegui import ui
 from utils.my_log import logger
 from webui_app.config_store import update_config
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS, common_textarea_handle, textarea_data_change
-from webui_app.options import CHAT_TYPE_OPTIONS, PLATFORM_OPTIONS, VISUAL_BODY_OPTIONS
+from webui_app.options import (
+    CHAT_TYPE_OPTIONS,
+    LIVE_MONITOR_PLATFORM_KEYS,
+    VISUAL_BODY_OPTIONS,
+    platform_options,
+)
 from webui_app.pages import PageConfig
 
 _validator = None
@@ -267,7 +272,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         
         select_platform = ui.select(
             label='平台', 
-            options=PLATFORM_OPTIONS, 
+            options=platform_options(config.get("platform")), 
             value=config.get("platform")
         ).style("width:200px;")
 
@@ -339,7 +344,12 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                     input_twitch_user = ui.input(label='用户名', value=config.get("twitch", "user"), placeholder='你的twitch账号用户名').style("width:300px;")
                     input_twitch_proxy_server = ui.input(label='HTTP代理IP地址', value=config.get("twitch", "proxy_server"), placeholder='代理软件，http协议监听的ip地址，一般为：127.0.0.1').style("width:200px;")
                     input_twitch_proxy_port = ui.input(label='HTTP代理端口', value=config.get("twitch", "proxy_port"), placeholder='代理软件，http协议监听的端口，一般为：1080').style("width:200px;")
-                    
+            with ui.card().style(card_css):
+                ui.label('直播弹幕监听助手')
+                with ui.row():
+                    input_live_monitor_assistant_ws_ip = ui.input(label='监听IP', value=config.get("live_monitor_assistant", "ws_ip") or '127.0.0.1', placeholder='本机监听地址，一般为：127.0.0.1').style("width:200px;").tooltip('快手2、拼多多、斗鱼、1688、淘宝这些平台的弹幕，是由「直播弹幕监听助手」(游猴) 通过 websocket 推给本机的，本机就监听这个地址。助手和本程序在同一台电脑就填 127.0.0.1；助手在别的设备上就填这台设备对内开放的地址')
+                    input_live_monitor_assistant_ws_port = ui.input(label='监听端口', value=config.get("live_monitor_assistant", "ws_port") or 5001, placeholder='默认 5001').style("width:120px;").tooltip('助手侧要连接的端口，必须和这里一致。端口填得不合法时，程序会退回默认端口 5001 并在日志里报错')
+
         if config.get("webui", "show_card", "common_config", "play_audio"):
             with ui.card().style(card_css):
                 ui.label('音频播放')
@@ -1223,7 +1233,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
             """
             针对配置情况进行提示
             """
-            tip_config = f'平台：{PLATFORM_OPTIONS[select_platform.value]} | ' +\
+            tip_config = f'平台：{select_platform.options[select_platform.value]} | ' +\
                 f'大语言模型：{CHAT_TYPE_OPTIONS[select_chat_type.value]} | ' +\
                 f'语音合成：{AUDIO_SYNTHESIS_TYPE_OPTIONS[select_audio_synthesis_type.value]} | ' +\
                 f'虚拟身体：{VISUAL_BODY_OPTIONS[select_visual_body.value]}'
@@ -1232,6 +1242,11 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
             # 检测平台配置，进行提示
             if select_platform.value == "dy":
                 ui.notify(position="top", type="warning", message="对接抖音平台时，请先开启抖音弹幕监听程序！直播间号不需要填写")
+            elif select_platform.value in LIVE_MONITOR_PLATFORM_KEYS:
+                ui.notify(position="top", type="warning", message=(
+                    f'走「直播弹幕监听助手」接入：请先让助手把弹幕推送到 ws://'
+                    f'{input_live_monitor_assistant_ws_ip.value}:{input_live_monitor_assistant_ws_port.value}，'
+                    '监听哪个直播间由助手那边决定，直播间号不需要填写'))
             elif select_platform.value == "bilibili":
                 ui.notify(position="top", type="info", message="哔哩哔哩1 监听不是很稳定，推荐使用 哔哩哔哩2")
             elif select_platform.value == "bilibili2":
@@ -1310,6 +1325,10 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                 "user": (input_twitch_user, 'str'),
                 "proxy_server": (input_twitch_proxy_server, 'str'),
                 "proxy_port": (input_twitch_proxy_port, 'str'),
+            },
+            "live_monitor_assistant": {
+                "ws_ip": (input_live_monitor_assistant_ws_ip, 'str'),
+                "ws_port": (input_live_monitor_assistant_ws_port, 'int'),
             },
         }
         config_data = update_config(config_mapping, config, config_data, None)

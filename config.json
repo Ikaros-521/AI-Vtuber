@@ -47,6 +47,10 @@
       ]
     }
   },
+  "live_monitor_assistant": {
+    "ws_ip": "127.0.0.1",
+    "ws_port": 5001
+  },
   "xuniren": {
     "api_ip_port": "http://127.0.0.1:8800"
   },

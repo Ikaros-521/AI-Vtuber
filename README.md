@@ -26,6 +26,8 @@
 
 `Luna AI` 的外观由 `Live2D、Vtube Studio、xuniren、UE5 结合 Audio2Face、EasyAIVtuber、数字人视频播放器（Easy-Wav2Lip、Sadtalker、GeneFace++、MuseTalk、AniTalker、本地视频）、metahuman-stream（ernerf、musetalk、wav2lip）、DH_live、live2d-TTS-LLM-GPT-SoVITS-Vtuber` 技术打造，为用户提供了一个生动、互动的虚拟形象。这使得 `Luna AI` 能够在各大直播平台，如 `Bilibili、抖音、快手、微信视频号、拼多多、1688、斗鱼、淘宝、YouTube、Twitch 和 TikTok`，进行实时互动直播。当然，它也可以在本地环境中与您进行个性化对话。
 
+> 其中 `拼多多、1688、斗鱼、淘宝、快手2` 的弹幕不是本程序直连平台，而是由「直播弹幕监听助手」（游猴）通过 websocket 推给本机，所以平台下拉里把它们合成为一项 `直播弹幕监听助手`（旧的几个平台名在 `config.json` 里仍然认，不用手改）。本机监听的 ip 和端口在 `通用配置 → 功能管理 → 平台相关 → 直播弹幕监听助手` 修改，对应 `config.json` 的 `live_monitor_assistant` 段，默认 `127.0.0.1:5001`；监听哪个直播间由助手那边决定，`直播间号` 留空即可。这条链路目前只接弹幕消息（`type == "comment"`），礼物、进场、关注不会进来。
+
 为了使交流更加自然，`Luna AI` 使用了先进的自然语言处理技术，结合文本转语音系统，如 `Edge-TTS、VITS-Fast、elevenlabs、VALL-E-X、睿声AI、OpenVoice、GPT_SoVITS、clone-voice、Azure TTS、fish-speech、ChatTTS、CosyVoice、F5-TTS、MultiTTS、MeloTTS`。这不仅让它能够生成流畅的回答，还可以通过 `so-vits-svc 和 DDSP-SVC` 实现声音的变化，以适应不同的场景和角色。
 
 此外，`Luna AI` 还能够通过特定指令与 `Stable Diffusion` 协作，展示画作。用户还可以自定义文案，让 Luna AI 循环播放，以满足不同场合的需求。

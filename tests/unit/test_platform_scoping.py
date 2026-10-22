@@ -16,6 +16,8 @@ import pathlib
 
 import pytest
 
+from fakes import FakeConfig
+
 CRLF, NL = chr(13) + chr(10), chr(10)
 DUNDER = {'__file__', '__name__', '__doc__', '__package__', '__spec__',
           '__loader__', '__builtins__', '__debug__'}
@@ -234,14 +236,14 @@ def _capture_served_handler(monkeypatch, module):
         return FakeServer()
 
     monkeypatch.setattr(module.websockets, 'serve', fake_serve)
-    module.start_listen(None, None, None, 'douyu')
+    module.start_listen(FakeConfig({}), None, None, 'douyu')
     return captured['handler']
 
 
 def test_lx_handler_takes_the_single_connection_argument(monkeypatch):
     """websockets 14 起 serve 只把 connection 一个参数传给 handler。
-    多写一个 path 会在每次客户端连上时抛 TypeError，而 douyu/ks2/pdd/1688/taobao
-    五个平台都走这个监听器，一条弹幕都进不来。"""
+    多写一个 path 会在每次客户端连上时抛 TypeError，而走这个助手的平台
+    （统一项 + ks2/pdd/douyu/1688/taobao 五个旧别名）全靠它，一条弹幕都进不来。"""
     import utils.platforms.lx_live_monitor_assistant as lx
 
     handler = _capture_served_handler(monkeypatch, lx)

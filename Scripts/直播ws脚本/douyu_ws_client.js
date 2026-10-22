@@ -2,7 +2,7 @@ let socket = null;
 
 function connectWebSocket() {
   // 创建 WebSocket 连接，适配服务端
-  socket = new WebSocket("ws://127.0.0.1:5000");
+  socket = new WebSocket("ws://127.0.0.1:5001");
 
   // 当连接建立时触发
   socket.addEventListener("open", event => {
