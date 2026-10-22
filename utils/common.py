@@ -1498,6 +1498,62 @@ class Common:
         return check_useful(data_json)
 
 
+    # 取 OpenAI 兼容接口下面的模型列表
+    def get_openai_models(self, base_url: str, api_keys: str):
+        """请求 ``{base_url}/v1/models``，把这把 key 能用的模型名列出来。
+
+        地址拼法与 test_openai_key 一致（都 urljoin 到 /v1/xxx），所以那边能通的
+        网关这里也能通。密钥取文本框第一行，多 key 时搜的是第一个 key 的可见模型。
+
+        Returns:
+            dict: {"code": 200, "models": [模型名...]}，或 {"code": -1, "msg": 原因}
+        """
+        from urllib.parse import urljoin
+
+        try:
+            api_key = (api_keys or "").split('\n')[0].strip()
+
+            url = urljoin(base_url, '/v1/models')
+            headers = {"Content-Type": "application/json"}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+
+            logger.debug(f"url=【{url}】")
+
+            response = requests.get(url, headers=headers, timeout=(10, 30))
+            response.raise_for_status()
+            response_data = response.json()
+
+            # OpenAI 是 {"data":[{"id":...}]}，one-api、lmstudio、ollama 这些各家不一样，
+            # 三种常见形状都兜一下
+            if isinstance(response_data, list):
+                items = response_data
+            else:
+                items = response_data.get("data") or response_data.get("models") or []
+
+            models = []
+            for item in items:
+                if isinstance(item, str):
+                    name = item
+                elif isinstance(item, dict):
+                    name = item.get("id") or item.get("name")
+                else:
+                    name = None
+                if name and name not in models:
+                    models.append(name)
+
+            if not models:
+                return {"code": -1, "msg": f"接口没有返回任何模型名：{url}"}
+
+            models.sort()
+            logger.info(f"从 {url} 取到 {len(models)} 个模型")
+            return {"code": 200, "models": models}
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            logger.error(f"获取模型列表失败: {e}")
+            return {"code": -1, "msg": f"获取模型列表失败: {e}"}
+
+
     """
     图像操作
     """

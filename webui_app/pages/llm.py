@@ -1,9 +1,35 @@
 """大语言模型页：OpenAI 兼容接口与各家 provider 配置。"""
+import asyncio
+
 from nicegui import ui
 
 from utils.my_log import logger
 from webui_app.helpers import common_textarea_handle, textarea_data_change
 from webui_app.pages import PageConfig
+
+
+def merge_model_options(models, current):
+    """把搜索到的模型名做成下拉选项，并决定选中哪个。
+
+    Args:
+        models (list): 接口返回的模型名
+        current (str): 模型框里现在的值
+
+    Returns:
+        tuple: (options 字典, 应该选中的值)
+    """
+    options = {name: name for name in models}
+
+    # 用户手输的、或搜索前就配好的名字，接口没列出来也要留着——
+    # 点一次搜索就把别人的自定义模型名挤掉是不该发生的
+    if current and current not in options:
+        options[current] = current
+
+    # 原来有值就尊重原值；没值才自动填第一个，省得手打
+    if current:
+        return options, current
+
+    return options, (models[0] if models else current)
 
 
 def build_llm_tab(config, common, card_css, switch_internal_css,
@@ -27,6 +53,35 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
             ui.notify(position="top", type="positive", message=resp_json["msg"])
         else:
             ui.notify(position="top", type="negative", message=resp_json["msg"])
+
+    # 搜索模型：请求 /v1/models，把模型名回填到左边的模型框
+    async def search_chatgpt_models():
+        button_chatgpt_model_search.set_enabled(False)
+        try:
+            # 这是个 blocking 的 requests，放线程里跑，别把整个 webui 的事件循环卡住
+            resp_json = await asyncio.to_thread(
+                common.get_openai_models, input_openai_api.value, textarea_openai_api_key.value
+            )
+        finally:
+            button_chatgpt_model_search.set_enabled(True)
+
+        if resp_json["code"] != 200:
+            ui.notify(position="top", type="negative", message=resp_json["msg"])
+            return
+
+        models = resp_json["models"]
+        options, selected = merge_model_options(models, select_chatgpt_model.value)
+        select_chatgpt_model.options = options
+        select_chatgpt_model.value = selected
+        select_chatgpt_model.update()
+
+        if selected and selected in models:
+            message = f'取到 {len(models)} 个模型，当前是：{selected}（也可以直接手输）'
+        elif selected:
+            message = f'取到 {len(models)} 个模型，你原来的模型名接口没列出来，已保留：{selected}'
+        else:
+            message = f'取到 {len(models)} 个模型，点下拉选一个，也可以直接手输'
+        ui.notify(position="top", type="positive", message=message)
 
 
     if config.get("webui", "show_card", "llm", "chatgpt"):
@@ -77,6 +132,11 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
                     new_value_mode='add-unique',
                     clearable=True
                 ).tooltip("如果你没有在此找到你用的模型名，你可以删除此配置项的内容，然后手动输入，最后一定要回车！确认！")
+                button_chatgpt_model_search = ui.button(
+                    '搜索模型',
+                    on_click=search_chatgpt_models,
+                    color=button_bottom_color
+                ).style(button_bottom_css).tooltip('用上面的 API地址 + 密钥列表里的第一个 key 请求 /v1/models，把返回的模型名填进左边的下拉框。搜索不会挤掉你手输的模型名，下拉框也始终可以直接输入')
                 input_chatgpt_temperature = ui.input(label='温度', placeholder='控制生成文本的随机性。较高的温度值会使生成的文本更随机和多样化，而较低的温度值会使生成的文本更加确定和一致。', value=config.get("chatgpt", "temperature")).style("width:100px;")
                 input_chatgpt_max_tokens = ui.input(label='最大token数', placeholder='限制生成回答的最大长度。', value=config.get("chatgpt", "max_tokens")).style("width:100px;")
                 input_chatgpt_top_p = ui.input(label='top_p', placeholder='Nucleus采样。这个参数控制模型从累积概率大于一定阈值的令牌中进行采样。较高的值会产生更多的多样性，较低的值会产生更少但更确定的回答。', value=config.get("chatgpt", "top_p")).style("width:100px;")
