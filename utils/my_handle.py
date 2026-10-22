@@ -3282,6 +3282,7 @@ class My_handle(metaclass=SingletonMeta):
                     if len(My_handle.config.get("thanks", "gift_copy")) == 0:
                         logger.warning("你把礼物的文案删了，还触发个der礼物感谢？不用别启用不就得了，删了搞啥")
                         return None
+                    My_handle.thanks_gift_copy = copy.copy(My_handle.config.get("thanks", "gift_copy"))
                 resp_content = My_handle.thanks_gift_copy.pop(0)
 
             
