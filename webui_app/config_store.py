@@ -13,7 +13,9 @@ def _handle_float(value):
     return round(float(value.value), 2)
 
 def _handle_string(value):
-    return str(value.value)
+    # 未选中的下拉框 value 是 None，直接 str() 会把字符串 "None" 写进 config.json，
+    # 下次启动时它既不是合法选项、又看起来像用户真填了个标题
+    return '' if value.value is None else str(value.value)
 
 def _handle_bool(value):
     return bool(value.value)

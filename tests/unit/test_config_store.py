@@ -2,7 +2,7 @@
 
 from fakes import FakeConfig, FakeWidget
 from webui_app.config_store import process_config_mapping, update_config, update_nested_dict
-from webui_app.helpers import common_textarea_handle, textarea_data_change
+from webui_app.helpers import common_textarea_handle, select_value_or_none, textarea_data_change
 
 
 def test_int_handler_casts_and_defaults_blank_to_zero():
@@ -31,6 +31,26 @@ def test_str_and_bool_handlers():
     out = process_config_mapping({}, mapping)
 
     assert out == {"a": {"s": "8420", "on": True, "off": False}}
+
+
+def test_unselected_dropdown_does_not_write_the_string_None():
+    """下拉框未选中时 value 是 None，str(None) 会把 'None' 落进 config.json，
+    下次启动看起来像用户真填了个窗口标题。"""
+    mapping = {"image_recognition": {"screenshot_window_title": (FakeWidget(None), "str")}}
+
+    out = process_config_mapping({}, mapping)
+
+    assert out == {"image_recognition": {"screenshot_window_title": ""}}
+
+
+def test_select_value_or_none():
+    # 选项是运行时枚举出来的，配置里存的值可能已经不在了
+    assert select_value_or_none("记事本", {"记事本": "记事本", "Chrome": "Chrome"}) == "记事本"
+    assert select_value_or_none("已关闭的窗口", {"Chrome": "Chrome"}) is None
+    assert select_value_or_none(0, {}) is None
+    assert select_value_or_none(None, {"a": "a"}) is None
+    assert select_value_or_none(2, [1, 2, 3]) == 2
+    assert select_value_or_none(9, [1, 2, 3]) is None
 
 
 def test_textarea_handler_splits_and_strips_lines():

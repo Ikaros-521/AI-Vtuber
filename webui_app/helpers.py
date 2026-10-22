@@ -13,6 +13,17 @@ def common_textarea_handle(content):
     return [token.strip() for token in content.split("\n") if token.strip()]
 
 
+def select_value_or_none(value, options):
+    """下拉框的初始值只有在当前选项里才有效，否则给 None。
+
+    选项常常是运行时枚举出来的（窗口标题、摄像头索引、配置模板文件），
+    配置里存的值完全可能已经不存在了：nicegui 1 会默默显示一个不存在的选项，
+    nicegui 3 直接抛 ValueError。给 None 才是「没有选中」的正确表达。
+    """
+    keys = options.keys() if isinstance(options, dict) else options
+    return value if value in keys else None
+
+
 AUDIO_SYNTHESIS_TYPE_OPTIONS = {
     'none': '不启用',
     'edge-tts': 'Edge-TTS',

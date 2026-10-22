@@ -142,9 +142,11 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
             for line in config_template_paths:
                 data_json[line] = line
             select_config_template_path = ui.select(
-                label='配置模板路径', 
-                options=data_json, 
-                value="",
+                label='配置模板路径',
+                options=data_json,
+                # 这个下拉框允许用户现输一个新路径，初始就是「未选中」；
+                # 空串不在 options 里，nicegui 3 会拒绝，None 才是未选中的正确表达
+                value=None,
                 with_input=True,
                 new_value_mode='add-unique',
                 clearable=True

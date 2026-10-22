@@ -5,6 +5,7 @@ import traceback
 from nicegui import ui
 
 from utils.my_log import logger
+from webui_app.helpers import select_value_or_none
 from webui_app.pages import PageConfig
 
 
@@ -119,7 +120,7 @@ def build_image_recognition_tab(config, common, state, card_css, switch_internal
                 select_image_recognition_screenshot_window_title = ui.select(
                     label='截图窗口标题',
                     options=data_json,
-                    value=config.get("image_recognition", "screenshot_window_title")
+                    value=select_value_or_none(config.get("image_recognition", "screenshot_window_title"), data_json)
                 ).style("width:300px")
                 input_image_recognition_screenshot_delay = ui.input(label='N秒后进行截图', value=config.get("image_recognition", "screenshot_delay"), placeholder='截图延迟，方便用户打开对应窗口').style("width:100px")
                 button_image_recognition_screenshot_and_send = ui.button('截图并发送', on_click=lambda: image_recognition_screenshot_and_send(float(input_image_recognition_screenshot_delay.value)), color=button_internal_color).style(button_internal_css)
@@ -142,7 +143,7 @@ def build_image_recognition_tab(config, common, state, card_css, switch_internal
                 select_image_recognition_cam_index = ui.select(
                     label='摄像头索引',
                     options=data_json,
-                    value=config.get("image_recognition", "cam_index")
+                    value=select_value_or_none(config.get("image_recognition", "cam_index"), data_json)
                 ).style("width:100px")
                 input_image_recognition_cam_screenshot_delay = ui.input(label='N秒后进行截图', value=config.get("image_recognition", "cam_screenshot_delay"), placeholder='截图延迟，方便用户调整摄像头').style("width:100px")
                 button_image_recognition_cam_screenshot_and_send = ui.button('截图并发送', on_click=lambda: image_recognition_cam_screenshot_and_send(float(input_image_recognition_cam_screenshot_delay.value)), color=button_internal_color).style(button_internal_css)
