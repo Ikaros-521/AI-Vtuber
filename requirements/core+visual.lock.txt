@@ -118,13 +118,13 @@ numpy==1.26.4
     #   pyvirtualcam
 openai==1.109.1
     # via -r requirements/core.txt
-opencv-python==4.9.0.80
+opencv-python==4.11.0.86
     # via -r requirements/visual.txt
 orjson==3.13.0
     # via nicegui
 packaging==26.3
     # via -r requirements/core.txt
-pillow==10.1.0
+pillow==12.3.0
     # via
     #   -r requirements/visual.txt
     #   pyscreeze
@@ -182,7 +182,7 @@ python-socketio==5.17.0
     # via nicegui
 pytweening==1.2.0
     # via pyautogui
-pyvirtualcam==0.10.2
+pyvirtualcam==0.15.0
     # via -r requirements/visual.txt
 pyyaml==6.0.3
     # via uvicorn

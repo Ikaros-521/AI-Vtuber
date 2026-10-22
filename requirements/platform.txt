@@ -4,13 +4,16 @@
 # 因此本组现在可与 core 合并生成 lock（见 core+platform.lock.txt）。
 bilibili-api-python==17.4.2
 blivedm @ git+https://gitee.com/ikaros-521/blivedm@8c5f6a910d9f755ef01a6b099b7da2e2d4453fa6
-TikTokLive==6.2.1.post1
+# TikTokLive 7 起 client.on() 只接受事件类（内部调 event.get_type()），传字符串会 AttributeError；
+# utils/platforms/tiktok.py 已改为 @client.on(ConnectEvent) 这种写法
+TikTokLive==7.0.1
 betterproto==2.0.0b1
-playwright==1.36.0
+playwright==1.64.0
 pytchat==0.5.5
 PySocks==1.7.1
-emoji==2.14.1
+emoji==2.16.0
 websocket-client==1.8.0
-protobuf==4.25.8
+# 7.x 仍支持 protoc 3.19+ 生成的 _builder 风格代码；kuaishou_pb2.py 已重新生成为该风格
+protobuf==7.36.2
 protobuf-inspector==0.2
-rsocket==0.4.15
+rsocket==0.4.20

@@ -37,17 +37,17 @@ def start_listen(config, common, my_handle, platform: str):
 
     def start_client():
         # Define how you want to handle specific events via decorator
-        @client.on("connect")
+        @client.on(ConnectEvent)
         async def on_connect(_: ConnectEvent):
             logger.info(f"连接到 房间ID:{client.room_id}")
 
-        @client.on("disconnect")
+        @client.on(DisconnectEvent)
         async def on_disconnect(event: DisconnectEvent):
             logger.info("断开连接，10秒后重连")
             await asyncio.sleep(10)  # 等待一段时间后尝试重连，这里等待10秒
             start_client()  # 尝试重新连接
 
-        @client.on("join")
+        @client.on(JoinEvent)
         async def on_join(event: JoinEvent):
             my_global.idle_time_auto_clear(config, "entrance")
 
@@ -68,7 +68,7 @@ def start_listen(config, common, my_handle, platform: str):
             my_handle.process_data(data, "entrance")
 
         # Notice no decorator?
-        @client.on("comment")
+        @client.on(CommentEvent)
         async def on_comment(event: CommentEvent):
             # 闲时计数清零
             my_global.idle_time_auto_clear(config, "comment")
@@ -82,7 +82,7 @@ def start_listen(config, common, my_handle, platform: str):
 
             my_handle.process_data(data, "comment")
 
-        @client.on("gift")
+        @client.on(GiftEvent)
         async def on_gift(event: GiftEvent):
             """
             This is an example for the "gift" event to show you how to read gift data properly.
@@ -149,7 +149,7 @@ def start_listen(config, common, my_handle, platform: str):
 
             my_handle.process_data(data, "gift")
 
-        @client.on("follow")
+        @client.on(FollowEvent)
         async def on_follow(event: FollowEvent):
             my_global.idle_time_auto_clear(config, "follow")
 

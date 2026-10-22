@@ -85,25 +85,26 @@ optional = true
 [tool.poetry.group.platform.dependencies]
 bilibili-api-python = "==17.4.2"
 blivedm = { git = "https://gitee.com/ikaros-521/blivedm", rev = "8c5f6a910d9f755ef01a6b099b7da2e2d4453fa6" }
-TikTokLive = "==6.2.1.post1"
+TikTokLive = "==7.0.1"
 betterproto = "==2.0.0b1"
-playwright = "==1.36.0"
+playwright = "==1.64.0"
 pytchat = "==0.5.5"
 PySocks = "==1.7.1"
-emoji = "==2.14.1"
+emoji = "==2.16.0"
 websocket-client = "==1.8.0"
-protobuf = "==4.25.8"
+protobuf = "==7.36.2"
 protobuf-inspector = "==0.2"
-rsocket = "==0.4.15"
+rsocket = "==0.4.20"
 
 # --- visual：数字人/绘图/桌面自动化（requirements/visual.txt） ---
+# opencv 5.x 要求 numpy>=2，与 core 的 numpy 1.26 互斥，故停在 4.x 末版
 [tool.poetry.group.visual]
 optional = true
 
 [tool.poetry.group.visual.dependencies]
-opencv-python = "==4.9.0.80"
-Pillow = "==10.1.0"
-pyvirtualcam = "==0.10.2"
+opencv-python = "==4.11.0.86"
+Pillow = "==12.3.0"
+pyvirtualcam = "==0.15.0"
 webuiapi = "==0.9.3"
 pyautogui = "==0.9.54"
 PyGetWindow = "==0.0.9"

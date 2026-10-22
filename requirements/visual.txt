@@ -1,7 +1,8 @@
 # 数字人、虚拟摄像头、Stable Diffusion、桌面自动化与串口
-opencv-python==4.9.0.80
-Pillow==10.1.0
-pyvirtualcam==0.10.2
+# opencv 5.x 要求 numpy>=2，而 faiss-cpu 等编译扩展还在 numpy 1.x 上，故停在 4.x 末版
+opencv-python==4.11.0.86
+Pillow==12.3.0
+pyvirtualcam==0.15.0
 webuiapi==0.9.3
 pyautogui==0.9.54
 PyGetWindow==0.0.9
