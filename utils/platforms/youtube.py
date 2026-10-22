@@ -2,7 +2,6 @@ import pytchat
 import time
 import re
 import traceback
-import os
 
 from utils.my_log import logger
 import utils.my_global as my_global
@@ -46,37 +45,30 @@ def start_listen(config, common, my_handle, platform: str):
                 my_handle.abnormal_alarm_handle("platform")
                 break  # 退出内部while循环以触发重连机制
 
-    try:
-        reconnect_attempts = 0
-        last_reconnect_time = None
-
-        while True:
+    # 以前是「快速重连满 3 次就 break，然后 finally os._exit(0)」：YouTube 一路断开就把
+    # 整个程序（音频、webui、其他平台监听）带走。现在一直退避重连，只管这条线程；
+    # 每次重建客户端都把上一把 terminate 掉——不 terminate 会攒出多个监听线程，
+    # 同一条弹幕被处理好几遍。
+    while True:
+        live = None
+        try:
             video_id = get_video_id()
             if video_id is None:
-                break
+                logger.error("取不到 YouTube 直播间号，停止该平台监听（不影响其他功能）")
+                return
 
             live = pytchat.create(video_id=video_id)
             process_chat(live)
+            reason = "直播间连接结束（主播可能已下播）"
+        except KeyboardInterrupt:
+            logger.warning("程序被强行退出")
+            return
+        except Exception:
+            logger.error(traceback.format_exc())
+            reason = "连接失败"
+        finally:
+            if live is not None and live.is_alive():
+                live.terminate()
 
-            current_time = time.time()
-            # 如果重连间隔只有30s内，那就只有3次，如果间隔大于30s，那就无限重连
-            if last_reconnect_time and (current_time - last_reconnect_time < 30):
-                reconnect_attempts += 1
-                if reconnect_attempts >= 3:
-                    logger.error("重连失败次数已达上限，退出程序...")
-                    break
-                logger.warning(
-                    f"连接已关闭，间隔小于30秒，尝试重新连接 ({reconnect_attempts}/3)..."
-                )
-            else:
-                reconnect_attempts = 0  # 重置重连次数
-                logger.warning("连接已关闭，尝试重新连接...")
-
-            last_reconnect_time = current_time
-
-    except KeyboardInterrupt:
-        logger.warning("程序被强行退出")
-
-    finally:
-        logger.warning("关闭连接...")
-        os._exit(0)
+        logger.warning(f"{reason}，60 秒后重连")
+        time.sleep(60)

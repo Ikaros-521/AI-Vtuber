@@ -1,5 +1,6 @@
 import asyncio
 import os
+import time
 import tempfile
 import traceback
 
@@ -94,7 +95,8 @@ def start_listen(config, common, my_handle, platform: str):
     except Exception as e:
         logger.error(traceback.format_exc())
         my_handle.abnormal_alarm_handle("platform")
-        # os._exit(0)
+        # 连弹幕客户端对象都建不出来，这条线程没有可做的事：只结束线程，别碰进程
+        return
 
     """
     DANMU_MSG: 用户发送弹幕
@@ -279,11 +281,21 @@ def start_listen(config, common, my_handle, platform: str):
 
     #     logger.info(event)
 
-    try:
-        # 启动 Bilibili 直播间连接
-        sync(room.connect())
-    except KeyboardInterrupt:
-        logger.warning("程序被强行退出")
-    finally:
-        logger.warning("关闭连接...可能是直播间号配置有误或者其他原因导致的")
-        os._exit(0)
+    # 库内部本来就会在多台弹幕服务器之间重试，真的放弃了（主播下播、长时间断网）才回到
+    # 这里。以前是 finally + os._exit(0)，等于 B 站一路断开就把音频、webui 和其他平台的
+    # 监听一起带走。改成退避重连，只管这条线程。
+    # __main__ 跑完时库的 status 已是 CLOSED/ERROR，对同一个 room 再 connect 一次是合法的，
+    # 而六个 handler 注册在 room 对象上、这里不会重复注册。
+    while True:
+        try:
+            # 启动 Bilibili 直播间连接
+            sync(room.connect())
+        except KeyboardInterrupt:
+            logger.warning("程序被强行退出")
+            return
+        except Exception:
+            logger.error(traceback.format_exc())
+            logger.warning("关闭连接...可能是直播间号配置有误或者其他原因导致的")
+
+        logger.warning("60 秒后重连哔哩哔哩直播间")
+        time.sleep(60)
