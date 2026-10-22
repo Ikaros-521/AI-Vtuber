@@ -86,9 +86,6 @@ class Audio:
 
         Audio.audio_player =  AUDIO_PLAYER(self.config.get("audio_player"))
 
-        # 虚拟身体部分
-        if self.config.get("visual_body") == "live2d-TTS-LLM-GPT-SoVITS-Vtuber":
-            pass
 
     # 清空 待合成消息队列|待播放音频队列
     def clear_queue(self, type: str="message_queue"):
@@ -137,26 +134,21 @@ class Audio:
 
     # 判断 等待合成消息队列|待播放音频队列 数是否小于或大于某个值，就返回True
     def is_queue_less_or_greater_than(self, type: str="message_queue", less: int=None, greater: int=None):
-        if less:
-            if type == "voice_tmp_path_queue":
-                if len(Audio.voice_tmp_path_queue) < less:
-                    return True
-                return False
-            elif type == "message_queue":
-                if len(Audio.message_queue) < less:
-                    return True
-                return False
-        
-        if greater:
-            if type == "voice_tmp_path_queue":
-                if len(Audio.voice_tmp_path_queue) > greater:
-                    return True
-                return False
-            elif type == "message_queue":
-                if len(Audio.message_queue) > greater:
-                    return True
-                return False
-        
+        # 阈值按「有没有传」判断，不能按真值判断：传 0 是有意义的，greater=0 就是
+        # 「队列非空」，写成 if greater 会把 0 当成没传，整条判断被跳过
+        if type == "voice_tmp_path_queue":
+            queue = Audio.voice_tmp_path_queue
+        elif type == "message_queue":
+            queue = Audio.message_queue
+        else:
+            return False
+
+        if less is not None:
+            return len(queue) < less
+
+        if greater is not None:
+            return len(queue) > greater
+
         return False
     
     def get_audio_info(self):
@@ -1576,7 +1568,7 @@ class Audio:
                         except pygame.error as e:
                             logger.error(traceback.format_exc())
                             # 如果发生 pygame.error 异常，则捕获并处理它
-                            logger.error(f"无法加载音频文件:{voice_tmp_path}。请确保文件格式正确且文件未损坏。可能原因是TTS配置有误或者TTS服务端有问题，可以去服务端排查一下问题")
+                            logger.error(f"无法加载音频文件:{audio_path}。请确保文件格式正确且文件未损坏。可能原因是TTS配置有误或者TTS服务端有问题，可以去服务端排查一下问题")
 
 
                 # 添加延时，暂停执行n秒钟
@@ -1737,21 +1729,6 @@ class Audio:
             Audio.audio_player.resume_stream()
         else:
             Audio.mixer_copywriting.music.unpause()
-
-    
-    # 停止文案播放
-    def stop_copywriting_play(self):
-        logger.info("停止文案播放")
-        Audio.copywriting_play_flag = 0
-        if self.config.get("play_audio", "player") == "audio_player":
-            Audio.audio_player.pause_stream()
-        # 由于v2的暂停不会更换音频，所以这个只暂停文案就没有意义了
-        elif self.config.get("play_audio", "player") == "audio_player_v2":
-            pass
-            # Audio.audio_player.pause_stream()
-        else:
-            Audio.mixer_copywriting.music.stop()
-
 
     # 合并文案音频文件
     def merge_audio_files(self, directory, base_filename, last_index, pause_duration=1, format="wav"):

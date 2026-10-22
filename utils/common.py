@@ -460,75 +460,6 @@ class Common:
         
         return None
 
-    # 中文语句切分(只根据特定符号切分)
-    def split_sentences1(self, text):
-        # 使用正则表达式切分句子
-        # .的过滤可能会导致 序号类的回复被切分
-        sentences = re.split('([。！？!?])', text)
-        result = []
-        for sentence in sentences:
-            if sentence not in ["。", "！", "？", ".", "!", "?", ""]:
-                result.append(sentence)
-        
-        # 替换换行
-        result = [s.replace('\n', '。') for s in result]
-
-        # print(result)
-        return result
-    
-
-    # 文本切分算法 旧算法，有最大长度限制
-    def split_sentences2(self, text):
-        # 最大长度限制，超过后会强制切分
-        max_limit_len = 40
-
-        # 使用正则表达式切分句子
-        sentences = re.split('([。！？!?])', text)
-        result = []
-        current_sentence = ""
-        for i in range(len(sentences)):
-            if sentences[i] not in ["。", "！", "？", ".", "!", "?", ""]:
-                # 去除换行和空格
-                sentence = sentences[i].replace('\n', '。')
-                # 如果句子长度小于10个字，则与下一句合并
-                if len(current_sentence) < 10:
-                    current_sentence += sentence
-                    # 如果合并后的句子长度超过max_limit_len个字，则进行二次切分
-                    if len(current_sentence) > max_limit_len:
-                        # 判断是否有分隔符可用于二次切分
-                        if i+1 < len(sentences) and len(sentences[i+1]) > 0 and sentences[i+1][0] not in ["。", "！", "？", ".", "!", "?"]:
-                            next_sentence = sentences[i+1].replace('\n', '。')
-                            # 寻找常用分隔符进行二次切分
-                            for separator in [",", "，", ";", "；"]:
-                                if separator in next_sentence:
-                                    split_index = next_sentence.index(separator) + 1
-                                    current_sentence += next_sentence[:split_index]
-                                    result.append(current_sentence)
-                                    current_sentence = next_sentence[split_index:]
-                                    break
-                        else:
-                            # 如果合并后的句子长度超过max_limit_len个字，进行二次切分
-                            while len(current_sentence) > max_limit_len:
-                                result.append(current_sentence[:max_limit_len])
-                                current_sentence = current_sentence[max_limit_len:]
-                else:
-                    result.append(current_sentence)
-                    current_sentence = sentence
-
-        # 添加最后一句
-        if current_sentence:
-            result.append(current_sentence)
-
-        # 2次切分长字符串
-        result2 = []
-        for string in result:
-            if len(string) > max_limit_len:
-                split_strings = re.split(r"[,，;；。！!]", string)
-                result2.extend(split_strings)
-            else:
-                result2.append(string)
-
-        return result2
 
 
     # 文本切分算法
@@ -1028,21 +959,6 @@ class Common:
         else:
             return None
 
-    # 获取Live2D模型名
-    def get_live2d_model_name(self, path):
-        content = self.read_file_return_content(path)
-        if content is None:
-            logger.error(f"读取Live2D模型名失败")
-            return None
-        
-        pattern = r'"(.*?)"'
-        result = re.search(pattern, content)
-
-        if result:
-            content = result.group(1)
-            return content
-        else:
-            return None
 
     
 

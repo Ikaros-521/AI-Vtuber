@@ -114,3 +114,29 @@ def test_get_audio_info_reports_both_queues(audio):
     info = audio.get_audio_info()
 
     assert info == {"wait_play_audio_num": 1, "wait_synthesis_msg_num": 1}
+
+def test_greater_of_zero_is_a_real_threshold(audio):
+    """greater=0 表示「队列非空就返回 True」。以前写成 if greater，
+    0 被当成没传，这条判断永远不会成立。"""
+    assert audio.is_queue_less_or_greater_than("message_queue", greater=0) is False
+
+    Audio.message_queue.append(msg("comment", "你好"))
+
+    assert audio.is_queue_less_or_greater_than("message_queue", greater=0) is True
+
+
+def test_less_and_greater_are_compared_against_the_selected_queue(audio):
+    Audio.message_queue.extend([msg("comment", "一"), msg("comment", "二")])
+
+    assert audio.is_queue_less_or_greater_than("message_queue", less=3) is True
+    assert audio.is_queue_less_or_greater_than("message_queue", less=2) is False
+    # 两个队列各算各的：音频队列这时是空的
+    assert audio.is_queue_less_or_greater_than("voice_tmp_path_queue", less=3) is True
+    assert audio.is_queue_less_or_greater_than("voice_tmp_path_queue", greater=1) is False
+    assert audio.is_queue_less_or_greater_than("没这个队列", less=3) is False
+
+
+def test_no_threshold_means_no_trigger(audio):
+    Audio.message_queue.append(msg("comment", "你好"))
+
+    assert audio.is_queue_less_or_greater_than("message_queue") is False

@@ -183,186 +183,192 @@ class My_handle(metaclass=SingletonMeta):
 
     # 周期性触发数据处理，每秒执行一次，进行计时
     def periodic_trigger_data_handle(self):
-        def get_last_n_items(data_list: list, num: int):
-            # 返回最后的 n 个元素，如果不足 n 个则返回实际元素个数
-            return data_list[-num:] if num > 0 else []
+        try:
+            def get_last_n_items(data_list: list, num: int):
+                # 返回最后的 n 个元素，如果不足 n 个则返回实际元素个数
+                return data_list[-num:] if num > 0 else []
         
         
-        if My_handle.config.get("read_comment", "periodic_trigger", "enable"):
-            type = "read_comment"
-            # 计时+1
-            My_handle.task_data[type]["time"] += 1
+            if My_handle.config.get("read_comment", "periodic_trigger", "enable"):
+                type = "read_comment"
+                # 计时+1
+                My_handle.task_data[type]["time"] += 1
             
-            periodic_time_min = int(My_handle.config.get(type, "periodic_trigger", "periodic_time_min"))
-            periodic_time_max = int(My_handle.config.get(type, "periodic_trigger", "periodic_time_max"))
-            # 生成触发周期值
-            periodic_time = random.randint(periodic_time_min, periodic_time_max)
-            logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
+                periodic_time_min = int(My_handle.config.get(type, "periodic_trigger", "periodic_time_min"))
+                periodic_time_max = int(My_handle.config.get(type, "periodic_trigger", "periodic_time_max"))
+                # 生成触发周期值
+                periodic_time = random.randint(periodic_time_min, periodic_time_max)
+                logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
 
-            # 计时时间是否超过限定的触发周期
-            if My_handle.task_data[type]["time"] >= periodic_time:
-                # 计时清零
-                My_handle.task_data[type]["time"] = 0
+                # 计时时间是否超过限定的触发周期
+                if My_handle.task_data[type]["time"] >= periodic_time:
+                    # 计时清零
+                    My_handle.task_data[type]["time"] = 0
 
-                trigger_num_min = int(My_handle.config.get(type, "periodic_trigger", "trigger_num_min"))
-                trigger_num_max = int(My_handle.config.get(type, "periodic_trigger", "trigger_num_max"))
-                # 生成触发个数
-                trigger_num = random.randint(trigger_num_min, trigger_num_max)
-                # 获取数据
-                data_list = get_last_n_items(My_handle.task_data[type]["data"], trigger_num)
-                logger.debug(f"type={type}, trigger_num={trigger_num}")
+                    trigger_num_min = int(My_handle.config.get(type, "periodic_trigger", "trigger_num_min"))
+                    trigger_num_max = int(My_handle.config.get(type, "periodic_trigger", "trigger_num_max"))
+                    # 生成触发个数
+                    trigger_num = random.randint(trigger_num_min, trigger_num_max)
+                    # 获取数据
+                    data_list = get_last_n_items(My_handle.task_data[type]["data"], trigger_num)
+                    logger.debug(f"type={type}, trigger_num={trigger_num}")
 
-                if data_list != []:
-                    # 遍历数据 进行webui数据回传 和 音频合成播放
-                    for data in data_list:
-                        self.audio_synthesis_handle(data)
+                    if data_list != []:
+                        # 遍历数据 进行webui数据回传 和 音频合成播放
+                        for data in data_list:
+                            self.audio_synthesis_handle(data)
 
-                # 数据清空
-                My_handle.task_data[type]["data"] = []
+                    # 数据清空
+                    My_handle.task_data[type]["data"] = []
         
 
-        if My_handle.config.get("local_qa", "periodic_trigger", "enable"):
-            type = "local_qa"
-            # 计时+1
-            My_handle.task_data[type]["time"] += 1
+            if My_handle.config.get("local_qa", "periodic_trigger", "enable"):
+                type = "local_qa"
+                # 计时+1
+                My_handle.task_data[type]["time"] += 1
             
-            periodic_time_min = int(My_handle.config.get(type, "periodic_trigger", "periodic_time_min"))
-            periodic_time_max = int(My_handle.config.get(type, "periodic_trigger", "periodic_time_max"))
-            # 生成触发周期值
-            periodic_time = random.randint(periodic_time_min, periodic_time_max)
-            logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
+                periodic_time_min = int(My_handle.config.get(type, "periodic_trigger", "periodic_time_min"))
+                periodic_time_max = int(My_handle.config.get(type, "periodic_trigger", "periodic_time_max"))
+                # 生成触发周期值
+                periodic_time = random.randint(periodic_time_min, periodic_time_max)
+                logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
 
-            # 计时时间是否超过限定的触发周期
-            if My_handle.task_data[type]["time"] >= periodic_time:
-                # 计时清零
-                My_handle.task_data[type]["time"] = 0
+                # 计时时间是否超过限定的触发周期
+                if My_handle.task_data[type]["time"] >= periodic_time:
+                    # 计时清零
+                    My_handle.task_data[type]["time"] = 0
 
-                trigger_num_min = int(My_handle.config.get(type, "periodic_trigger", "trigger_num_min"))
-                trigger_num_max = int(My_handle.config.get(type, "periodic_trigger", "trigger_num_max"))
-                # 生成触发个数
-                trigger_num = random.randint(trigger_num_min, trigger_num_max)
-                # 获取数据
-                data_list = get_last_n_items(My_handle.task_data[type]["data"], trigger_num)
-                logger.debug(f"type={type}, trigger_num={trigger_num}")
+                    trigger_num_min = int(My_handle.config.get(type, "periodic_trigger", "trigger_num_min"))
+                    trigger_num_max = int(My_handle.config.get(type, "periodic_trigger", "trigger_num_max"))
+                    # 生成触发个数
+                    trigger_num = random.randint(trigger_num_min, trigger_num_max)
+                    # 获取数据
+                    data_list = get_last_n_items(My_handle.task_data[type]["data"], trigger_num)
+                    logger.debug(f"type={type}, trigger_num={trigger_num}")
 
-                if data_list != []:
-                    # 遍历数据 进行webui数据回传 和 音频合成播放
-                    for data in data_list:
-                        if data["type"] == "local_qa_audio":
-                            self.webui_show_chat_log_callback("本地问答-音频", data, data["file_path"])
-                        else:
-                            self.webui_show_chat_log_callback("本地问答-文本", data, data["content"])
+                    if data_list != []:
+                        # 遍历数据 进行webui数据回传 和 音频合成播放
+                        for data in data_list:
+                            if data["type"] == "local_qa_audio":
+                                self.webui_show_chat_log_callback("本地问答-音频", data, data["file_path"])
+                            else:
+                                self.webui_show_chat_log_callback("本地问答-文本", data, data["content"])
 
-                        self.audio_synthesis_handle(data)
+                            self.audio_synthesis_handle(data)
 
-                # 数据清空
-                My_handle.task_data[type]["data"] = []
+                    # 数据清空
+                    My_handle.task_data[type]["data"] = []
         
-        if My_handle.config.get("thanks", "gift", "periodic_trigger", "enable"):
-            type = "thanks"
-            type2 = "gift"
+            if My_handle.config.get("thanks", "gift", "periodic_trigger", "enable"):
+                type = "thanks"
+                type2 = "gift"
 
-            # 计时+1
-            My_handle.task_data[type][type2]["time"] += 1
+                # 计时+1
+                My_handle.task_data[type][type2]["time"] += 1
 
-            periodic_time_min = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_min"))
-            periodic_time_max = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_max"))
-            # 生成触发周期值
-            periodic_time = random.randint(periodic_time_min, periodic_time_max)
-            logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
+                periodic_time_min = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_min"))
+                periodic_time_max = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_max"))
+                # 生成触发周期值
+                periodic_time = random.randint(periodic_time_min, periodic_time_max)
+                logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
 
-            # 计时时间是否超过限定的触发周期
-            if My_handle.task_data[type][type2]["time"] >= periodic_time:
-                # 计时清零
-                My_handle.task_data[type][type2]["time"] = 0
+                # 计时时间是否超过限定的触发周期
+                if My_handle.task_data[type][type2]["time"] >= periodic_time:
+                    # 计时清零
+                    My_handle.task_data[type][type2]["time"] = 0
 
-                trigger_num_min = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_min"))
-                trigger_num_max = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_max"))
-                # 生成触发个数
-                trigger_num = random.randint(trigger_num_min, trigger_num_max)
-                # 获取数据
-                data_list = get_last_n_items(My_handle.task_data[type][type2]["data"], trigger_num)
-                logger.debug(f"type={type}, trigger_num={trigger_num}")
+                    trigger_num_min = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_min"))
+                    trigger_num_max = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_max"))
+                    # 生成触发个数
+                    trigger_num = random.randint(trigger_num_min, trigger_num_max)
+                    # 获取数据
+                    data_list = get_last_n_items(My_handle.task_data[type][type2]["data"], trigger_num)
+                    logger.debug(f"type={type}, trigger_num={trigger_num}")
 
-                if data_list != []:
-                    # 遍历数据 进行webui数据回传 和 音频合成播放
-                    for data in data_list:
-                        self.audio_synthesis_handle(data)
+                    if data_list != []:
+                        # 遍历数据 进行webui数据回传 和 音频合成播放
+                        for data in data_list:
+                            self.audio_synthesis_handle(data)
 
-                # 数据清空
-                My_handle.task_data[type][type2]["data"] = []
+                    # 数据清空
+                    My_handle.task_data[type][type2]["data"] = []
         
-        if My_handle.config.get("thanks", "entrance", "periodic_trigger", "enable"):
-            type = "thanks"
-            type2 = "entrance"
+            if My_handle.config.get("thanks", "entrance", "periodic_trigger", "enable"):
+                type = "thanks"
+                type2 = "entrance"
 
-            # 计时+1
-            My_handle.task_data[type][type2]["time"] += 1
+                # 计时+1
+                My_handle.task_data[type][type2]["time"] += 1
 
-            periodic_time_min = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_min"))
-            periodic_time_max = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_max"))
-            # 生成触发周期值
-            periodic_time = random.randint(periodic_time_min, periodic_time_max)
-            logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
+                periodic_time_min = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_min"))
+                periodic_time_max = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_max"))
+                # 生成触发周期值
+                periodic_time = random.randint(periodic_time_min, periodic_time_max)
+                logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
 
-            # 计时时间是否超过限定的触发周期
-            if My_handle.task_data[type][type2]["time"] >= periodic_time:
-                # 计时清零
-                My_handle.task_data[type][type2]["time"] = 0
+                # 计时时间是否超过限定的触发周期
+                if My_handle.task_data[type][type2]["time"] >= periodic_time:
+                    # 计时清零
+                    My_handle.task_data[type][type2]["time"] = 0
 
-                trigger_num_min = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_min"))
-                trigger_num_max = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_max"))
-                # 生成触发个数
-                trigger_num = random.randint(trigger_num_min, trigger_num_max)
-                # 获取数据
-                data_list = get_last_n_items(My_handle.task_data[type][type2]["data"], trigger_num)
-                logger.debug(f"type={type}, trigger_num={trigger_num}")
+                    trigger_num_min = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_min"))
+                    trigger_num_max = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_max"))
+                    # 生成触发个数
+                    trigger_num = random.randint(trigger_num_min, trigger_num_max)
+                    # 获取数据
+                    data_list = get_last_n_items(My_handle.task_data[type][type2]["data"], trigger_num)
+                    logger.debug(f"type={type}, trigger_num={trigger_num}")
 
-                if data_list != []:
-                    # 遍历数据 进行webui数据回传 和 音频合成播放
-                    for data in data_list:
-                        self.audio_synthesis_handle(data)
+                    if data_list != []:
+                        # 遍历数据 进行webui数据回传 和 音频合成播放
+                        for data in data_list:
+                            self.audio_synthesis_handle(data)
 
-                # 数据清空
-                My_handle.task_data[type][type2]["data"] = []
+                    # 数据清空
+                    My_handle.task_data[type][type2]["data"] = []
 
-        if My_handle.config.get("thanks", "follow", "periodic_trigger", "enable"):
-            type = "thanks"
-            type2 = "follow"
+            if My_handle.config.get("thanks", "follow", "periodic_trigger", "enable"):
+                type = "thanks"
+                type2 = "follow"
 
-            # 计时+1
-            My_handle.task_data[type][type2]["time"] += 1
+                # 计时+1
+                My_handle.task_data[type][type2]["time"] += 1
 
-            periodic_time_min = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_min"))
-            periodic_time_max = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_max"))
-            # 生成触发周期值
-            periodic_time = random.randint(periodic_time_min, periodic_time_max)
-            logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
+                periodic_time_min = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_min"))
+                periodic_time_max = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_max"))
+                # 生成触发周期值
+                periodic_time = random.randint(periodic_time_min, periodic_time_max)
+                logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
 
-            # 计时时间是否超过限定的触发周期
-            if My_handle.task_data[type][type2]["time"] >= periodic_time:
-                # 计时清零
-                My_handle.task_data[type][type2]["time"] = 0
+                # 计时时间是否超过限定的触发周期
+                if My_handle.task_data[type][type2]["time"] >= periodic_time:
+                    # 计时清零
+                    My_handle.task_data[type][type2]["time"] = 0
 
-                trigger_num_min = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_min"))
-                trigger_num_max = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_max"))
-                # 生成触发个数
-                trigger_num = random.randint(trigger_num_min, trigger_num_max)
-                # 获取数据
-                data_list = get_last_n_items(My_handle.task_data[type][type2]["data"], trigger_num)
-                logger.debug(f"type={type}, trigger_num={trigger_num}")
+                    trigger_num_min = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_min"))
+                    trigger_num_max = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_max"))
+                    # 生成触发个数
+                    trigger_num = random.randint(trigger_num_min, trigger_num_max)
+                    # 获取数据
+                    data_list = get_last_n_items(My_handle.task_data[type][type2]["data"], trigger_num)
+                    logger.debug(f"type={type}, trigger_num={trigger_num}")
 
-                if data_list != []:
-                    # 遍历数据 进行webui数据回传 和 音频合成播放
-                    for data in data_list:
-                        self.audio_synthesis_handle(data)
+                    if data_list != []:
+                        # 遍历数据 进行webui数据回传 和 音频合成播放
+                        for data in data_list:
+                            self.audio_synthesis_handle(data)
 
-                # 数据清空
-                My_handle.task_data[type][type2]["data"] = []
+                    # 数据清空
+                    My_handle.task_data[type][type2]["data"] = []
 
 
-        self.periodic_trigger_timer = threading.Timer(1, partial(self.periodic_trigger_data_handle))
-        self.periodic_trigger_timer.start()
+        except Exception:
+            logger.error(traceback.format_exc())
+        finally:
+            # 重新挂 timer 必须放在 finally：这条链一断，这场直播的周期触发
+            # （念弹幕、本地问答、礼物/入场/关注答谢）就再也不会响，而且只死在 stderr 里
+            self.periodic_trigger_timer = threading.Timer(1, partial(self.periodic_trigger_data_handle))
+            self.periodic_trigger_timer.start()
 
     # 清空live_data直播数据
     def clear_live_data(self, type: str=""):
@@ -724,7 +730,7 @@ class My_handle(metaclass=SingletonMeta):
                         "content": resp_content
                     }
 
-                    if "insert_index" in message:
+                    if "insert_index" in data_json:
                         message["insert_index"] = data_json["insert_index"]
 
                     
@@ -775,7 +781,7 @@ class My_handle(metaclass=SingletonMeta):
                                 "file_path": resp_content
                             }
 
-                            if "insert_index" in message:
+                            if "insert_index" in data_json:
                                 message["insert_index"] = data_json["insert_index"]
 
                             My_handle.audio.audio_synthesis(message)
@@ -4136,12 +4142,14 @@ class My_handle(metaclass=SingletonMeta):
             "follow": My_handle.config.get("filter", "follow_forget_duration"),
             "talk": My_handle.config.get("filter", "talk_forget_duration"),
             "schedule": My_handle.config.get("filter", "schedule_forget_duration"),
-            "idle_time_task": My_handle.config.get("filter", "idle_time_task_forget_duration")
+            "idle_time_task": My_handle.config.get("filter", "idle_time_task_forget_duration"),
+            "image_recognition_schedule": My_handle.config.get("filter", "image_recognition_schedule_forget_duration")
             # 根据需要添加更多计时器及其间隔，记得添加config.json中的配置项
         }
 
-        # 默认间隔为0.1秒
-        return intervals.get(timer_flag, 0.1)
+        # 默认间隔为0.1秒。配置项缺失时取到的是 None，不能直接当间隔用
+        interval = intervals.get(timer_flag)
+        return interval if interval is not None else 0.1
 
 
     """

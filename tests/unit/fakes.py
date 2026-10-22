@@ -59,16 +59,32 @@ class FakeAudio:
         self.calls.append(("get_audio_info", ()))
         return {"message_queue": 0}
 
+    def audio_synthesis(self, message):
+        return self._guard("audio_synthesis", message)
+
+    def get_dir_audios_filename(self, path, type=1):
+        self.calls.append(("get_dir_audios_filename", (path, type)))
+        return []
+
+    def search_files(self, path, name):
+        self.calls.append(("search_files", (path, name)))
+        return []
+
 
 class FakeSender:
-    """替代 Common 里的网络调用，记录发出的请求。"""
+    """替代 Common 里的网络调用，记录发出的请求。
+
+    形参名必须和 utils/common.py 的 send_request 一一对上：生产代码里有几处是用
+    method=/json_data= 关键字调的，名字对不上就会被吞进 **kwargs，
+    断言读到的是 None 而不是真实数据。
+    """
 
     def __init__(self, reply=None):
         self.requests = []
         self.reply = reply if reply is not None else {"code": 200}
 
-    def send_request(self, url, type, data_json=None, **kwargs):
-        self.requests.append((url, type, data_json))
+    def send_request(self, url, method='GET', json_data=None, resp_data_type='json', timeout=60, proxy=None):
+        self.requests.append((url, method, json_data))
         return self.reply
 
     def get_bj_time(self, type=0):
