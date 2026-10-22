@@ -16,6 +16,7 @@ from .message import build_playback
 from . import alarm
 from utils.audio_handle.my_tts import MY_TTS
 from utils.audio_handle.audio_player import AUDIO_PLAYER
+from utils.audio_handle.playback_stream import PlaybackStream
 import utils.my_global as my_global
 
 
@@ -64,11 +65,11 @@ class Audio:
         self.only_play_copywriting_thread = None
 
         if self.config.get("play_audio", "player") in ["pygame"]:
-            import pygame
-
-            # 初始化多个pygame.mixer实例
-            Audio.mixer_normal = pygame.mixer
-            Audio.mixer_copywriting = pygame.mixer
+            # 弹幕音频和文案音频各占一个 channel。以前这两个都指向 pygame.mixer 模块
+            # 本身，也就是共用 mixer.music 那一条全局流，"暂停文案"会连正在播的
+            # 弹幕回复一起暂停。
+            Audio.mixer_normal = PlaybackStream(0)
+            Audio.mixer_copywriting = PlaybackStream(1)
 
         # 旧版同步写法
         # threading.Thread(target=self.message_queue_thread).start()
@@ -1389,9 +1390,12 @@ class Audio:
                                 Audio.mixer_normal.music.stop()
                                 
                                 await self.send_audio_play_info_to_callback()
-                            except pygame.error as e:
+                            except Exception as e:
+                                # 以前这里只捕 pygame.error，因为 mixer.music.load 读不到
+                                # 文件时抛的就是它；换成 channel 后文件缺失是
+                                # FileNotFoundError，只捕 pygame.error 会漏掉最常见的那种
                                 logger.error(traceback.format_exc())
-                                # 如果发生 pygame.error 异常，则捕获并处理它
+                                # 如果发生异常，则捕获并处理它
                                 logger.error(f"无法加载音频文件:{voice_tmp_path}。请确保文件格式正确且文件未损坏。可能原因是TTS配置有误或者TTS服务端有问题，可以去服务端排查一下问题")
 
                     # 是否启用字幕输出
@@ -1399,11 +1403,16 @@ class Audio:
                         # 清空字幕文件
                         # self.common.write_content_to_file(captions_config["file_path"], "")
 
+                except Exception as e:
+                    logger.error(traceback.format_exc())
+                finally:
+                    # 恢复文案这一步必须放在 finally。两条流各占一个 channel 之后，
+                    # 文案被暂停时 get_busy() 仍为真，文案线程会一直在 while 里等，
+                    # 录音闸门也跟着一直关着；以前共用一条 music 流时"暂停"会被当成
+                    # 播完、自动往下走，所以漏排一次不明显。现在漏排就是永久静音。
                     if Audio.copywriting_play_flag == 1:
                         # 延时执行恢复文案播放
                         self.delayed_execution_unpause_copywriting_play()
-                except Exception as e:
-                    logger.error(traceback.format_exc())
             Audio.mixer_normal.quit()
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -1506,9 +1515,9 @@ class Audio:
                             Audio.mixer_copywriting.music.stop()
 
                             await self.send_audio_play_info_to_callback()
-                        except pygame.error as e:
+                        except Exception as e:
                             logger.error(traceback.format_exc())
-                            # 如果发生 pygame.error 异常，则捕获并处理它
+                            # 同普通音频：文件缺失现在抛的是 FileNotFoundError，不是 pygame.error
                             logger.error(f"无法加载音频文件:{audio_path}。请确保文件格式正确且文件未损坏。可能原因是TTS配置有误或者TTS服务端有问题，可以去服务端排查一下问题")
 
 
