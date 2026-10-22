@@ -1,7 +1,7 @@
 """
 tiktok
 """
-import asyncio
+import time
 import traceback
 import json
 
@@ -35,7 +35,7 @@ def start_listen(config, common, my_handle, platform: str):
         unique_id=f"@{room_id}", web_proxy=proxys, ws_proxy=proxys
     )
 
-    def start_client():
+    def register_events():
         # Define how you want to handle specific events via decorator
         @client.on(ConnectEvent)
         async def on_connect(_: ConnectEvent):
@@ -43,9 +43,9 @@ def start_listen(config, common, my_handle, platform: str):
 
         @client.on(DisconnectEvent)
         async def on_disconnect(event: DisconnectEvent):
-            logger.info("断开连接，10秒后重连")
-            await asyncio.sleep(10)  # 等待一段时间后尝试重连，这里等待10秒
-            start_client()  # 尝试重新连接
+            # 只记日志：重连交给 start_client() 的外层循环。以前这里直接调 start_client()，
+            # 等于在事件循环里再跑一次阻塞的 client.run()
+            logger.info("断开连接，等待重连")
 
         @client.on(JoinEvent)
         async def on_join(event: JoinEvent):
@@ -166,14 +166,21 @@ def start_listen(config, common, my_handle, platform: str):
 
             my_handle.process_data(data, "follow")
 
-        try:
-            client.stop()
-            logger.info(f"连接{room_id}中...")
-            client.run()
+    def start_client():
+        # 原来这里 except 里直接再调一次 start_client()：既会把六个 handler 重新注册一遍
+        # （之后每条弹幕都被处理多次），又会一层层递归下去。改成注册一次、连接失败就地重试。
+        while True:
+            try:
+                client.stop()
+                logger.info(f"连接{room_id}中...")
+                client.run()
+            except Exception:
+                logger.info(f"用户ID: @{client.unique_id} 好像不在线捏, 1分钟后重试...")
+                time.sleep(60)
+                continue
+            # run() 正常返回一般是直播断开/结束，按原语义继续等下一次
+            logger.info("连接已关闭，10秒后重连")
+            time.sleep(10)
 
-        except Exception as e:
-            logger.info(f"用户ID: @{client.unique_id} 好像不在线捏, 1分钟后重试...")
-            start_client()
-
-    # 运行客户端
+    register_events()
     start_client()
