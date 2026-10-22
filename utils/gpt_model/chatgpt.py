@@ -50,9 +50,14 @@ class Chatgpt:
 
             # 如果返回的消息包含最大上下文长度限制，则删除超长上下文并重试
             if message.__contains__("This model's maximum context length is 409"):
-                del session['msg'][0:3]
-                del session['msg'][len(session['msg']) - 1:len(session['msg'])]
-                message = self.chat(msg, sessionid)
+                # 只丢对话轮次，留着开头两条 system（预设人设 + 当前时间）。
+                # 原来删的是 [0:3]，把两条 system 和刚加的 user 全删了，重试那次
+                # 给只有 1 个元素的列表做 msg[1] = ... 直接 IndexError，
+                # 撞上上下文超长就永远只会返回 None
+                del session['msg'][2:]
+                # 重试那一次自己会把 assistant 回复写回会话，所以这里必须直接返回，
+                # 再往下走会又 append 一遍，历史里留下两条一模一样的回复
+                return self.chat(msg, sessionid)
 
             # 将 ChatGPT 返回的回复消息添加到会话中
             session['msg'].append({"role": "assistant", "content": message})

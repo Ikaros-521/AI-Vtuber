@@ -51,11 +51,12 @@ class Langchain_ChatChat:
 
             if ret is None:
                 logger.error("Failed to parse JSON: %s", result)
-                # handle error here
-            else:
-                # continue with your code using parsed_json
-                logger.debug(ret)
-                logger.info(f"本地知识库列表：{ret['data']}")
+                # 解析不出来就得就此返回：以前这里只记一条日志然后继续往下走，
+                # 下一行 ret['data'] 直接 TypeError
+                return None
+
+            logger.debug(ret)
+            logger.info(f"本地知识库列表：{ret['data']}")
 
             return ret['data']
         except Exception as e:
