@@ -8,7 +8,7 @@ from nicegui import ui
 
 from utils.my_log import logger
 from webui_app.config_store import update_config
-from webui_app.confirm import confirm_delete_group
+from webui_app.confirm import confirm_delete_group, delete_button
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS, common_textarea_handle, textarea_data_change
 from webui_app.options import (
     CHAT_TYPE_OPTIONS,
@@ -582,7 +582,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                 with ui.row():
                     input_schedule_index = ui.input(label='任务索引', value="", placeholder='任务组的排序号，就是说第一个组是1，第二个组是2，以此类推。请填写纯正整数')
                     button_schedule_add = ui.button('增加任务组', on_click=schedule_add, color=button_internal_color).style(button_internal_css)
-                    button_schedule_del = ui.button('删除任务组', on_click=lambda: confirm_delete_group('定时任务', input_schedule_index.value, schedule_del), color=button_internal_color).style(button_internal_css)
+                    button_schedule_del = delete_button('删除任务组', lambda: confirm_delete_group('定时任务', input_schedule_index.value, schedule_del)).style(button_internal_css)
                 
                 schedule_var = {}
                 schedule_config_card = ui.card()
@@ -736,7 +736,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                 with ui.row():
                     input_trends_copywriting_index = ui.input(label='文案索引', value="", placeholder='文案组的排序号，就是说第一个组是1，第二个组是2，以此类推。请填写纯正整数').tooltip('文案组的排序号，就是说第一个组是1，第二个组是2，以此类推。请填写纯正整数')
                     button_trends_copywriting_add = ui.button('增加文案组', on_click=trends_copywriting_add, color=button_internal_color).style(button_internal_css)
-                    button_trends_copywriting_del = ui.button('删除文案组', on_click=lambda: confirm_delete_group('动态文案', input_trends_copywriting_index.value, trends_copywriting_del), color=button_internal_color).style(button_internal_css)
+                    button_trends_copywriting_del = delete_button('删除文案组', lambda: confirm_delete_group('动态文案', input_trends_copywriting_index.value, trends_copywriting_del)).style(button_internal_css)
                 
                 trends_copywriting_copywriting_var = {}
                 trends_copywriting_config_card = ui.card()
@@ -798,7 +798,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                 with ui.row():
                     input_key_mapping_index = ui.input(label='配置索引', value="", placeholder='配置组的排序号，就是说第一个组是1，第二个组是2，以此类推。请填写纯正整数').tooltip('配置组的排序号，就是说第一个组是1，第二个组是2，以此类推。请填写纯正整数')
                     button_key_mapping_add = ui.button('增加配置组', on_click=key_mapping_add, color=button_internal_color).style(button_internal_css)
-                    button_key_mapping_del = ui.button('删除配置组', on_click=lambda: confirm_delete_group('按键/文案映射', input_key_mapping_index.value, key_mapping_del), color=button_internal_color).style(button_internal_css)
+                    button_key_mapping_del = delete_button('删除配置组', lambda: confirm_delete_group('按键/文案映射', input_key_mapping_index.value, key_mapping_del)).style(button_internal_css)
                 
                 
                 key_mapping_config_var = {}
@@ -998,7 +998,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                 with ui.row():
                     input_custom_cmd_index = ui.input(label='配置索引', value="", placeholder='配置组的排序号，就是说第一个组是1，第二个组是2，以此类推。请填写纯正整数')
                     button_custom_cmd_add = ui.button('增加配置组', on_click=custom_cmd_add, color=button_internal_color).style(button_internal_css)
-                    button_custom_cmd_del = ui.button('删除配置组', on_click=lambda: confirm_delete_group('自定义命令', input_custom_cmd_index.value, custom_cmd_del), color=button_internal_color).style(button_internal_css)
+                    button_custom_cmd_del = delete_button('删除配置组', lambda: confirm_delete_group('自定义命令', input_custom_cmd_index.value, custom_cmd_del)).style(button_internal_css)
                 
                 custom_cmd_config_var = {}
                 custom_cmd_config_card = ui.card()
@@ -1101,7 +1101,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                 with ui.row():
                     input_coordination_program_index = ui.input(label='配置索引', value="", placeholder='配置组的排序号，就是说第一个组是1，第二个组是2，以此类推。请填写纯正整数')
                     button_coordination_program_add = ui.button('增加配置组', on_click=coordination_program_add, color=button_internal_color).style(button_internal_css)
-                    button_coordination_program_del = ui.button('删除配置组', on_click=lambda: confirm_delete_group('联动程序', input_coordination_program_index.value, coordination_program_del), color=button_internal_color).style(button_internal_css)
+                    button_coordination_program_del = delete_button('删除配置组', lambda: confirm_delete_group('联动程序', input_coordination_program_index.value, coordination_program_del)).style(button_internal_css)
                 
                 coordination_program_var = {}
                 coordination_program_config_card = ui.card()

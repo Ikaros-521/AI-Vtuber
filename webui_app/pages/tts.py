@@ -5,7 +5,7 @@ from urllib.parse import urljoin
 from nicegui import ui
 
 from utils.my_log import logger
-from webui_app.confirm import confirm_delete_file
+from webui_app.confirm import confirm_delete_file, delete_button
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
 from webui_app.pages import PageConfig
 
@@ -133,7 +133,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
         tmp_label.move(tts_common_audio_card)
         audio_tmp = ui.audio(src=file_path)
         audio_tmp.move(tts_common_audio_card)
-        button_audio_del = ui.button('删除音频', on_click=lambda: confirm_delete_file(file_path, lambda: clear_tts_common_audio_card(file_path)), color=button_internal_color).style(button_internal_css)
+        button_audio_del = delete_button('删除音频', lambda: confirm_delete_file(file_path, lambda: clear_tts_common_audio_card(file_path))).style(button_internal_css)
         button_audio_del.move(tts_common_audio_card)
         
         

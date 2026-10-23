@@ -137,7 +137,8 @@ def build_login(config, common, login_card_css, on_success):
             logger.error(traceback.format_exc())
             return
 
-    login_column = ui.column().style("width:100%;text-align: center;")
+    # 登录卡只给登录用：定宽与渐变由卡片自己带，外面这层 column 不再套全屏渐变
+    login_column = ui.column().style("width:100%;align-items:center;padding:24px;")
     with login_column:
         login_card = ui.card().style(login_card_css)
         with login_card:

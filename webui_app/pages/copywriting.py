@@ -5,7 +5,7 @@ import traceback
 from nicegui import ui
 
 from utils.my_log import logger
-from webui_app.confirm import confirm_delete_file, confirm_delete_group
+from webui_app.confirm import confirm_delete_file, confirm_delete_group, delete_button
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS, common_textarea_handle, textarea_data_change
 from webui_app.pages import PageConfig
 
@@ -114,7 +114,7 @@ def build_copywriting_tab(config, common, audio, card_css, switch_internal_css,
         tmp_label.move(copywriting_audio_card)
         audio_copywriting = ui.audio(src=file_path)
         audio_copywriting.move(copywriting_audio_card)
-        button_copywriting_audio_del = ui.button('删除音频', on_click=lambda: confirm_delete_file(file_path, lambda: clear_copywriting_audio_card(file_path)), color=button_internal_color).style(button_internal_css)
+        button_copywriting_audio_del = delete_button('删除音频', lambda: confirm_delete_file(file_path, lambda: clear_copywriting_audio_card(file_path))).style(button_internal_css)
         button_copywriting_audio_del.move(copywriting_audio_card)
 
     with ui.row():
@@ -125,7 +125,7 @@ def build_copywriting_tab(config, common, audio, card_css, switch_internal_css,
     with ui.row():
         input_copywriting_index = ui.input(label='文案索引', value="", placeholder='文案组的排序号，就是说第一个组是1，第二个组是2，以此类推。请填写纯正整数')
         button_copywriting_add = ui.button('增加文案组', on_click=copywriting_add, color=button_internal_color).style(button_internal_css)
-        button_copywriting_del = ui.button('删除文案组', on_click=lambda: confirm_delete_group('文案', input_copywriting_index.value, copywriting_del), color=button_internal_color).style(button_internal_css)
+        button_copywriting_del = delete_button('删除文案组', lambda: confirm_delete_group('文案', input_copywriting_index.value, copywriting_del)).style(button_internal_css)
 
     with copywriting_config_card:
         for index, copywriting_config in enumerate(config.get("copywriting", "config")):

@@ -240,6 +240,11 @@ PAGE_SCRIPTS = """
 </script>
 <style>
 .narrow-tip{display:none !important;}
+/* 提示条：原先三处写死 Tailwind 的 bg-blue-100，换深色主题就成了一块突兀的浅蓝。
+   半透明白底 + 左侧色条，在渐变背景和卡片上都读得清 */
+.tip-bar{padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.72);
+         border-left:3px solid #2f6fad;box-shadow:0 1px 3px rgba(0,0,0,0.10);
+         font-size:13px;line-height:1.6;color:#1f3552;}
 /* 聊天记录面板浮在右侧，500px 宽：窗口不够宽就会压住配置项（1024 实测遮 1 个，
    640 遮 7 个）。不够宽时改成正常流，代价是要滚到页面上方才看得到日志 */
 @media (max-width:1279px){.chat-log-float{position:static !important;}}
@@ -272,6 +277,9 @@ PAGE_SCRIPTS = """
                  width:100% !important;max-width:100% !important;min-width:0;}
   /* 芯片本身不能被压缩，否则一行 21 个会被挤成一列一个字 */
   .section-index > *{flex:none;}
+  /* 图表容器的 height:600px 写在主题里（width:100%;height:600px），390 下饼图被裁、
+     图例挤出卡片：改成按宽度等比，ECharts 自己有 ResizeObserver 会重排 */
+  .nicegui-echart{height:auto !important;aspect-ratio:1/1;max-height:70vh;}
 }
 </style>
 <script>
@@ -625,9 +633,10 @@ login_card_css = config.get("webui", "theme", "list", theme_choose, "login_card"
 if config.get("login", "enable"):
     build_login(config, common, login_card_css, goto_func_page)
 else:
+    # 这里原先还建了一张空的 ui.card().style(login_card_css)：login_card 是
+    # position:fixed 的全屏渐变，关掉登录后它就变成一张 0 字符的幽灵层，跟 tab_panel 的
+    # 渐变重复、还是个随时跟新浮层抢层级的定位元素（走查 audit-17）
     with ui.column().style("width:100%;text-align: center;"):
-        ui.card().style(login_card_css)
-
         # 跳转到功能页
         goto_func_page()
 

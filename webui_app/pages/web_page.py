@@ -6,7 +6,7 @@ from nicegui import ui
 
 from utils.my_log import logger
 from webui_app.config_store import update_config
-from webui_app.confirm import confirm, confirm_delete_group
+from webui_app.confirm import confirm, confirm_delete_group, delete_button
 from webui_app.pages import PageConfig
 
 
@@ -107,7 +107,7 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
         with ui.row():
             input_webui_local_dir_to_endpoint_index = ui.input(label='配置索引', value="", placeholder='配置组的排序号，就是说第一个组是1，第二个组是2，以此类推。请填写纯正整数')
             button_webui_local_dir_to_endpoint_add = ui.button('增加配置组', on_click=webui_local_dir_to_endpoint_add, color=button_internal_color).style(button_internal_css)
-            button_webui_local_dir_to_endpoint_del = ui.button('删除配置组', on_click=lambda: confirm_delete_group('本地路径映射', input_webui_local_dir_to_endpoint_index.value, webui_local_dir_to_endpoint_del), color=button_internal_color).style(button_internal_css)
+            button_webui_local_dir_to_endpoint_del = delete_button('删除配置组', lambda: confirm_delete_group('本地路径映射', input_webui_local_dir_to_endpoint_index.value, webui_local_dir_to_endpoint_del)).style(button_internal_css)
         
         with ui.row():
             switch_webui_local_dir_to_endpoint_enable = ui.switch('启用', value=config.get("webui", "local_dir_to_endpoint", "enable")).style(switch_internal_css)
@@ -154,11 +154,12 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
             )
 
             button_config_template_save = ui.button('保存webui配置到文件', on_click=lambda: config_template_save(select_config_template_path.value), color=button_internal_color).style(button_internal_css)
-            button_config_template_load = ui.button('读取模板到本地（慎点）', on_click=lambda: confirm.ask(
+            # 这是全站唯一一个不经「保存配置」就写盘的按钮，按危险操作对待：警示色 + 警示图标
+            button_config_template_load = ui.button('读取模板到本地（慎点）', icon='warning', on_click=lambda: confirm.ask(
                 f'确认用「{select_config_template_path.value or "（未填路径）"}」覆盖当前配置？',
                 lambda: config_template_load(select_config_template_path.value),
                 '这一步直接写配置文件，不经过「保存配置」，写完要重启 webui 才生效，也没法撤销。'),
-                color=button_internal_color).style(button_internal_css)
+                color='negative').style(button_internal_css)
             
 
 

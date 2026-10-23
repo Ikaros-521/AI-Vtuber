@@ -61,6 +61,15 @@ class ConfirmBox:
 confirm = ConfirmBox()
 
 
+def delete_button(label: str, on_click: Callable[[], None]):
+    """删除类按钮的统一出口：警示色 + 垃圾桶图标（走查 audit-18「危险与日常同形同色」）。
+
+    危险色只能走调色板 `color='negative'`——NiceGUI 给每个按钮挂了 Quasar 的 text-primary，
+    那是条 !important 规则，`.style('color:#dc2626')` 压不过它。
+    """
+    return ui.button(label, on_click=on_click, color='negative', icon='delete').props('no-caps')
+
+
 def confirm_delete_group(name: str, index, action: Callable[[object], None]) -> None:
     """删除「第 N 组配置」这类操作：十来个删除按钮共用一套文案。"""
     if index is None or str(index).strip() == '':

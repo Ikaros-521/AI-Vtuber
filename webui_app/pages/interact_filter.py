@@ -39,7 +39,7 @@ def build_interact_filter_tab(config, card_css, switch_internal_css):
             input_filter_badwords_replace = ui.input(label='违禁词替换', value=config.get("filter", "badwords", "replace"), placeholder='在不丢弃违禁语句的前提下，将违禁词替换成此项的文本').style("width:200px;").tooltip('在不丢弃违禁语句的前提下，将违禁词替换成此项的文本')
 
         with ui.expansion('消息遗忘&保留设置', icon="settings", value=True).classes('w-full'):
-            with ui.element('div').classes('p-2 bg-blue-100'):
+            with ui.element('div').classes('tip-bar'):
                 ui.label("遗忘间隔 指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，但会保留最新的n个数据；保留数 指的是保留最新收到的数据的数量")
             with ui.grid(columns=4):
                 input_filter_comment_forget_duration = ui.input(
@@ -83,7 +83,7 @@ def build_interact_filter_tab(config, card_css, switch_internal_css):
                     value=config.get("filter", "voice_tmp_path_queue_min_start_play")
                 ).style("width:200px;").tooltip('此功能用于缓存一定数量的音频后再开始播放。如果你不想开播前缓冲一定数量的音频，请配置0；如果你想提前准备一些音频，如因为TTS合成慢的原因，可以配置此值，让TTS提前合成你的其他任务触发的内容')
 
-                with ui.element('div').classes('p-2 bg-blue-100'):
+                with ui.element('div').classes('tip-bar'):
                     ui.label("下方优先级配置，请使用正整数。数字越大，优先级越高，就会优先合成音频播放")
                     ui.label("另外需要注意，由于shi山原因，目前这个队列内容是文本切分后计算的长度，所以如果回复内容过长，可能会有丢数据的情况")
             with ui.grid(columns=5):
