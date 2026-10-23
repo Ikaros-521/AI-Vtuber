@@ -177,6 +177,8 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
             "similarity": 1,
             "copywriting": [],
             "local_audio": [],
+            "serial_name": "",
+            "serial_send_data": [],
             "img_path": []
         }
 
@@ -188,10 +190,10 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                 key_mapping_config_var[str(data_len + 2)] = ui.textarea(label=f"按键#{num}", value=textarea_data_change(tmp_config["keys"]), placeholder='此处输入你要映射的按键，多个按键请以换行分隔（按键名参考pyautogui规则）').style("width:100px;")
                 key_mapping_config_var[str(data_len + 3)] = ui.input(label=f"相似度#{num}", value=tmp_config["similarity"], placeholder='关键词与用户输入的相似度，默认1即100%').style("width:50px;")
                 key_mapping_config_var[str(data_len + 4)] = ui.textarea(label=f"文案#{num}", value=textarea_data_change(tmp_config["copywriting"]), placeholder='此处输入触发后合成的文案内容，多个请以换行分隔').style("width:300px;")
-                key_mapping_config_var[str(data_len + 5)] = ui.textarea(label=f"文案#{num}", value=textarea_data_change(tmp_config["copywriting"]), placeholder='此处输入触发后合成的文案内容，多个请以换行分隔').style("width:300px;")
+                key_mapping_config_var[str(data_len + 5)] = ui.textarea(label=f"本地音频#{num}", value=textarea_data_change(tmp_config["local_audio"]), placeholder='此处输入触发后播放的本地音频路径，多个请以换行分隔').style("width:300px;").tooltip('此处输入触发后播放的本地音频路径，多个请以换行分隔')
                 key_mapping_config_var[str(data_len + 6)] = ui.input(label=f"串口名#{num}", value=tmp_config["serial_name"], placeholder='例如：COM1').style("width:100px;").tooltip('串口页配置的串口名，例如：COM1')
                 key_mapping_config_var[str(data_len + 7)] = ui.textarea(label=f"串口发送内容#{num}", value=textarea_data_change(tmp_config["serial_send_data"]), placeholder='多个请以换行分隔，ASCII例如：open led\nHEX例如（2个字符的十六进制字符）：313233').style("width:300px;").tooltip('此处输入发送到串口的数据内容，数据类型根据串口页设置决定，多个请以换行分隔')
-                key_mapping_config_var[str(data_len + 8)] = ui.textarea(label=f"串口发送内容#{num}", value=textarea_data_change(tmp_config["serial_send_data"]), placeholder='多个请以换行分隔，ASCII例如：open led\nHEX例如（2个字符的十六进制字符）：313233').style("width:300px;").tooltip('此处输入发送到串口的数据内容，数据类型根据串口页设置决定，多个请以换行分隔')
+                key_mapping_config_var[str(data_len + 8)] = ui.textarea(label=f"图片路径#{num}", value=textarea_data_change(tmp_config["img_path"]), placeholder='多个请以换行分隔，支持绝对路径或相对路径，需要注意路径的斜杠哈').style("width:300px;").tooltip('此处输入图片路径，多个请以换行分隔。默认随机显示')
                           
     
     def key_mapping_del(index):
