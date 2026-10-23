@@ -5,6 +5,7 @@
 """
 from nicegui import ui
 
+from webui_app.fields import jump_to
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
 from webui_app.options import CHAT_TYPE_OPTIONS, VISUAL_BODY_OPTIONS, platform_options
 
@@ -70,30 +71,30 @@ def readiness(config):
         'title': '弹幕来源',
         'value': plat_label + (f' · 房间号 {room}' if room else ' · 未填房间号'),
         'ok': bool(platform) and platform != 'talk' and bool(room),
-        'tab': '平台接入',
+        'tab': '平台接入', 'field': '平台',
         'hint': '不接平台就只能按文案念，收不到任何弹幕',
     }, {
         'title': '大语言模型',
         'value': CHAT_TYPE_OPTIONS.get(chat_type, chat_type or '未选择'),
         'ok': bool(chat_type) and chat_type != 'none',
-        'tab': '大语言模型',
+        'tab': '平台接入', 'field': '大语言模型',
         'hint': '不选则数字人不会回答，只会复读或只念文案',
     }, {
         'title': '文本转语音',
         'value': AUDIO_SYNTHESIS_TYPE_OPTIONS.get(tts_type, tts_type or '未选择'),
         'ok': bool(tts_type) and tts_type != 'none',
-        'tab': '文本转语音',
+        'tab': '平台接入', 'field': '语音合成',
         'hint': '不选就没有声音，弹幕回复只会出现在字幕页',
     }, {
         'title': '虚拟身体',
         'value': VISUAL_BODY_OPTIONS.get(body, body or '未选择'),
         'ok': bool(body),
-        'tab': '虚拟身体',
+        'tab': '平台接入', 'field': '虚拟身体',
         'hint': '只要画面的话，留「其他（外置）」由外部窗口显示',
     }]
 
 
-def build_overview_tab(config, state, dirty_guard, select, save_config, card_css):
+def build_overview_tab(config, state, dirty_guard, select, save_config, card_css, accent):
     """总览面板：运行态 + 未保存计数 + 开播就绪度，每行都能一键跳到对应配置页。"""
     with ui.card().style(card_css + 'width:100%;max-width:760px;'):
         ui.label('开播就绪度').style(f'font-size:17px;font-weight:600;color:{INK};')
@@ -121,8 +122,9 @@ def build_overview_tab(config, state, dirty_guard, select, save_config, card_css
                     ui.label(row['title']).style(f'font-size:14px;font-weight:600;color:{INK};')
                     ui.label(row['value'] if row['ok'] else f"{row['value']} —— {row['hint']}").style(
                         f'font-size:13px;color:{INK_MUT};')
-                ui.button('去配置', on_click=lambda name=row['tab']: select(name)).props(
-                    'flat dense no-caps size=sm')
+                # 「去配置」不止切页，还要落到那个框上并描一下边（story-1 的验收标准）
+                ui.button('去配置', on_click=lambda r=row: jump_to(
+                    r['field'], 0, accent, select, r['tab'])).props('flat dense no-caps size=sm')
 
         ui.button('保存配置', on_click=save_config).props('outline no-caps dense').style(
             'margin-top:12px;')

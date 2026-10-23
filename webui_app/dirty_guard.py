@@ -3,15 +3,18 @@
 这版 webui 的语义是「点保存才把所有控件值写盘」，改到一半刷新或关标签页会静默丢光，
 而全站原本没有任何提示（走查 audit-2 blocker）。
 
-脏状态不去逐个控件手写监听——输入类控件有 850 多个，分散在 16 个页面模块里就地创建，
+脏状态不去逐个控件手写监听——输入类控件有 850 多个，分散在十几个页面模块里就地创建，
 往十几层函数签名上串一个回调不划算——而是在页面构建完成后遍历元素树，统一给这些控件
 挂 on_value_change；运行期新加的组（增加配置组）靠定时器补挂。
+
+角标还能点开，列出「改了哪些项、现在是什么值」，点某一项跳到那个框（story-2 的验收标准）。
 """
 from nicegui import app, context, ui
 
-# 只有真会改配置的控件算脏；ui.expansion / ui.tabs 也是 ValueElement，
-# 但展开面板、切页不该被当成「有未保存修改」。
-INPUT_TYPES = (ui.input, ui.textarea, ui.select, ui.switch, ui.checkbox)
+from webui_app.fields import INPUT_TYPES, field_name, jump_to, locate, value_text
+
+INK = '#111827'
+INK_MUT = '#4b5563'
 
 # 浏览器侧的拦截开关：Chrome 只在用户已经和页面交互过之后才允许 beforeunload 弹窗，
 # 而「改过控件」本身就意味着交互过，所以这里不需要额外兜底。
@@ -35,6 +38,12 @@ class DirtyGuard:
         self._sent = None
         self._label = None
         self._status = None
+        self._elements = {}
+        self._select_tab = None
+        self._accent = '#3e78bd'
+        self.dialog = None
+        self._list = None
+        self._hint = None
 
     def install(self) -> None:
         """注入页面脚本并在浏览器连上时补发一次当前脏状态。"""
@@ -51,6 +60,58 @@ class DirtyGuard:
         self._status = label
         self._paint_label()
 
+    def bind_nav(self, select_tab, accent) -> None:
+        """未保存清单要点开某一项就能跳过去，所以需要切页回调与主题色。"""
+        self._select_tab = select_tab
+        self._accent = accent.rstrip(';')
+
+    def build_list(self) -> None:
+        """未保存清单对话框：全站建一次复用（同 confirm 的理由）。"""
+        dialog = ui.dialog()
+        self.dialog = dialog
+        with dialog, ui.card().style('width:100%;max-width:620px;padding:14px;'):
+            self._hint = ui.label('').style(f'font-size:12px;color:{INK_MUT};margin-bottom:6px;')
+            self._list = ui.column().style('width:100%;gap:2px;max-height:50vh;overflow-y:auto;')
+
+    def open_list(self) -> None:
+        items = self.items()
+        self._list.clear()
+        self._hint.set_text(f'共 {len(items)} 项改动还没写进配置文件；点某一项跳到那个框'
+                            if items else '没有未保存的改动')
+        with self._list:
+            for label, value, tab, section, element in items:
+                ordinal = sum(1 for other in self._elements.values()
+                              if other.id < element.id and field_name(other) == label
+                              and locate(other)[0] == tab)
+                with ui.button(on_click=lambda el=element, ords=ordinal, tb=tab: self._jump_to_field(
+                        el, ords, tb)).props('flat no-caps align=left dense').classes('w-full'):
+                    with ui.column().style('gap:0;align-items:flex-start;'):
+                        ui.label(f'{label} = {value}').style(f'font-size:14px;color:{INK};')
+                        where = ' · '.join(x for x in (tab, section) if x)
+                        if where:
+                            ui.label(where).style(f'font-size:12px;color:{INK_MUT};')
+        self.dialog.open()
+
+    def _jump_to_field(self, element, ordinal, tab):
+        self.dialog.close()
+        _tab, _section, expansion = locate(element)
+        jump_to(field_name(element), ordinal, self._accent, self._select_tab, tab, expansion)
+
+    def items(self):
+        """(控件名, 当前值, tab, 分区, 控件)，按页面与控件顺序。"""
+        rows = []
+        for element_id in self._dirty:
+            element = self._elements.get(element_id)
+            if element is None or element.is_deleted:
+                continue
+            label = field_name(element)
+            if not label:
+                continue
+            tab, section, _expansion = locate(element)
+            rows.append((label, value_text(element), tab, section, element))
+        rows.sort(key=lambda r: (r[2], r[3], r[0]))
+        return rows
+
     def count(self) -> int:
         return len(self._dirty)
 
@@ -63,6 +124,7 @@ class DirtyGuard:
             if not isinstance(element, INPUT_TYPES) or element.id in self._watched:
                 continue
             self._watched.add(element.id)
+            self._elements[element.id] = element
             element.on_value_change(lambda e: self.note_change(e.sender.id))
 
     def note_change(self, element_id: int) -> None:

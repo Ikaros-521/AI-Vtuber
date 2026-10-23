@@ -430,7 +430,8 @@ def goto_func_page():
 
     with ui.tab_panels(tabs, value=overview_page).classes('w-full') as tab_panels:
         with ui.tab_panel(overview_page).style(tab_panel_css):
-            build_overview_tab(config, state, dirty_guard, select_tab, save_config, card_css)
+            build_overview_tab(config, state, dirty_guard, select_tab, save_config, card_css,
+                               button_bottom_color)
 
         with ui.tab_panel(common_config_page).style(tab_panel_css) as common_config_panel:
             page_config_mappings.append(build_common_config_tab(
@@ -514,9 +515,11 @@ def goto_func_page():
 
     with ui.page_sticky(position="bottom-right", x_offset=12, y_offset=12):
         with ui.column().style("align-items:flex-end;gap:8px;"):
-            dirty_label = ui.label('● 配置已保存').style(
+            # 角标做成真按钮：点开「哪些项还没保存、现在是什么值」的清单（story-2 验收标准）
+            dirty_badge = ui.button('● 配置已保存', on_click=dirty_guard.open_list).props(
+                'flat no-caps dense').style(
                 "font-size:12px;padding:4px 10px;border-radius:14px;background:#ffffff;"
-                "color:#16a34a;box-shadow:0 1px 4px rgba(0,0,0,0.18);")
+                "color:#16a34a;box-shadow:0 1px 4px rgba(0,0,0,0.18);").tooltip('点开看哪些项还没保存')
 
             with ui.row().style("flex-wrap:wrap;justify-content:flex-end;gap:6px;") as ops_row:
                 button_save = ui.button('保存配置', on_click=lambda: save_config(), color=button_bottom_color).style(button_bottom_css).tooltip("保存webui的配置到本地文件，有些配置保存后需要重启生效")
@@ -547,8 +550,10 @@ def goto_func_page():
 
     # 未保存改动守卫接线：注入拦截脚本 + 角标 + 给页面上的输入控件挂变更记录
     dirty_guard.install()
+    dirty_guard.bind_nav(select_tab, button_bottom_color)
+    dirty_guard.build_list()
     ui.add_head_html(PAGE_SCRIPTS)
-    dirty_guard.bind_label(dirty_label)
+    dirty_guard.bind_label(dirty_badge)
     dirty_guard.watch(force=True)
     # 「增加配置组」这类按钮是运行期现建控件的，定时补挂一次，别漏掉新加的组
     ui.timer(3.0, dirty_guard.watch)

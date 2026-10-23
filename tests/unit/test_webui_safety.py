@@ -11,6 +11,7 @@ from nicegui.page import page
 
 from webui_app.confirm import ConfirmBox, confirm_delete_file, confirm_delete_group
 from webui_app.dirty_guard import DirtyGuard
+from webui_app.fields import jump_to
 
 TEST_PAGE = page('/webui-safety-unit-test')
 
@@ -208,3 +209,36 @@ def test_widgets_created_later_are_picked_up(in_client):
     first.value = 'a'
     later.value = 'b'
     assert guard.count() == 2
+
+
+# ─────────────────────────────────────────── 未保存清单（角标点开那一层）
+
+def test_list_rows_carry_name_value_and_page(in_client):
+    """清单要报出「哪一项、现在是什么值」，开关也要有可读值而不是 True。"""
+    guard = DirtyGuard()
+    with in_client:
+        room = ui.input('直播间号', value='1')
+        tts = ui.switch('启用语音合成', value=False)
+        guard.bind_nav(lambda name: None, '#3e78bd;')
+        guard.build_list()
+        guard.watch(force=True)
+        room.value = '2783339'
+        tts.value = True
+        guard.open_list()
+        rows = [child for child in guard._list if isinstance(child, ui.button)]
+    assert len(rows) == 2
+    texts = [el.text for row in rows for el in row.descendants() if isinstance(el, ui.label)]
+    assert '直播间号 = 2783339' in texts
+    assert '启用语音合成 = 开' in texts
+
+
+def test_highlight_color_stays_valid_css(in_client, monkeypatch):
+    """主题色是从 config 读的，末尾常带分号；带着它拼 outline 会整条失效，描边静默不出现。"""
+    calls = []
+    monkeypatch.setattr(Client, 'has_socket_connection', True)
+    monkeypatch.setattr(Client, 'run_javascript', lambda self, code, **kw: calls.append(code))
+    with in_client:
+        jump_to('直播间号', 0, '#3e78bd;')
+    assert len(calls) == 1
+    assert "2px solid #3e78bd'" in calls[0]
+    assert "solid #3e78bd;'" not in calls[0]

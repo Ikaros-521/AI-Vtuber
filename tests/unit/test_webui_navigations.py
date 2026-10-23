@@ -12,10 +12,10 @@ import pytest
 from nicegui import Client, ui
 from nicegui.page import page
 
-from webui_app.dirty_guard import INPUT_TYPES
 from webui_app.overview import NAV_GROUPS, OVERVIEW, group_of, readiness
 from webui_app.repage import PAGE_PLAN, _blocks, _with_following
-from webui_app.search import ConfigSearch, _name_of
+from webui_app.fields import field_name
+from webui_app.search import ConfigSearch
 from webui_app.sections import _sections_of
 
 TEST_PAGE = page('/webui-nav-unit-test')
@@ -85,18 +85,18 @@ def test_name_of_covers_both_label_and_text():
         area = ui.textarea('回复模板')
         sel = ui.select(label='平台', options=['a'])
         empty = ui.input()
-    assert _name_of(box) == '违禁词路径'
-    assert _name_of(sw) == '启用音频匹配'
-    assert _name_of(cb) == '同意'
-    assert _name_of(area) == '回复模板'
-    assert _name_of(sel) == '平台'
-    assert _name_of(empty) == ''
+    assert field_name(box) == '违禁词路径'
+    assert field_name(sw) == '启用音频匹配'
+    assert field_name(cb) == '同意'
+    assert field_name(area) == '回复模板'
+    assert field_name(sel) == '平台'
+    assert field_name(empty) == ''
 
 
 def test_hits_match_name_and_section_case_insensitively():
-    index = [('保留条数', '定时任务', '定时与闲时', 0, None),
-             ('Max Tokens', '大语言模型', '大语言模型', 0, None),
-             ('别的', '无关', '无关', 0, None)]
+    index = [('保留条数', '定时任务', '定时与闲时', 0, None, None),
+             ('Max Tokens', '大语言模型', '大语言模型', 0, None, None),
+             ('别的', '无关', '无关', 0, None, None)]
     search = ConfigSearch(lambda name: None, '#3e78bd;')
     search._index = index
     assert [r[0] for r in search._hits('保留')] == ['保留条数']

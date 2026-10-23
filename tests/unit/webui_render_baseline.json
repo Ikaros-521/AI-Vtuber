@@ -1,14 +1,14 @@
 {
-  "distinct_texts": 1032,
+  "distinct_texts": 1033,
   "kinds": {
-    "Button": 119,
-    "Card": 127,
+    "Button": 120,
+    "Card": 128,
     "Checkbox": 33,
-    "Column": 7,
+    "Column": 8,
     "DarkMode": 1,
-    "Dialog": 2,
+    "Dialog": 3,
     "EChart": 3,
-    "Element": 9,
+    "Element": 10,
     "Expansion": 21,
     "Grid": 40,
     "Html": 2,
@@ -30,7 +30,7 @@
     "Tabs": 1,
     "Textarea": 160,
     "Timer": 3,
-    "Tooltip": 394
+    "Tooltip": 395
   },
   "texts": {
     "ACCESS_KEY_ID": 1,
@@ -791,6 +791,7 @@
     "温度": 6,
     "源语言": 2,
     "火山引擎": 3,
+    "点开看哪些项还没保存": 1,
     "点我跳转": 1,
     "点歌": 3,
     "点歌 优先级": 1,
@@ -1066,5 +1067,5 @@
     "默认不填就是默认选中的发言人": 1,
     "默认为：1，但有时候可能文章内容解析出来是空的，可以适当扩大检索数": 1
   },
-  "total_elements": 2172
+  "total_elements": 2178
 }
