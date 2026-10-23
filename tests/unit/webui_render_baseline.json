@@ -1,8 +1,8 @@
 {
-  "distinct_texts": 1031,
+  "distinct_texts": 1032,
   "kinds": {
     "Button": 119,
-    "Card": 126,
+    "Card": 127,
     "Checkbox": 33,
     "Column": 7,
     "DarkMode": 1,
@@ -16,7 +16,7 @@
     "Image": 1,
     "Input": 498,
     "Keyboard": 1,
-    "Label": 150,
+    "Label": 151,
     "Link": 5,
     "PageSticky": 1,
     "Row": 225,
@@ -505,6 +505,7 @@
     "工作区slug": 1,
     "工作流自定义参数（JSON）": 1,
     "平台": 1,
+    "平台与模型": 1,
     "平台接入": 1,
     "平台相关": 1,
     "应用ID": 1,
@@ -1065,5 +1066,5 @@
     "默认不填就是默认选中的发言人": 1,
     "默认为：1，但有时候可能文章内容解析出来是空的，可以适当扩大检索数": 1
   },
-  "total_elements": 2170
+  "total_elements": 2172
 }

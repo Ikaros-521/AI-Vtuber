@@ -28,6 +28,9 @@ PAGE_PLAN = [
 # 裸 row 搬走后要有个标题，不然在新页面上是悬着的一片输入框
 ROW_TITLES = {'提示词前缀': '对话与回复模板'}
 
+# 就地包一层卡片（不搬走）：平台接入 顶部那排是全页唯一的裸表单，和下面「一功能一卡片」
+WRAP_IN_PLACE = [('平台', '平台与模型')]
+
 
 def _title_of(section):
     if isinstance(section, Expansion):
@@ -126,5 +129,20 @@ def apply_page_plan(tabs, tab_panels, source_panel, panel_css, card_css):
         for block in picked:
             block.move(panel)
         made.append(name)
+    _wrap_in_place(source_panel, card_css)
     _drop_empty_containers(source_panel)
     return made
+
+
+def _wrap_in_place(root, card_css):
+    """给留在原页的裸 row 套一张带标题的卡片，位置和大小都不变。"""
+    for anchor, title in WRAP_IN_PLACE:
+        row = _loose_row(root, anchor)
+        parent = row.parent_slot.parent
+        index = list(parent).index(row)
+        with parent:
+            shell = ui.card().style(card_css)
+        with shell:
+            ui.label(title)
+        row.move(shell)
+        shell.move(parent, index)
