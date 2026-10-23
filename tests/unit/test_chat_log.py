@@ -47,7 +47,12 @@ def answer(text):
 
 
 def rendered(scroll_area):
-    return [message._original_text[0] for message in scroll_area]
+    # 面板里除了消息还可能有「还没有聊天记录」占位，只数消息
+    return [m._original_text[0] for m in scroll_area if hasattr(m, '_original_text')]
+
+
+def placeholders(scroll_area):
+    return [c for c in scroll_area if not hasattr(c, '_original_text')]
 
 
 def test_every_open_page_gets_the_message(boxes):
@@ -118,3 +123,29 @@ def test_non_llm_callback_is_ignored(boxes):
 
     assert rendered(box) == []
     assert len(log.messages) == 0
+
+
+def test_empty_panel_shows_placeholder(boxes):
+    """一条消息都没有时得有个说明，否则看着像坏了；来消息就撤掉。"""
+    log = ChatLog()
+    box = boxes()
+    log.mount(box)
+    assert len(placeholders(box)) == 1
+    assert rendered(box) == []
+
+    log.add(question("在吗"))
+    assert placeholders(box) == []
+    assert rendered(box) == ["在吗"]
+
+
+def test_replayed_history_has_no_placeholder(boxes):
+    """有历史可补的时候不要挂占位，说明会和消息混在一起。"""
+    log = ChatLog()
+    first = boxes()
+    log.mount(first)
+    log.add(question("在吗"))
+
+    second = boxes()
+    log.mount(second)
+    assert placeholders(second) == []
+    assert rendered(second) == ["在吗"]

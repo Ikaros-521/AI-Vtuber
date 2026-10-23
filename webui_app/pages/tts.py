@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 from nicegui import ui
 
 from utils.my_log import logger
+from webui_app.confirm import confirm_delete_file
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
 from webui_app.pages import PageConfig
 
@@ -132,12 +133,12 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
         tmp_label.move(tts_common_audio_card)
         audio_tmp = ui.audio(src=file_path)
         audio_tmp.move(tts_common_audio_card)
-        button_audio_del = ui.button('删除音频', on_click=lambda: clear_tts_common_audio_card(file_path), color=button_internal_color).style(button_internal_css)
+        button_audio_del = ui.button('删除音频', on_click=lambda: confirm_delete_file(file_path, lambda: clear_tts_common_audio_card(file_path)), color=button_internal_color).style(button_internal_css)
         button_audio_del.move(tts_common_audio_card)
         
         
     with ui.card().style(card_css):
-        ui.label("合成测试（只是测试，若确认使用此TTS，请前往 通用配置 配置 语音合成）")
+        ui.label("合成测试（只是测试，若确认使用此TTS，请前往 平台接入 选 语音合成）")
         with ui.row():
             select_tts_common_audio_synthesis_type = ui.select(
                 label='语音合成', 

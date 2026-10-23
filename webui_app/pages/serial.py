@@ -4,6 +4,7 @@ import traceback
 from nicegui import ui
 
 from utils.my_log import logger
+from webui_app.confirm import confirm_delete_group
 from webui_app.pages import PageConfig
 
 
@@ -110,12 +111,12 @@ def build_serial_tab(config, card_css, switch_internal_css, button_internal_colo
             logger.error(traceback.format_exc())
 
     with ui.element('div').classes('p-2 bg-blue-100'):
-        ui.label("此页完成串口配置后，可以在“通用配置”的 串口映射配置功能\n 注意！！！此处连接测试完成后，请 关闭串口，因为程序是跨进程使用的，所以不关掉会占用串口，导致无法正常使用！")
+        ui.label("此页完成串口配置后，可以在“按键与命令”的 串口映射配置功能\n 注意！！！此处连接测试完成后，请 关闭串口，因为程序是跨进程使用的，所以不关掉会占用串口，导致无法正常使用！")
 
     with ui.row():
         input_serial_config_index = ui.input(label='串口配置索引', value="", placeholder='串口配置组的排序号，就是说第一个组是1，第二个组是2，以此类推。请填写纯正整数')
         button_serial_config_add = ui.button('增加串口配置组', on_click=serial_config_add, color=button_internal_color).style(button_internal_css)
-        button_serial_config_del = ui.button('删除串口配置组', on_click=lambda: serial_config_del(input_serial_config_index.value), color=button_internal_color).style(button_internal_css)
+        button_serial_config_del = ui.button('删除串口配置组', on_click=lambda: confirm_delete_group('串口', input_serial_config_index.value, serial_config_del), color=button_internal_color).style(button_internal_css)
 
     with serial_config_card:
         for index, serial_config in enumerate(config.get("serial", "config")):

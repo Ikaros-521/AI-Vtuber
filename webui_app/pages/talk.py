@@ -23,7 +23,7 @@ FASTER_WHISPER_LANGUAGES = [
 
 def build_talk_tab(config, common, state, chat_log, card_css, switch_internal_css,
                    button_internal_color, button_internal_css):
-    with ui.row().style("position:fixed; top: 100px; right: 20px;"):
+    with ui.row().style("position:fixed; top: 100px; right: 20px;").classes("chat-log-float"):
         with ui.expansion('聊天记录', icon="question_answer", value=True):
             scroll_area_chat_box = ui.scroll_area().style("width:500px; height:700px;")
     chat_log.mount(scroll_area_chat_box)

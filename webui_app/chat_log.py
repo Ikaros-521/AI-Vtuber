@@ -17,11 +17,18 @@ class ChatLog:
     def __init__(self):
         self.scroll_areas = []
         self.messages = deque(maxlen=MAX_MESSAGES)
+        # 一条消息都没有时面板是全空的，看起来像坏了；挂一条说明，来消息就撤掉
+        self._placeholders = {}
 
     def mount(self, scroll_area):
         self.scroll_areas = self._live() + [scroll_area]
         for message in self.messages:
             self._append(scroll_area, message)
+        if not self.messages:
+            with scroll_area:
+                self._placeholders[id(scroll_area)] = ui.label(
+                    '还没有聊天记录：弹幕被回复后会显示在这里，最多保留最近 100 条'
+                ).style('font-size:13px;color:#4b5563;padding:14px 12px;')
         scroll_area.scroll_to(percent=1, duration=0.2)
 
     def add(self, data_json):
@@ -45,6 +52,10 @@ class ChatLog:
             scroll_area.scroll_to(percent=1, duration=0.2)
 
     def _append(self, scroll_area, message):
+        placeholder = self._placeholders.pop(id(scroll_area), None)
+        if placeholder is not None and not placeholder.is_deleted:
+            placeholder.delete()
+
         with scroll_area:
             ui.chat_message(message["content"], name=message["name"],
                             stamp=message["stamp"], avatar=message["avatar"])
@@ -57,13 +68,19 @@ class ChatLog:
         # 连接断开超过重连宽限后 nicegui 会删掉 client，往它那棵树上加元素只是白加，
         # 而且每刷新一次页面就多一棵，必须收掉
         live = []
+        dead = []
         for scroll_area in self.scroll_areas:
             try:
                 client = scroll_area.client
             except RuntimeError:
+                dead.append(id(scroll_area))
                 continue
-            if not client.is_deleted and client.id in Client.instances:
-                live.append(scroll_area)
+            if client.is_deleted or client.id not in Client.instances:
+                dead.append(id(scroll_area))
+                continue
+            live.append(scroll_area)
+        for key in dead:
+            self._placeholders.pop(key, None)
         return live
 
 

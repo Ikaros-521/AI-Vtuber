@@ -11,13 +11,17 @@ from utils.audio import Audio
 from webui_app.api import register_api
 from webui_app.chat_log import chat_log
 from webui_app.config_store import update_config
+from webui_app.confirm import confirm
+from webui_app.dirty_guard import DirtyGuard
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
 from webui_app.login import build_login, start_expiration_timer
+from webui_app.overview import OVERVIEW, build_nav_chips, build_overview_tab
 from webui_app.pages.assistant_anchor import build_assistant_anchor_tab
 from webui_app.pages.common_config import build_common_config_tab, validate_config, write_local_qa_file
 from webui_app.pages.copywriting import build_copywriting_tab
 from webui_app.pages.data_analysis import build_data_analysis_tab
 from webui_app.pages.image_recognition import build_image_recognition_tab
+from webui_app.pages.interact_filter import build_interact_filter_tab
 from webui_app.pages.integral import build_integral_tab
 from webui_app.pages.llm import build_llm_tab
 from webui_app.pages.serial import build_serial_tab
@@ -28,12 +32,15 @@ from webui_app.pages.translate import build_translate_tab
 from webui_app.pages.tts import build_tts_tab
 from webui_app.pages.visual_body import build_visual_body_tab
 from webui_app.pages.web_page import build_web_page_tab
+from webui_app.repage import apply_page_plan
 from webui_app.processes import (
     restart_application,
     run_external_program,
     scroll_to_top,
     stop_external_program,
 )
+from webui_app.search import ConfigSearch
+from webui_app.sections import add_section_indexes
 from webui_app.state import state
 
 """
@@ -189,6 +196,82 @@ button_internal_color = config.get("webui", "theme", "list", theme_choose, "butt
 switch_internal_css = config.get("webui", "theme", "list", theme_choose, "switch_internal")
 echart_css = config.get("webui", "theme", "list", theme_choose, "echart")
 
+# 未保存改动守卫：角标与浏览器关闭拦截，页面构建完成后在 goto_func_page 里接线
+dirty_guard = DirtyGuard()
+
+"""
+页面级脚本与样式
+
+- .q-page 底部留白：右下角的操作条是浮在页面上的，不留白滚到底最后一行会被压住
+- <900px 的流式化：定宽控件/卡片改成整行、网格降单列（实测 390 下 16 个 tab 从 11 个横向溢出降到 0 个）
+- .narrow-tip：窄屏提示条，默认不显示，窗口 <900px 才显
+- ?tab= 深链：NiceGUI 是单页应用，16 个 tab 都挂在同一个 URL 上，
+  不写进地址栏就没法把「哪个配置页」发给别人，刷新也回不到原来那一页
+"""
+PAGE_SCRIPTS = """
+<style>
+.q-page{padding-bottom:100px;}
+.narrow-tip{display:none !important;}
+/* 聊天记录面板浮在右侧，500px 宽：窗口不够宽就会压住配置项（1024 实测遮 1 个，
+   640 遮 7 个）。不够宽时改成正常流，代价是要滚到页面上方才看得到日志 */
+@media (max-width:1279px){.chat-log-float{position:static !important;}}
+@media (max-width:899px){
+  .narrow-tip{display:flex !important;}
+  /* 页面里 850 多处 .style('width:XXXpx') 不可能逐个改，窄屏用样式表的 !important
+     覆盖内联宽度，是代价最小的流式化做法：定宽控件降成整行，卡片和按钮最多撑满一行 */
+  .q-tab-panel .q-field,
+  .q-tab-panel .q-img,
+  .q-tab-panel img,
+  .q-tab-panel video,
+  .q-tab-panel audio,
+  .q-tab-panel .q-table{width:100% !important;max-width:100% !important;}
+  .q-tab-panel .q-card{width:100% !important;max-width:100% !important;}
+  .q-tab-panel .q-btn{max-width:100%;}
+  /* flex 子项默认 min-width:auto，里面只要有一个定宽控件就会把整行顶出视口；
+     NiceGUI 的 row/column 落到 DOM 是 .nicegui-row / .nicegui-column，不是 q-row */
+  .q-tab-panel .nicegui-row > *,
+  .q-tab-panel .nicegui-column > *{min-width:0;}
+  .q-tab-panel .nicegui-grid{grid-template-columns:1fr !important;}
+  /* 开关/勾选框被挤窄时「启用」会竖排成两行，这类控件保持自身宽度、标签不折行 */
+  .q-tab-panel .q-toggle,
+  .q-tab-panel .q-checkbox,
+  .q-tab-panel .q-radio{flex:none;}
+  .q-tab-panel .q-q-item__label{white-space:nowrap;}
+  .q-tab-panel pre{overflow-x:auto;max-width:100%;}
+  /* 区块索引在窄屏收成一行横向滑，21 个芯片竖着排能占掉半屏；
+     必须同时压住宽度，否则 nowrap 会让这一行自己把面板顶宽 */
+  .section-index{flex-wrap:nowrap !important;overflow-x:auto;
+                 width:100% !important;max-width:100% !important;min-width:0;}
+  /* 芯片本身不能被压缩，否则一行 21 个会被挤成一列一个字 */
+  .section-index > *{flex:none;}
+}
+</style>
+<script>
+(function () {
+    function tabByName(name) {
+        return Array.prototype.find.call(document.querySelectorAll('.q-tab'),
+                                        function (el) { return el.textContent.trim() === name; });
+    }
+
+    var want = new URLSearchParams(location.search).get('tab');
+    if (want) {
+        var tries = 0;
+        var timer = setInterval(function () {
+            var el = tabByName(want);
+            if (el) { clearInterval(timer); el.click(); }
+            else if (++tries > 40) { clearInterval(timer); }
+        }, 100);
+    }
+
+    document.addEventListener('click', function (ev) {
+        var el = ev.target.closest ? ev.target.closest('.q-tab') : null;
+        if (!el) { return; }
+        history.replaceState(null, '', '?tab=' + encodeURIComponent(el.textContent.trim()));
+    }, true);
+})();
+</script>
+"""
+
 def goto_func_page():
     """
     跳转到功能页
@@ -266,6 +349,10 @@ def goto_func_page():
             logger.info("配置数据已成功写入文件！")
             ui.notify(position="top", type="positive", message="配置数据已成功写入文件！")
 
+            # 写盘成功后才清脏状态：放在最后是因为 on_save 回调里还会回写控件值，
+            # 提前清会让守卫把「自己写的值」重新记成未保存
+            dirty_guard.mark_saved()
+
             return True
         except Exception as e:
             logger.error(f"无法写入配置文件！\n{str(e)}")
@@ -302,13 +389,31 @@ def goto_func_page():
     # 聊天类型所有配置项
     page_config_mappings = []
 
+    # 窄屏提示：定宽控件在 <900px 已被上面那段样式表改成单列，不再裁；
+    # 这条只说明「窄屏能看到的东西少」，别再写会被裁掉那种已经不实的话
+    with ui.row().style(
+            'background:#fef3c7;color:#78350f;padding:8px 14px;border-radius:8px;'
+            'justify-content:center;align-items:center;margin:0 10px 6px;').classes('narrow-tip'):
+        ui.label('窄屏已自动改成单列，配置项多时要滚很久；能放宽窗口就放宽，一屏能看到更多。') \
+            .style('font-size:13px;')
+
+    # 分组导航条：16 个平铺 tab 归到「总览 + 6 组」，点组名跳到该组第一页。
+    # 这里不重建面板，只是给既有 tab 加一层可读的外壳
+    def select_tab(name):
+        tabs.set_value(name)
+
+    config_search = ConfigSearch(select_tab, button_bottom_color)
+    mark_group = build_nav_chips(select_tab, button_bottom_color.rstrip(';'), config_search.open)
+
     with ui.tabs().classes('w-full') as tabs:
-        common_config_page = ui.tab('通用配置')
+        overview_page = ui.tab('总览')
+        common_config_page = ui.tab('平台接入')
         llm_page = ui.tab('大语言模型')
         tts_page = ui.tab('文本转语音')
         svc_page = ui.tab('变声')
         visual_body_page = ui.tab('虚拟身体')
         copywriting_page = ui.tab('文案')
+        interact_filter_page = ui.tab('过滤')
         talk_page = ui.tab('聊天')
         image_recognition_page = ui.tab('图像识别')
         integral_page = ui.tab('积分')
@@ -320,8 +425,14 @@ def goto_func_page():
         docs_page = ui.tab('文档&教程')
         about_page = ui.tab('关于')
 
-    with ui.tab_panels(tabs, value=common_config_page).classes('w-full'):
-        with ui.tab_panel(common_config_page).style(tab_panel_css):
+    tabs.on_value_change(lambda e: mark_group(e.value))
+    mark_group(OVERVIEW)
+
+    with ui.tab_panels(tabs, value=overview_page).classes('w-full') as tab_panels:
+        with ui.tab_panel(overview_page).style(tab_panel_css):
+            build_overview_tab(config, state, dirty_guard, select_tab, save_config, card_css)
+
+        with ui.tab_panel(common_config_page).style(tab_panel_css) as common_config_panel:
             page_config_mappings.append(build_common_config_tab(
                 config, common, card_css, switch_internal_css, button_internal_color, button_internal_css))
 
@@ -345,6 +456,9 @@ def goto_func_page():
 
         with ui.tab_panel(integral_page).style(tab_panel_css):
             page_config_mappings.append(build_integral_tab(config, card_css, switch_internal_css))
+
+        with ui.tab_panel(interact_filter_page).style(tab_panel_css):
+            page_config_mappings.append(build_interact_filter_tab(config, card_css, switch_internal_css))
 
         with ui.tab_panel(talk_page).style(tab_panel_css):
             page_config_mappings.append(build_talk_tab(
@@ -378,17 +492,66 @@ def goto_func_page():
         with ui.tab_panel(about_page).style(tab_panel_css):
             build_about_tab(card_css)
 
-    with ui.grid(columns=6).style("position: fixed; bottom: 10px; text-align: center;"):
-        button_save = ui.button('保存配置', on_click=lambda: save_config(), color=button_bottom_color).style(button_bottom_css).tooltip("保存webui的配置到本地文件，有些配置保存后需要重启生效")
-        button_run = ui.button('一键运行', on_click=lambda: run_external_program(config), color=button_bottom_color).style(button_bottom_css).tooltip("运行main.py")
-        # 创建一个按钮，用于停止正在运行的程序
-        button_stop = ui.button("停止运行", on_click=lambda: stop_external_program(config), color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py")
-        button_light = ui.button('关灯', on_click=lambda: change_light_status(), color=button_bottom_color).style(button_bottom_css)
-        # button_stop.enabled = False  # 初始状态下停止按钮禁用
-        button_restart = ui.button('重启', on_click=lambda: restart_application(config), color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py并重启webui")
+    # 底部操作条：原来是一张 position:fixed 的定宽 grid，永久压住内容——1440 宽遮 46px 一条，
+    # 390 宽换行成 114px 高（占视口 15%）还有一半按钮掉出视口。改成右下角可折叠的一条，
+    # 平时只留「未保存」角标和一个按钮，要用了再展开。
+    def ask_stop():
+        confirm.ask('确认停止正在运行的直播程序？', lambda: stop_external_program(config),
+                    '弹幕监听、文案播报和虚拟身体会一起停下；正在直播的话，这一下就是断播。')
 
-    with ui.row().style("position:fixed; bottom: 20px; right: 20px;"):
-        ui.button('⇧', on_click=lambda: scroll_to_top(), color=button_bottom_color).style(button_bottom_css)
+    def ask_restart():
+        confirm.ask('确认重启 webui？', lambda: restart_application(config),
+                    '会先停掉正在运行的直播程序，再用当前配置重新拉起 webui；'
+                    '没点「保存配置」的改动会全部丢失。')
+
+    ops_open = False
+
+    def switch_ops():
+        nonlocal ops_open
+        ops_open = not ops_open
+        ops_row.set_visibility(ops_open)
+        button_ops.set_text('收起' if ops_open else '操作')
+
+    with ui.page_sticky(position="bottom-right", x_offset=12, y_offset=12):
+        with ui.column().style("align-items:flex-end;gap:8px;"):
+            dirty_label = ui.label('● 配置已保存').style(
+                "font-size:12px;padding:4px 10px;border-radius:14px;background:#ffffff;"
+                "color:#16a34a;box-shadow:0 1px 4px rgba(0,0,0,0.18);")
+
+            with ui.row().style("flex-wrap:wrap;justify-content:flex-end;gap:6px;") as ops_row:
+                button_save = ui.button('保存配置', on_click=lambda: save_config(), color=button_bottom_color).style(button_bottom_css).tooltip("保存webui的配置到本地文件，有些配置保存后需要重启生效")
+                button_run = ui.button('一键运行', on_click=lambda: run_external_program(config), color=button_bottom_color).style(button_bottom_css).tooltip("运行main.py")
+                # 创建一个按钮，用于停止正在运行的程序
+                button_stop = ui.button("停止运行", on_click=ask_stop, color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py")
+                button_light = ui.button('关灯', on_click=lambda: change_light_status(), color=button_bottom_color).style(button_bottom_css)
+                # button_stop.enabled = False  # 初始状态下停止按钮禁用
+                button_restart = ui.button('重启', on_click=ask_restart, color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py并重启webui")
+                ui.button('回到顶部', icon='keyboard_arrow_up', on_click=lambda: scroll_to_top(), color=button_bottom_color).style(button_bottom_css)
+            ops_row.set_visibility(False)
+
+            button_ops = ui.button('操作', icon='settings', on_click=switch_ops, color=button_bottom_color).style(button_bottom_css)
+
+    # 24 页拆分：把 通用配置 的区块按 sitemap 的分组改挂到各自的新 tab 上。
+    # 只搬 DOM 归属，控件与 save_common 留在原文件，保存链路不动
+    apply_page_plan(tabs, tab_panels, common_config_panel, tab_panel_css, card_css)
+
+    # 危险操作确认框：NiceGUI 3 没有 ui.confirm，对话框又是元素（关闭只是隐藏），
+    # 所以全站建一次放在布局里，各页面调用 confirm.ask 复用同一个
+    confirm.build()
+
+    # 全局搜索：索引在每次打开时现建，所以这里只是把对话框和 Ctrl+K 挂上
+    config_search.build()
+
+    # 长 tab 的区块索引（大语言模型 那种一二十块的一页，先让人看得见这页有什么）
+    add_section_indexes(button_bottom_color)
+
+    # 未保存改动守卫接线：注入拦截脚本 + 角标 + 给页面上的输入控件挂变更记录
+    dirty_guard.install()
+    ui.add_head_html(PAGE_SCRIPTS)
+    dirty_guard.bind_label(dirty_label)
+    dirty_guard.watch(force=True)
+    # 「增加配置组」这类按钮是运行期现建控件的，定时补挂一次，别漏掉新加的组
+    ui.timer(3.0, dirty_guard.watch)
 
     # 是否启用自动运行功能
     if config.get("webui", "auto_run"):
