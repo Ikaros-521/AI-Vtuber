@@ -12,6 +12,7 @@ import traceback
 from nicegui import ui
 
 from utils.my_log import logger
+from webui_app.errors import explain
 from webui_app.state import state
 
 # 存储运行的子进程，key 为程序名
@@ -114,7 +115,7 @@ def run_external_program(config, config_path="config.json", type="webui"):
         return {"code": 200, "msg": "程序开始运行"}
     except Exception as e:
         if type == "webui":
-            ui.notify(position="top", type="negative", message=f"错误：{e}")
+            ui.notify(position="top", type="negative", message=f"启动失败：{explain(e)}")
         logger.error(traceback.format_exc())
         state.running_flag = False
 

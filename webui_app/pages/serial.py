@@ -5,6 +5,7 @@ from nicegui import ui
 
 from utils.my_log import logger
 from webui_app.confirm import confirm_delete_group, delete_button
+from webui_app.errors import notify_error
 from webui_app.pages import PageConfig
 
 
@@ -22,9 +23,9 @@ def build_serial_tab(config, card_css, switch_internal_css, button_internal_colo
             logger.info(f"搜索到的串口：{list_ports}")
             ui.notify(position="top", type="positive", message=f"搜索到的串口：{list_ports}")
             serial_config_var[str(8 * index)].set_options(list_ports)
-        except Exception:
+        except Exception as e:
             logger.error(traceback.format_exc())
-            ui.notify(position="top", type="negative", message=f"{traceback.format_exc()}")
+            notify_error(e, '搜索串口')
 
     async def connect_serial(index: int):
         logger.warning(index)
@@ -36,9 +37,9 @@ def build_serial_tab(config, card_css, switch_internal_css, button_internal_colo
             baudrate = serial_config_var[str(8 * index + 1)].value
             resp_json = await serial_manager.connect(serial_name, baudrate)
             ui.notify(position="top", type="positive" if resp_json['ret'] else "negative", message=f"{resp_json['msg']}")
-        except Exception:
+        except Exception as e:
             logger.error(traceback.format_exc())
-            ui.notify(position="top", type="negative", message=f"{traceback.format_exc()}")
+            notify_error(e, '连接串口')
 
     async def disconnect_serial(index: int):
         logger.warning(index)
@@ -49,9 +50,9 @@ def build_serial_tab(config, card_css, switch_internal_css, button_internal_colo
             serial_name = serial_config_var[str(8 * index)].value
             resp_json = await serial_manager.disconnect(serial_name)
             ui.notify(position="top", type="positive" if resp_json['ret'] else "negative", message=f"{resp_json['msg']}")
-        except Exception:
+        except Exception as e:
             logger.error(traceback.format_exc())
-            ui.notify(position="top", type="negative", message=f"{traceback.format_exc()}")
+            notify_error(e, '关闭串口')
 
     async def send_data_to_serial(index: int):
         try:
@@ -63,9 +64,9 @@ def build_serial_tab(config, card_css, switch_internal_css, button_internal_colo
             send_data = serial_config_var[str(8 * index + 6)].value
             resp_json = await serial_manager.send_data(serial_name, send_data, serial_data_type)
             ui.notify(position="top", type="positive" if resp_json['ret'] else "negative", message=f"{resp_json['msg']}")
-        except Exception:
+        except Exception as e:
             logger.error(traceback.format_exc())
-            ui.notify(position="top", type="negative", message=f"{traceback.format_exc()}")
+            notify_error(e, '发送串口数据')
 
     def serial_config_add():
         data_len = len(serial_config_var)

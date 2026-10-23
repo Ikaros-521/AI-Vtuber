@@ -9,6 +9,7 @@ from nicegui import ui
 from utils.my_log import logger
 from webui_app.config_store import update_config
 from webui_app.confirm import confirm_delete_group, delete_button
+from webui_app.errors import explain
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS, common_textarea_handle, textarea_data_change
 from webui_app.options import (
     CHAT_TYPE_OPTIONS,
@@ -473,7 +474,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                                 textarea_local_qa_text_json_file_content.value = json.dumps(common.read_file(input_local_qa_text_json_file_path.value, "dict"), ensure_ascii=False, indent=3)
                         except Exception as e:
                             logger.error(traceback.format_exc())
-                            ui.notify(f"文件路径有误或其他问题。报错：{str(e)}", position="top", type="negative")
+                            ui.notify(f"读这个路径读不了：{explain(e)}", position="top", type="negative")
 
                     button_local_qa_text_json_file_reload = ui.button('加载文件', on_click=lambda: local_qa_text_json_file_reload(), color=button_internal_color).style(button_internal_css)
 

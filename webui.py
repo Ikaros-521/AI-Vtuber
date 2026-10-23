@@ -13,6 +13,7 @@ from webui_app.chat_log import chat_log
 from webui_app.config_store import update_config
 from webui_app.confirm import confirm
 from webui_app.dirty_guard import DirtyGuard
+from webui_app.errors import explain
 from webui_app.fields import INVALID_RING, jump_to_element
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
 from webui_app.login import build_login, start_expiration_timer
@@ -345,7 +346,8 @@ def goto_func_page():
             return config_data
         except Exception as e:
             logger.error(f"无法读取webui配置到变量！\n{e}")
-            ui.notify(position="top", type="negative", message=f"无法读取webui配置到变量！\n{e}")
+            ui.notify(position="top", type="negative",
+                        message=f"读取界面上的值失败：{explain(e)}（完整错误见服务端日志）")
             logger.error(traceback.format_exc())
 
             return None
@@ -370,7 +372,8 @@ def goto_func_page():
                 config_data = json.load(config_file)
         except Exception as e:
             logger.error(f"无法读取配置文件！\n{e}")
-            ui.notify(position="top", type="negative", message=f"无法读取配置文件！{e}")
+            ui.notify(position="top", type="negative",
+                message=f"配置文件读不出来：{explain(e)}（路径 {config_path}）")
             return False
 
         # 读取webui配置到dict变量
@@ -398,7 +401,8 @@ def goto_func_page():
             return True
         except Exception as e:
             logger.error(f"无法写入配置文件！\n{str(e)}")
-            ui.notify(position="top", type="negative", message=f"无法写入配置文件！\n{str(e)}")
+            ui.notify(position="top", type="negative",
+                    message=f"配置文件写不进去：{explain(e)}（路径 {config_path}）")
             return False
         
 

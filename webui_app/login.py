@@ -11,6 +11,7 @@ import requests
 from nicegui import ui
 
 from utils.my_log import logger
+from webui_app.errors import explain
 from webui_app.processes import stop_programs
 
 # 登录成功后保存的 UMS 用户信息（含 accessToken、expiration_ts）
@@ -56,7 +57,7 @@ def check_expiration(config, common):
         logger.error(f"自检异常！")
         return False
     except Exception as e:
-        ui.notify(position="top", type="negative", message=f"错误：{e}")
+        ui.notify(position="top", type="negative", message=f"登录请求没走通：{explain(e)}")
         logger.error(traceback.format_exc())
 
         return False
