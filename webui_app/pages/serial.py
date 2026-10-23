@@ -4,8 +4,9 @@ import traceback
 from nicegui import ui
 
 from utils.my_log import logger
-from webui_app.confirm import confirm_delete_group, delete_button
+from webui_app.confirm import delete_button
 from webui_app.errors import notify_error
+from webui_app.groups import GroupPicker
 from webui_app.pages import PageConfig
 
 
@@ -92,10 +93,10 @@ def build_serial_tab(config, card_css, switch_internal_css, button_internal_colo
                 serial_config_var[str(data_len + 6)] = ui.input(label=f"发送数据#{int(data_len / 8) + 1}", value="", placeholder='填要发的内容，连接后，点 发送').style("width:200px;").tooltip('填要发的内容，连接后，点 发送')
                 serial_config_var[str(data_len + 7)] = ui.button('发送', on_click=lambda: send_data_to_serial(int(data_len / 8)))
 
-    def serial_config_del(index):
+    def serial_config_del(pos):
         try:
-            serial_config_card.remove(int(index) - 1)
-            keys_to_delete = [str(8 * (int(index) - 1) + i) for i in range(8)]
+            serial_config_card.remove(pos)
+            keys_to_delete = [str(8 * pos + i) for i in range(8)]
             for key in keys_to_delete:
                 if key in serial_config_var:
                     del serial_config_var[key]
@@ -115,9 +116,9 @@ def build_serial_tab(config, card_css, switch_internal_css, button_internal_colo
         ui.label("此页完成串口配置后，可以在“按键与命令”的 串口映射配置功能\n 注意！！！此处连接测试完成后，请 关闭串口，因为程序是跨进程使用的，所以不关掉会占用串口，导致无法正常使用！")
 
     with ui.row():
-        input_serial_config_index = ui.input(label='串口配置索引', value="", placeholder='串口配置组的排序号，就是说第一个组是1，第二个组是2，以此类推。请填写纯正整数')
-        button_serial_config_add = ui.button('增加串口配置组', on_click=serial_config_add, color=button_internal_color).style(button_internal_css)
-        button_serial_config_del = delete_button('删除串口配置组', lambda: confirm_delete_group('串口', input_serial_config_index.value, serial_config_del)).style(button_internal_css)
+        picker_serial = GroupPicker(lambda: serial_config_card, '串口', serial_config_del).build()
+        button_serial_config_add = ui.button('增加串口配置组', on_click=lambda: (serial_config_add(), picker_serial.refresh()), color=button_internal_color).style(button_internal_css)
+        button_serial_config_del = delete_button('删除串口配置组', picker_serial.ask_delete).style(button_internal_css)
 
     with serial_config_card:
         for index, serial_config in enumerate(config.get("serial", "config")):

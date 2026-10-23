@@ -6,7 +6,8 @@ from nicegui import ui
 
 from utils.my_log import logger
 from webui_app.config_store import update_config
-from webui_app.confirm import confirm, confirm_delete_group, delete_button
+from webui_app.confirm import confirm, delete_button
+from webui_app.groups import GroupPicker
 from webui_app.pages import PageConfig
 
 
@@ -26,11 +27,11 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
 
 
     # -删除
-    def webui_local_dir_to_endpoint_del(index):
+    def webui_local_dir_to_endpoint_del(pos):
         try:
-            webui_local_dir_to_endpoint_config_card.remove(int(index) - 1)
+            webui_local_dir_to_endpoint_config_card.remove(pos)
             # 删除操作
-            keys_to_delete = [str(2 * (int(index) - 1) + i) for i in range(2)]
+            keys_to_delete = [str(2 * pos + i) for i in range(2)]
             for key in keys_to_delete:
                 if key in webui_local_dir_to_endpoint_config_var:
                     del webui_local_dir_to_endpoint_config_var[key]
@@ -105,9 +106,9 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
     with ui.card().style(card_css):
         ui.label("本地路径指定URL路径访问")
         with ui.row():
-            input_webui_local_dir_to_endpoint_index = ui.input(label='配置索引', value="", placeholder='配置组的排序号，就是说第一个组是1，第二个组是2，以此类推。请填写纯正整数')
-            button_webui_local_dir_to_endpoint_add = ui.button('增加配置组', on_click=webui_local_dir_to_endpoint_add, color=button_internal_color).style(button_internal_css)
-            button_webui_local_dir_to_endpoint_del = delete_button('删除配置组', lambda: confirm_delete_group('本地路径映射', input_webui_local_dir_to_endpoint_index.value, webui_local_dir_to_endpoint_del)).style(button_internal_css)
+            picker_local_dir = GroupPicker(lambda: webui_local_dir_to_endpoint_config_card, '本地路径映射', webui_local_dir_to_endpoint_del).build()
+            button_webui_local_dir_to_endpoint_add = ui.button('增加配置组', on_click=lambda: (webui_local_dir_to_endpoint_add(), picker_local_dir.refresh()), color=button_internal_color).style(button_internal_css)
+            button_webui_local_dir_to_endpoint_del = delete_button('删除配置组', picker_local_dir.ask_delete).style(button_internal_css)
         
         with ui.row():
             switch_webui_local_dir_to_endpoint_enable = ui.switch('启用', value=config.get("webui", "local_dir_to_endpoint", "enable")).style(switch_internal_css)

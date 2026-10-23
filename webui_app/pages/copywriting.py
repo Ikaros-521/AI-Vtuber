@@ -5,7 +5,8 @@ import traceback
 from nicegui import ui
 
 from utils.my_log import logger
-from webui_app.confirm import confirm_delete_file, confirm_delete_group, delete_button
+from webui_app.confirm import confirm_delete_file, delete_button
+from webui_app.groups import GroupPicker
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS, common_textarea_handle, textarea_data_change
 from webui_app.pages import PageConfig
 
@@ -33,10 +34,10 @@ def build_copywriting_tab(config, common, audio, card_css, switch_internal_css,
                 copywriting_config_var[str(data_len + 3)] = ui.input(label=f"连续播放时间#{int(data_len / 5) + 1}", value=tmp_config["max_play_time"], placeholder='文案播放列表中连续播放音频的时长，如果超过了这个时长就会切换下一个文案列表').style("width:200px;")
                 copywriting_config_var[str(data_len + 4)] = ui.textarea(label=f"播放列表#{int(data_len / 5) + 1}", value=textarea_data_change(tmp_config["play_list"]), placeholder='此处填写需要播放的音频文件全名，填写完毕后点击 保存配置。文件全名从音频列表中复制，换行分隔，请勿随意填写').style("width:500px;")
 
-    def copywriting_del(index):
+    def copywriting_del(pos):
         try:
-            copywriting_config_card.remove(int(index) - 1)
-            keys_to_delete = [str(5 * (int(index) - 1) + i) for i in range(5)]
+            copywriting_config_card.remove(pos)
+            keys_to_delete = [str(5 * pos + i) for i in range(5)]
             for key in keys_to_delete:
                 if key in copywriting_config_var:
                     del copywriting_config_var[key]
@@ -123,9 +124,9 @@ def build_copywriting_tab(config, common, audio, card_css, switch_internal_css,
         input_copywriting_audio_interval = ui.input(label='音频播放间隔', value=config.get("copywriting", "audio_interval"), placeholder='文案音频播放之间的间隔时间。就是前一个文案播放完成后，到后一个文案开始播放之间的间隔时间。').tooltip('文案音频播放之间的间隔时间。就是前一个文案播放完成后，到后一个文案开始播放之间的间隔时间。')
         input_copywriting_switching_interval = ui.input(label='音频切换间隔', value=config.get("copywriting", "switching_interval"), placeholder='文案音频切换到弹幕音频的切换间隔时间（反之一样）。\n就是在播放文案时，有弹幕触发并合成完毕，此时会暂停文案播放，然后等待这个间隔时间后，再播放弹幕回复音频。').tooltip('n就是在播放文案时，有弹幕触发并合成完毕，此时会暂停文案播放，然后等待这个间隔时间后，再播放弹幕回复音频。')
     with ui.row():
-        input_copywriting_index = ui.input(label='文案索引', value="", placeholder='文案组的排序号，就是说第一个组是1，第二个组是2，以此类推。请填写纯正整数')
-        button_copywriting_add = ui.button('增加文案组', on_click=copywriting_add, color=button_internal_color).style(button_internal_css)
-        button_copywriting_del = delete_button('删除文案组', lambda: confirm_delete_group('文案', input_copywriting_index.value, copywriting_del)).style(button_internal_css)
+        picker_copywriting = GroupPicker(lambda: copywriting_config_card, '文案', copywriting_del).build()
+        button_copywriting_add = ui.button('增加文案组', on_click=lambda: (copywriting_add(), picker_copywriting.refresh()), color=button_internal_color).style(button_internal_css)
+        button_copywriting_del = delete_button('删除文案组', picker_copywriting.ask_delete).style(button_internal_css)
 
     with copywriting_config_card:
         for index, copywriting_config in enumerate(config.get("copywriting", "config")):

@@ -147,6 +147,8 @@ def build_index():
     for element in context.client.elements.values():
         if not isinstance(element, INPUT_TYPES):
             continue
+        if getattr(element, 'is_config_field', True) is False:
+            continue
         label = field_name(element)
         if not label:
             continue

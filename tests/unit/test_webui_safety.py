@@ -9,7 +9,7 @@ import pytest
 from nicegui import Client, ui
 from nicegui.page import page
 
-from webui_app.confirm import ConfirmBox, confirm_delete_file, confirm_delete_group
+from webui_app.confirm import ConfirmBox, confirm_delete_file
 from webui_app.dirty_guard import DirtyGuard
 from webui_app.fields import jump_to
 
@@ -74,34 +74,6 @@ def test_detail_label_hidden_when_empty(in_client):
     assert box._detail.visible is False
     box.ask('有标题', lambda: None, '有细节')
     assert box._detail.visible is True
-
-
-def test_delete_group_requires_an_index(in_client, monkeypatch):
-    """没填组号时不该弹「确认删除」，也不该把 None 传给删除函数。"""
-    from webui_app import confirm as confirm_module
-    box = ConfirmBox()
-    box.build()
-    confirm_module.confirm = box
-    monkeypatch.setattr(ui, 'notify', lambda **kw: None)
-    ran = []
-    for blank in ('', '   ', None):
-        confirm_delete_group('定时任务', blank, lambda i: ran.append(i))
-    assert ran == []
-    assert box.dialog.value is not True
-
-
-def test_delete_group_message_names_the_group_and_warns(in_client, monkeypatch):
-    from webui_app import confirm as confirm_module
-    box = ConfirmBox()
-    box.build()
-    confirm_module.confirm = box
-    monkeypatch.setattr(ui, 'notify', lambda **kw: None)
-    ran = []
-    confirm_delete_group('联动程序', '2', lambda i: ran.append(i))
-    assert box._title.text.startswith('确认删除「联动程序」第 2 组')
-    assert '无法撤销' in box._detail.text
-    box._accept()
-    assert ran == ['2']                # 组号要原样传给删除函数
 
 
 def test_delete_file_message_carries_the_path(in_client):

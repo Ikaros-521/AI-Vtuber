@@ -119,6 +119,8 @@ class DirtyGuard:
         for element in list(client.elements.values()):
             if not isinstance(element, INPUT_TYPES) or element.id in self._watched:
                 continue
+            if getattr(element, 'is_config_field', True) is False:   # 选择器之类的界面控件
+                continue
             self._watched.add(element.id)
             self._elements[element.id] = element
             element.on_value_change(lambda e: self.note_change(e.sender.id))

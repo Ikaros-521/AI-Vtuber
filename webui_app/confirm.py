@@ -8,7 +8,6 @@ from typing import Callable, Optional
 
 from nicegui import ui
 
-from utils.my_log import logger
 
 # 删除一组配置的统一说明：这些删除函数只改内存里的配置字典和页面控件，
 # 不落盘；但控件已经移走了，不保存也回不去，所以「不可撤销」必须讲清楚。
@@ -68,15 +67,6 @@ def delete_button(label: str, on_click: Callable[[], None]):
     那是条 !important 规则，`.style('color:#dc2626')` 压不过它。
     """
     return ui.button(label, on_click=on_click, color='negative', icon='delete').props('no-caps')
-
-
-def confirm_delete_group(name: str, index, action: Callable[[object], None]) -> None:
-    """删除「第 N 组配置」这类操作：十来个删除按钮共用一套文案。"""
-    if index is None or str(index).strip() == '':
-        logger.info('删除配置组未填组号，已忽略')
-        ui.notify(position='top', type='warning', message=f'请先在「配置索引」里填要删除的{name}组号')
-        return
-    confirm.ask(f'确认删除「{name}」第 {index} 组配置？', lambda: action(index), GROUP_DETAIL)
 
 
 def confirm_delete_file(path, action: Callable[[], None]) -> None:
