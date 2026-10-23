@@ -13,6 +13,7 @@ from webui_app.chat_log import chat_log
 from webui_app.config_store import update_config
 from webui_app.confirm import confirm
 from webui_app.dirty_guard import DirtyGuard
+from webui_app.fields import INVALID_RING, jump_to_element
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
 from webui_app.login import build_login, start_expiration_timer
 from webui_app.overview import OVERVIEW, build_nav_chips, build_overview_tab
@@ -199,10 +200,15 @@ echart_css = config.get("webui", "theme", "list", theme_choose, "echart")
 # 未保存改动守卫：角标与浏览器关闭拦截，页面构建完成后在 goto_func_page 里接线
 dirty_guard = DirtyGuard()
 
+# 右下角两枚状态徽标的底样式。徽标是 ui.button，NiceGUI 会给它挂上 Quasar 的 text-primary，
+# 那是条 !important 规则，普通内联色压不过，所以状态色一律要带 !important（实测踩过）。
+PILL_CSS = ("font-size:12px;padding:4px 10px;border-radius:14px;background:#ffffff;"
+            "box-shadow:0 1px 4px rgba(0,0,0,0.18);color:{} !important;")
+
 """
 页面级脚本与样式
 
-- .q-page 底部留白：右下角的操作条是浮在页面上的，不留白滚到底最后一行会被压住
+- .q-page 底部留白：右下角的操作条浮在页面上，留白由 ResizeObserver 跟着它的真实高度算
 - <900px 的流式化：定宽控件/卡片改成整行、网格降单列（实测 390 下 16 个 tab 从 11 个横向溢出降到 0 个）
 - .narrow-tip：窄屏提示条，默认不显示，窗口 <900px 才显
 - ?tab= 深链：NiceGUI 是单页应用，16 个 tab 都挂在同一个 URL 上，
@@ -211,6 +217,28 @@ dirty_guard = DirtyGuard()
 PAGE_SCRIPTS = """
 <style>
 .q-page{padding-bottom:100px;}
+</style>
+<script>
+// 底部留白跟着操作条的真实高度走。写死一个数迟早被超：这条栏会随展开/收起、
+// 窗口换行改高度（390 展开后实测 225px，把「密码」那个框压到了栏底下点不到）。
+(function () {
+    const apply = function () {
+        const bar = document.querySelector('.q-page-sticky');
+        const page = document.querySelector('.q-page');
+        if (!bar || !page) return;
+        page.style.paddingBottom = (Math.round(bar.getBoundingClientRect().height) + 24) + 'px';
+    };
+    if (!window.ResizeObserver) return;
+    const poll = setInterval(function () {
+        const bar = document.querySelector('.q-page-sticky');
+        if (!bar) return;
+        clearInterval(poll);
+        new ResizeObserver(apply).observe(bar);
+        apply();
+    }, 300);
+})();
+</script>
+<style>
 .narrow-tip{display:none !important;}
 /* 聊天记录面板浮在右侧，500px 宽：窗口不够宽就会压住配置项（1024 实测遮 1 个，
    640 遮 7 个）。不够宽时改成正常流，代价是要滚到页面上方才看得到日志 */
@@ -319,8 +347,14 @@ def goto_func_page():
         """
         保存配置到本地配置文件中
         """
-        # 配置检查
-        if not validate_config():
+        # 配置检查：拦下来时不只弹一条 toast，还要把用户带到那个框上描一圈红
+        error = validate_config()
+        if error:
+            message, field = error
+            ui.notify(position="top", type="negative",
+                      message=message if field is None else f'{message} · 已跳到那个框')
+            if field is not None:
+                jump_to_element(field, button_bottom_color, select_tab, color=INVALID_RING)
             return False
 
         try:
@@ -513,13 +547,31 @@ def goto_func_page():
         ops_row.set_visibility(ops_open)
         button_ops.set_text('收起' if ops_open else '操作')
 
+    run_badge = None
+    run_state_shown = None
+
+    def paint_run_state():
+        """底栏常驻一枚运行态徽标：原先点完「一键运行」只有条会自己消失的 toast，按钮形态不变。
+
+        运行态也会被 /sys_cmd 接口从别处改掉，所以只能轮询，不能在按钮回调里刷。
+        这里刻意只报状态、不禁用按钮：main.py 自己崩掉时 running_flag 会留在 True，
+        禁用「一键运行」就等于把人锁在重启不了的状态。
+        """
+        nonlocal run_state_shown
+        on = bool(state.running_flag)
+        if on == run_state_shown:
+            return
+        run_state_shown = on
+        run_badge.set_text('● 直播程序运行中' if on else '○ 直播程序未运行')
+        run_badge.style(PILL_CSS.format('#16a34a' if on else '#4b5563'))
+
     with ui.page_sticky(position="bottom-right", x_offset=12, y_offset=12):
         with ui.column().style("align-items:flex-end;gap:8px;"):
             # 角标做成真按钮：点开「哪些项还没保存、现在是什么值」的清单（story-2 验收标准）
             dirty_badge = ui.button('● 配置已保存', on_click=dirty_guard.open_list).props(
-                'flat no-caps dense').style(
-                "font-size:12px;padding:4px 10px;border-radius:14px;background:#ffffff;"
-                "color:#16a34a;box-shadow:0 1px 4px rgba(0,0,0,0.18);").tooltip('点开看哪些项还没保存')
+                'flat no-caps dense').style(PILL_CSS.format('#16a34a')).tooltip('点开看哪些项还没保存')
+            run_badge = ui.button('○ 直播程序未运行', on_click=lambda: select_tab(OVERVIEW)).props(
+                'flat no-caps dense').style(PILL_CSS.format('#4b5563')).tooltip('到总览页看开播就绪度')
 
             with ui.row().style("flex-wrap:wrap;justify-content:flex-end;gap:6px;") as ops_row:
                 button_save = ui.button('保存配置', on_click=lambda: save_config(), color=button_bottom_color).style(button_bottom_css).tooltip("保存webui的配置到本地文件，有些配置保存后需要重启生效")
@@ -527,12 +579,13 @@ def goto_func_page():
                 # 创建一个按钮，用于停止正在运行的程序
                 button_stop = ui.button("停止运行", on_click=ask_stop, color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py")
                 button_light = ui.button('关灯', on_click=lambda: change_light_status(), color=button_bottom_color).style(button_bottom_css)
-                # button_stop.enabled = False  # 初始状态下停止按钮禁用
                 button_restart = ui.button('重启', on_click=ask_restart, color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py并重启webui")
                 ui.button('回到顶部', icon='keyboard_arrow_up', on_click=lambda: scroll_to_top(), color=button_bottom_color).style(button_bottom_css)
             ops_row.set_visibility(False)
 
             button_ops = ui.button('操作', icon='settings', on_click=switch_ops, color=button_bottom_color).style(button_bottom_css)
+
+    ui.timer(1.0, paint_run_state)
 
     # 24 页拆分：把 通用配置 的区块按 sitemap 的分组改挂到各自的新 tab 上。
     # 只搬 DOM 归属，控件与 save_common 留在原文件，保存链路不动

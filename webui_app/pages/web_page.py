@@ -220,8 +220,8 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
                 switch_webui_show_card_tts_azure_tts = ui.switch('azure_tts', value=config.get("webui", "show_card", "tts", "azure_tts")).style(switch_internal_css)
                 switch_webui_show_card_tts_cosyvoice = ui.switch('CosyVoice', value=config.get("webui", "show_card", "tts", "cosyvoice")).style(switch_internal_css)
                 switch_webui_show_card_tts_f5_tts = ui.switch('F5-TTS', value=config.get("webui", "show_card", "tts", "f5_tts")).style(switch_internal_css)
-                switch_webui_show_card_tts_multitts = ui.switch('F5-TTS', value=config.get("webui", "show_card", "tts", "multitts")).style(switch_internal_css)
-                switch_webui_show_card_tts_melotts = ui.switch('F5-TTS', value=config.get("webui", "show_card", "tts", "melotts")).style(switch_internal_css)
+                switch_webui_show_card_tts_multitts = ui.switch('MultiTTS', value=config.get("webui", "show_card", "tts", "multitts")).style(switch_internal_css)
+                switch_webui_show_card_tts_melotts = ui.switch('MeloTTS', value=config.get("webui", "show_card", "tts", "melotts")).style(switch_internal_css)
                 switch_webui_show_card_tts_index_tts = ui.switch('Index-TTS', value=config.get("webui", "show_card", "tts", "index_tts")).style(switch_internal_css)
                 
         with ui.card().style(card_css):

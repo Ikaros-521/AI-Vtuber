@@ -23,7 +23,8 @@ _writer = None
 
 
 def validate_config():
-    return _validator() if _validator is not None else True
+    """None = 可以保存；(提示语, 控件或 None) = 拦下来，并把用户带到那个控件。"""
+    return _validator() if _validator is not None else None
 
 
 def write_local_qa_file():
@@ -1115,16 +1116,20 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
 
 
     def check_config():
+        """通用配置页的保存前校验。
+
+        返回 None 表示可以写盘，否则返回 (提示语, 该跳到哪个框)。校验失败原先只丢一条
+        会自己消失的 toast，用户还得自己在 850 个控件里找那个框（走查 audit-20）。
+        """
         try:
             # 通用配置 页面 配置正确性校验
             if select_platform.value == 'bilibili2' and select_bilibili_login_type.value == 'cookie' and input_bilibili_cookie.value == '':
-                ui.notify(position="top", type="warning", message="请先前往 平台接入-哔哩哔哩，填写B站cookie")
-                return False
+                return 'B站登录方式选的是 cookie，但 cookie 还空着', input_bilibili_cookie
             elif select_platform.value == 'bilibili2' and select_bilibili_login_type.value == 'open_live' and \
                 (input_bilibili_open_live_ACCESS_KEY_ID.value == '' or input_bilibili_open_live_ACCESS_KEY_SECRET.value == '' or \
                 input_bilibili_open_live_APP_ID.value == '' or input_bilibili_open_live_ROOM_OWNER_AUTH_CODE.value == ''):
-                ui.notify(position="top", type="warning", message="请先前往 平台接入-哔哩哔哩，填写开放平台配置")
-                return False
+                return 'B站开放平台四项（ACCESS_KEY_ID / ACCESS_KEY_SECRET / 项目ID / 身份码）还没填全', \
+                    input_bilibili_open_live_ACCESS_KEY_ID
 
 
             """
@@ -1155,13 +1160,11 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
 
             if config.get("webui", "show_card", "common_config", "local_qa"):
                 if not common.is_json_convertible(textarea_local_qa_text_json_file_content.value):
-                    ui.notify(position="top", type="negative", message="本地问答json数据格式不正确，请检查JSON语法！")
-                    return False
+                    return '本地问答 json 数据格式不正确，请检查 JSON 语法', textarea_local_qa_text_json_file_content
 
-            return True
+            return None
         except Exception as e:
-            ui.notify(position="top", type="negative", message=f"配置错误：{e}")
-            return False
+            return f'配置错误：{e}', None
 
 
     _validator = check_config

@@ -102,16 +102,39 @@ def locate(element):
     return tab, section, expansion
 
 
-def jump_to(label, ordinal, accent, select_tab=None, tab=None, expansion=None):
-    """跳到某个配置框：先切页、展开所在折叠区，再让浏览器定位并描边。"""
+# 校验失败时描的圈：不用 Quasar 的语义名（negative），这段是拼进 outline 的裸 CSS
+INVALID_RING = '#dc2626'
+
+
+def jump_to(label, ordinal, accent, select_tab=None, tab=None, expansion=None, color=None):
+    """跳到某个配置框：先切页、展开所在折叠区，再让浏览器定位并描边。
+
+    color 给校验失败用（描红圈），不传就用主题色。
+    """
     if tab and select_tab is not None:
         select_tab(tab)
     if expansion is not None:
         expansion.open()
     # 主题色是从 config 里一路传下来的，末尾可能带分号；拼进 '2px solid x' 会写成非法值，
     # 结果是描边静默不出现。这里是唯一把它拼进 CSS 的地方，在这一层收口。
+    highlight = (color or accent or '').rstrip(';')
     context.client.run_javascript(
-        JS_LOCATE % (json.dumps(label, ensure_ascii=False), ordinal, (accent or '').rstrip(';')))
+        JS_LOCATE % (json.dumps(label, ensure_ascii=False), ordinal, highlight))
+
+
+def ordinal_of(element):
+    """这个控件在同名控件里排第几个——浏览器按「标签文本 + 序号」找，所以跳之前要算准。"""
+    label = field_name(element)
+    tab = locate(element)[0]
+    return sum(1 for other in context.client.elements.values()
+               if other.id < element.id and isinstance(other, INPUT_TYPES)
+               and field_name(other) == label and locate(other)[0] == tab)
+
+
+def jump_to_element(element, accent, select_tab=None, color=None):
+    """手上就有控件对象时（校验失败、未保存清单）直接跳过去，省掉猜标签文本与序号。"""
+    tab, _section, expansion = locate(element)
+    jump_to(field_name(element), ordinal_of(element), accent, select_tab, tab, expansion, color)
 
 
 def build_index():

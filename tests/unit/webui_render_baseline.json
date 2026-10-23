@@ -1,7 +1,7 @@
 {
-  "distinct_texts": 1033,
+  "distinct_texts": 1035,
   "kinds": {
-    "Button": 120,
+    "Button": 121,
     "Card": 128,
     "Checkbox": 33,
     "Column": 8,
@@ -29,8 +29,8 @@
     "TabPanels": 1,
     "Tabs": 1,
     "Textarea": 160,
-    "Timer": 3,
-    "Tooltip": 395
+    "Timer": 4,
+    "Tooltip": 396
   },
   "texts": {
     "ACCESS_KEY_ID": 1,
@@ -79,7 +79,7 @@
     "EasyAIVtuber": 3,
     "Edge TTS": 1,
     "Edge-TTS": 3,
-    "F5-TTS": 5,
+    "F5-TTS": 3,
     "GPT-SOVITS": 1,
     "GPT-SoVITS": 2,
     "GPT模型路径": 1,
@@ -105,9 +105,9 @@
     "LLM触发后缀": 1,
     "Langchain_ChatChat": 2,
     "Live2D": 3,
-    "MeloTTS": 2,
+    "MeloTTS": 3,
     "MeloTTS API程序所在设备的IP地址以及端口号": 1,
-    "MultiTTS": 2,
+    "MultiTTS": 3,
     "MultiTTS所在设备的IP地址以及端口号": 1,
     "NiceGUI官方文档：": 1,
     "N秒后自动截图": 2,
@@ -213,6 +213,7 @@
     "web字幕打印机": 2,
     "web字幕打印机的API地址，只需要 http://ip:端口 即可": 1,
     "xuniren": 3,
+    "○ 直播程序未运行": 1,
     "● 配置已保存": 1,
     "一句话的数据，是否只让这句话触发一次按键映射，因为一句话中可能会有多个关键词，触发多次": 1,
     "一句话的数据，是否只让这句话触发一次文案映射，因为一句话中可能会有多个关键词，触发多次": 3,
@@ -334,6 +335,7 @@
     "删除文案组": 2,
     "删除无用字符": 1,
     "删除配置组": 4,
+    "到总览页看开播就绪度": 1,
     "刷新串口": 1,
     "刷新闲时计时的消息类型": 1,
     "前N个关键词": 1,
@@ -1067,5 +1069,5 @@
     "默认不填就是默认选中的发言人": 1,
     "默认为：1，但有时候可能文章内容解析出来是空的，可以适当扩大检索数": 1
   },
-  "total_elements": 2178
+  "total_elements": 2181
 }

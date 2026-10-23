@@ -11,7 +11,7 @@
 """
 from nicegui import app, context, ui
 
-from webui_app.fields import INPUT_TYPES, field_name, jump_to, locate, value_text
+from webui_app.fields import INPUT_TYPES, field_name, jump_to_element, locate, value_text
 
 INK = '#111827'
 INK_MUT = '#4b5563'
@@ -80,11 +80,8 @@ class DirtyGuard:
                             if items else '没有未保存的改动')
         with self._list:
             for label, value, tab, section, element in items:
-                ordinal = sum(1 for other in self._elements.values()
-                              if other.id < element.id and field_name(other) == label
-                              and locate(other)[0] == tab)
-                with ui.button(on_click=lambda el=element, ords=ordinal, tb=tab: self._jump_to_field(
-                        el, ords, tb)).props('flat no-caps align=left dense').classes('w-full'):
+                with ui.button(on_click=lambda el=element: self._jump_to_field(el)).props(
+                        'flat no-caps align=left dense').classes('w-full'):
                     with ui.column().style('gap:0;align-items:flex-start;'):
                         ui.label(f'{label} = {value}').style(f'font-size:14px;color:{INK};')
                         where = ' · '.join(x for x in (tab, section) if x)
@@ -92,10 +89,9 @@ class DirtyGuard:
                             ui.label(where).style(f'font-size:12px;color:{INK_MUT};')
         self.dialog.open()
 
-    def _jump_to_field(self, element, ordinal, tab):
+    def _jump_to_field(self, element):
         self.dialog.close()
-        _tab, _section, expansion = locate(element)
-        jump_to(field_name(element), ordinal, self._accent, self._select_tab, tab, expansion)
+        jump_to_element(element, self._accent, self._select_tab)
 
     def items(self):
         """(控件名, 当前值, tab, 分区, 控件)，按页面与控件顺序。"""
@@ -154,7 +150,9 @@ class DirtyGuard:
         count = len(self._dirty)
         if self._label is not None:
             self._label.set_text(f'● {count} 项未保存' if count else '● 配置已保存')
-            self._label.style('color:' + ('#b45309' if count else '#16a34a'))
+            # 角标是 ui.button，NiceGUI 给它挂的 Quasar text-primary 是 !important 规则，
+            # 内联色不带 !important 压不过它
+            self._label.style('color:' + ('#b45309' if count else '#16a34a') + ' !important;')
         if self._status is not None:
             self._status.set_text(f'当前有 {count} 项改动还没写进配置文件' if count else '所有改动都已保存')
             self._status.style('color:' + ('#b45309' if count else '#4b5563'))
