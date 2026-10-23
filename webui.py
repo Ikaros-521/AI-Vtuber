@@ -636,7 +636,9 @@ else:
     # 这里原先还建了一张空的 ui.card().style(login_card_css)：login_card 是
     # position:fixed 的全屏渐变，关掉登录后它就变成一张 0 字符的幽灵层，跟 tab_panel 的
     # 渐变重复、还是个随时跟新浮层抢层级的定位元素（走查 audit-17）
-    with ui.column().style("width:100%;text-align: center;"):
+    # 这层 column 只是给功能页一个容器。原先带 text-align:center，它会一路继承到
+    # Quasar 的折叠区标题上，把「功能管理 / 互动功能」那几条大标题推到条带正中（audit-21）
+    with ui.column().style("width:100%;"):
         # 跳转到功能页
         goto_func_page()
 
