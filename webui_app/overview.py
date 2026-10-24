@@ -23,6 +23,11 @@ NAV_GROUPS = [
 
 OVERVIEW = '总览'
 
+
+def page_order():
+    """tab 条应有的顺序：总览打头，然后按分组走。"""
+    return [OVERVIEW] + [name for _group, pages in NAV_GROUPS for name in pages]
+
 INK = '#111827'
 INK_MUT = '#4b5563'
 OK = '#16a34a'

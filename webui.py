@@ -19,7 +19,7 @@ from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
 from webui_app.labels import name_bare_enable_switches
 from webui_app.theme import LINK
 from webui_app.login import build_login, start_expiration_timer
-from webui_app.overview import OVERVIEW, build_nav_chips, build_overview_tab
+from webui_app.overview import OVERVIEW, build_nav_chips, build_overview_tab, page_order
 from webui_app.pages.assistant_anchor import build_assistant_anchor_tab
 from webui_app.pages.common_config import build_common_config_tab, validate_config, write_local_qa_file
 from webui_app.pages.copywriting import build_copywriting_tab
@@ -36,7 +36,7 @@ from webui_app.pages.translate import build_translate_tab
 from webui_app.pages.tts import build_tts_tab
 from webui_app.pages.visual_body import build_visual_body_tab
 from webui_app.pages.web_page import build_web_page_tab
-from webui_app.repage import apply_page_plan
+from webui_app.repage import apply_page_plan, order_tabs
 from webui_app.processes import (
     restart_application,
     run_external_program,
@@ -651,6 +651,8 @@ def goto_func_page():
     # 24 页拆分：把 通用配置 的区块按 sitemap 的分组改挂到各自的新 tab 上。
     # 只搬 DOM 归属，控件与 save_common 留在原文件，保存链路不动
     apply_page_plan(tabs, tab_panels, common_config_panel, tab_panel_css, card_css)
+    # 新页是 append 上去的，排一遍才跟分组芯片的顺序一致
+    order_tabs(tabs, page_order())
 
     # 危险操作确认框：NiceGUI 3 没有 ui.confirm，对话框又是元素（关闭只是隐藏），
     # 所以全站建一次放在布局里，各页面调用 confirm.ask 复用同一个

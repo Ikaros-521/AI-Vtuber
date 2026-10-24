@@ -12,8 +12,9 @@ import pytest
 from nicegui import Client, ui
 from nicegui.page import page
 
-from webui_app.overview import NAV_GROUPS, OVERVIEW, group_of, readiness
-from webui_app.repage import PAGE_PLAN, _blocks, _with_following
+from webui_app.overview import (NAV_GROUPS, OVERVIEW, group_of, page_order,
+                                readiness)
+from webui_app.repage import PAGE_PLAN, _blocks, _with_following, order_tabs
 from webui_app.fields import field_name
 from webui_app.search import ConfigSearch
 from webui_app.sections import _sections_of
@@ -229,3 +230,24 @@ def test_split_filter_page_still_saves_the_same_fields():
     assert {'before_must_str', 'badwords', 'priority_mapping', 'blacklist'} <= set(fields)
     assert fields['max_len'][1] == 'int'
     assert fields['badwords']['path'][1] == 'str'
+
+
+def test_page_order_covers_every_tab(in_client):
+    """tab 条的期望顺序必须正好覆盖 29 个页面，不多不少不重复。"""
+    from tests.unit.test_webui_render import KNOWN_TABS
+
+    order = page_order()
+    assert len(order) == len(set(order)) == len(KNOWN_TABS)
+    assert set(order) == set(KNOWN_TABS)
+
+
+def test_order_tabs_sorts_the_strip(in_client):
+    with in_client:
+        with ui.tabs() as tabs:
+            a = ui.tab('关于')
+            b = ui.tab('平台接入')
+            c = ui.tab('播报与输出')
+    order_tabs(tabs, ['平台接入', '播报与输出', '关于'])
+    assert [t._props.get('name') for t in tabs] == ['平台接入', '播报与输出', '关于']
+    kids = list(tabs)
+    assert kids[0] is b and kids[1] is c and kids[2] is a

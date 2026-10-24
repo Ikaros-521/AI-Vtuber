@@ -134,6 +134,21 @@ def apply_page_plan(tabs, tab_panels, source_panel, panel_css, card_css):
     return made
 
 
+def order_tabs(tabs, order):
+    """把 tab 条按给定顺序排好。
+
+    拆分出来的新页是 append 到 QTabs 后面的，不排的话全堆在「关于」之后，
+    跟顶部那排分组芯片的顺序对不上。
+    """
+    by_name = {}
+    for tab in tabs:
+        by_name.setdefault(str(tab._props.get('name') or ''), tab)
+    for index, name in enumerate(order):
+        tab = by_name.get(name)
+        if tab is not None:
+            tab.move(tabs, index)
+
+
 def _wrap_in_place(root, card_css):
     """给留在原页的裸 row 套一张带标题的卡片，位置和大小都不变。"""
     for anchor, title in WRAP_IN_PLACE:
