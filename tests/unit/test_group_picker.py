@@ -94,7 +94,7 @@ def test_confirm_names_the_row_and_passes_its_position(in_client, box):
     picker.select.value = 1
     picker.ask_delete()
     assert 'data/copywriting2/' in box._title.text      # 确认框里写的就是选中的那一行
-    assert '页面顶部撤销' in box._detail.text
+    assert '页面底部撤销' in box._detail.text
     box._accept()
     assert ran == [1]                                   # 传的是卡片里的位置，不是人肉数的组号
 
