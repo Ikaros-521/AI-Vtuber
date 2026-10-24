@@ -210,7 +210,7 @@ PILL_CSS = ("font-size:12px;padding:4px 10px;border-radius:14px;background:#ffff
 """
 页面级脚本与样式
 
-- .q-page 底部留白：右下角的操作条浮在页面上，留白由 ResizeObserver 跟着它的真实高度算
+- .q-page 底部留白：浮在页面上的 .q-page-sticky 会挡住最后一行，留白由 ResizeObserver 跟着它们算
 - <900px 的流式化：定宽控件/卡片改成整行、网格降单列（实测 390 下 16 个 tab 从 11 个横向溢出降到 0 个）
 - .narrow-tip：窄屏提示条，默认不显示，窗口 <900px 才显
 - ?tab= 深链：NiceGUI 是单页应用，16 个 tab 都挂在同一个 URL 上，
@@ -224,18 +224,25 @@ PAGE_SCRIPTS = """
 // 底部留白跟着操作条的真实高度走。写死一个数迟早被超：这条栏会随展开/收起、
 // 窗口换行改高度（390 展开后实测 225px，把「密码」那个框压到了栏底下点不到）。
 (function () {
+    const shown = function (e) {
+        const r = e.getBoundingClientRect();
+        return r.height > 0 && getComputedStyle(e).display !== 'none';
+    };
     const apply = function () {
-        const bar = document.querySelector('.q-page-sticky');
         const page = document.querySelector('.q-page');
-        if (!bar || !page) return;
-        page.style.paddingBottom = (Math.round(bar.getBoundingClientRect().height) + 24) + 'px';
+        const bars = [...document.querySelectorAll('.q-page-sticky')].filter(shown);
+        if (!page || !bars.length) return;
+        // 取所有浮层里最靠上的那条顶边：右下角是操作条与状态徽标，底部居中是删除的撤销托盘
+        const top = Math.min.apply(null, bars.map(e => e.getBoundingClientRect().top));
+        page.style.paddingBottom = Math.round(innerHeight - top + 12) + 'px';
     };
     if (!window.ResizeObserver) return;
     const poll = setInterval(function () {
-        const bar = document.querySelector('.q-page-sticky');
-        if (!bar) return;
+        const bars = document.querySelectorAll('.q-page-sticky');
+        if (!bars.length) return;
         clearInterval(poll);
-        new ResizeObserver(apply).observe(bar);
+        const ro = new ResizeObserver(apply);
+        bars.forEach(e => ro.observe(e));
         apply();
     }, 300);
 })();
