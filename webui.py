@@ -16,6 +16,7 @@ from webui_app.dirty_guard import DirtyGuard
 from webui_app.errors import explain
 from webui_app.fields import INVALID_RING, jump_to_element
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
+from webui_app.labels import name_bare_enable_switches
 from webui_app.theme import LINK
 from webui_app.login import build_login, start_expiration_timer
 from webui_app.overview import OVERVIEW, build_nav_chips, build_overview_tab
@@ -660,6 +661,8 @@ def goto_func_page():
 
     # 长 tab 的区块索引（大语言模型 那种一二十块的一页，先让人看得见这页有什么）
     add_section_indexes(button_bottom_color)
+    # 把 30 个只写「启用」的开关补成「启用+对象名」，要在挂脏状态监听之前做（文案是搜索与清单的键）
+    name_bare_enable_switches()
 
     # 未保存改动守卫接线：注入拦截脚本 + 角标 + 给页面上的输入控件挂变更记录
     dirty_guard.install()
