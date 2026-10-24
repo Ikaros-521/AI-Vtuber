@@ -5,7 +5,7 @@
 按 2 填进去删掉的反而是标号 #3 那行。所以这里直接列出还看得见的行，摘要取行上第一个控件的
 名字与当前值：用户挑的是自己看到的东西，位置由这里换算。
 """
-from nicegui import ui
+from nicegui import context, ui
 
 from webui_app import confirm as confirm_module
 from webui_app.confirm import GROUP_DETAIL
@@ -13,13 +13,35 @@ from webui_app.fields import field_name, value_text
 from webui_app.undo import undo
 
 SELECT_WIDTH = 'width:320px;'
+# 每个客户端自己一份（一个标签页一套元素树，共用列表会串页）
+_REGISTRY = '_group_pickers'
+
+
+def _registry():
+    client = context.client
+    pickers = getattr(client, _REGISTRY, None)
+    if pickers is None:
+        pickers = []
+        setattr(client, _REGISTRY, pickers)
+    return pickers
+
+
+def refresh_pickers():
+    """建页收尾时把所有选取器的下拉填上——别用定时器补。
+
+    原先是 ui.timer(0.2, refresh, once=True)：这页要建 10 多秒，0.2 秒的那一枪经常在
+    浏览器还没连上时就打完了，once 的定时器不会补第二枪，实测结果就是下拉点开是空的
+    （「要删除的文案组」里啥也没有），得切一次页再回来才有选项。
+    """
+    for picker in _registry():
+        picker.refresh()
 
 
 class GroupPicker:
     """一张「一组一行」的卡片 + 一个下拉。
 
     card 与 var 传的都是「取值函数」：真实页面里卡片和控件字典是在这一行之后才创建的，
-    直接传会变成 UnboundLocalError；同理第一次列行要等建页循环跑完，交给一次性定时器补。
+    直接传会变成 UnboundLocalError；同理第一次列行要等建页循环跑完，收尾时统一 refresh。
     action(位置) 只负责把这一组的键从 var 里挪走——行的收起与撤销在这里做。
     """
 
@@ -36,7 +58,7 @@ class GroupPicker:
             .props('outlined dense options-dense clearable').style(SELECT_WIDTH)
         # 它只是个选择器，值不写进配置：标一下，脏状态守卫与全局搜索都跳过它
         self.select.is_config_field = False
-        ui.timer(0.2, self.refresh, once=True)
+        _registry().append(self)      # 选项在建页收尾时由 refresh_pickers() 填
         return self
 
     def rows(self):

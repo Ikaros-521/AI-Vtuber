@@ -15,6 +15,7 @@ from webui_app.confirm import confirm
 from webui_app.dirty_guard import DirtyGuard
 from webui_app.errors import explain
 from webui_app.fields import INVALID_RING, jump_to_element
+from webui_app.groups import refresh_pickers
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
 from webui_app.labels import name_bare_enable_switches
 from webui_app.theme import LINK
@@ -665,6 +666,8 @@ def goto_func_page():
     add_section_indexes(button_bottom_color)
     # 把 30 个只写「启用」的开关补成「启用+对象名」，要在挂脏状态监听之前做（文案是搜索与清单的键）
     name_bare_enable_switches()
+    # 「要删除的XX组」下拉的选项：行是建页循环里现造的，所以要等这一遍跑完才列得全
+    refresh_pickers()
 
     # 未保存改动守卫接线：注入拦截脚本 + 角标 + 给页面上的输入控件挂变更记录
     dirty_guard.install()

@@ -30,7 +30,7 @@
     "TabPanels": 1,
     "Tabs": 1,
     "Textarea": 160,
-    "Timer": 13,
+    "Timer": 5,
     "Tooltip": 394
   },
   "texts": {
@@ -1102,5 +1102,5 @@
     "默认不填就是默认选中的发言人": 1,
     "默认为：1，但有时候可能文章内容解析出来是空的，可以适当扩大检索数": 1
   },
-  "total_elements": 2193
+  "total_elements": 2185
 }

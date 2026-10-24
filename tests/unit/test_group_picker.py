@@ -9,7 +9,7 @@ from nicegui.page import page
 
 from webui_app import confirm as confirm_module
 from webui_app.confirm import ConfirmBox
-from webui_app.groups import GroupPicker
+from webui_app.groups import GroupPicker, refresh_pickers
 from webui_app.undo import undo
 
 TEST_PAGE = page('/webui-group-picker-test')
@@ -161,6 +161,21 @@ def test_undo_restores_both_the_row_and_the_keys(in_client, box):
     assert rows[0].visible is not False
     assert var == before
     assert list(picker.select.options) == [0, 1]
+
+
+def test_dropdown_is_filled_by_the_end_of_build_sweep(in_client, box):
+    """选项靠建页收尾填，不靠定时器。
+
+    原来 build() 里挂的是 ui.timer(0.2, refresh, once=True)：这一页要建十几秒，0.2 秒那一枪
+    经常在浏览器还没连上时就放完了，once 又不补枪——实测下拉点开是空的，得切一次页回来才有选项。
+    """
+    with in_client:
+        card, var = card_with_rows(2)
+        picker = make_picker(card, var, lambda pos: None)
+    assert picker.select.options == {}
+    refresh_pickers()
+    assert list(picker.select.options) == [0, 1]
+    assert picker.select.options[0].startswith('文案存储路径#1 · ')
     assert undo.sticky.visible is False
 
 
