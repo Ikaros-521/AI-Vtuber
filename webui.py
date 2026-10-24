@@ -17,6 +17,7 @@ from webui_app.errors import explain
 from webui_app.fields import INVALID_RING, jump_to_element
 from webui_app.groups import refresh_pickers
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
+from webui_app.hints import move_long_placeholders_to_hints
 from webui_app.labels import name_bare_enable_switches
 from webui_app.theme import LINK
 from webui_app.login import build_login, start_expiration_timer
@@ -252,6 +253,16 @@ PAGE_SCRIPTS = """
 </script>
 <style>
 .narrow-tip{display:none !important;}
+/* 字段下方的常驻 helper（走查 audit-19）：原来这些解释写在 placeholder 里，一输入就消失。
+   挪到 hint 之后要保留原文的换行，否则 Gradio「请求参数」那种多行格式说明会挤成一行。
+   Quasar 默认的 hint 色是 rgba(0,0,0,0.54)，在白纸上只有 4.6:1，落在渐变卡片上就掉到 3.7:1，
+   过不了 AA，所以固定成 INK_MUT；报错文字走 .q-field--error 那条规则，不在这次覆盖范围内。
+   .q-field__bottom--animated 是个绝对定位 + translateY(100%) 的抽屉，只在聚焦/报错时滑出来；
+   常驻说明得让它回到常规流自己长高，否则两三行文字直接压到下一行字段上（实测按键映射页整片重叠）。
+   只带 has-persistent-hint 标记的字段这么改，别的字段保留原来的抽屉行为。 */
+.q-tab-panel .q-field__messages{white-space:pre-line;}
+.q-tab-panel .has-persistent-hint .q-field__bottom--animated{position:static;transform:none;}
+.q-tab-panel .q-field:not(.q-field--error) .q-field__messages{color:#4b5563;}
 /* 提示条：原先三处写死 Tailwind 的 bg-blue-100，换深色主题就成了一块突兀的浅蓝。
    半透明白底 + 左侧色条，在渐变背景和卡片上都读得清 */
 .tip-bar{padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.72);
@@ -666,6 +677,8 @@ def goto_func_page():
     add_section_indexes(button_bottom_color)
     # 把 30 个只写「启用」的开关补成「启用+对象名」，要在挂脏状态监听之前做（文案是搜索与清单的键）
     name_bare_enable_switches()
+    # 把塞在 placeholder 里的长解释挪到字段下方常驻（placeholder 一输入就没了，规则不能跟着没）
+    move_long_placeholders_to_hints()
     # 「要删除的XX组」下拉的选项：行是建页循环里现造的，所以要等这一遍跑完才列得全
     refresh_pickers()
 
