@@ -36,7 +36,6 @@ def build_copywriting_tab(config, common, audio, card_css, switch_internal_css,
 
     def copywriting_del(pos):
         try:
-            copywriting_config_card.remove(pos)
             keys_to_delete = [str(5 * pos + i) for i in range(5)]
             for key in keys_to_delete:
                 if key in copywriting_config_var:
@@ -124,7 +123,7 @@ def build_copywriting_tab(config, common, audio, card_css, switch_internal_css,
         input_copywriting_audio_interval = ui.input(label='音频播放间隔', value=config.get("copywriting", "audio_interval"), placeholder='文案音频播放之间的间隔时间。就是前一个文案播放完成后，到后一个文案开始播放之间的间隔时间。').tooltip('文案音频播放之间的间隔时间。就是前一个文案播放完成后，到后一个文案开始播放之间的间隔时间。')
         input_copywriting_switching_interval = ui.input(label='音频切换间隔', value=config.get("copywriting", "switching_interval"), placeholder='文案音频切换到弹幕音频的切换间隔时间（反之一样）。\n就是在播放文案时，有弹幕触发并合成完毕，此时会暂停文案播放，然后等待这个间隔时间后，再播放弹幕回复音频。').tooltip('n就是在播放文案时，有弹幕触发并合成完毕，此时会暂停文案播放，然后等待这个间隔时间后，再播放弹幕回复音频。')
     with ui.row():
-        picker_copywriting = GroupPicker(lambda: copywriting_config_card, '文案', copywriting_del).build()
+        picker_copywriting = GroupPicker(lambda: copywriting_config_card, '文案', copywriting_del, lambda: copywriting_config_var).build()
         button_copywriting_add = ui.button('增加文案组', on_click=lambda: (copywriting_add(), picker_copywriting.refresh()), color=button_internal_color).style(button_internal_css)
         button_copywriting_del = delete_button('删除文案组', picker_copywriting.ask_delete).style(button_internal_css)
 

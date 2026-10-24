@@ -11,7 +11,7 @@
 """
 from nicegui import app, context, ui
 
-from webui_app.fields import INPUT_TYPES, field_name, jump_to_element, locate, value_text
+from webui_app.fields import INPUT_TYPES, field_name, hidden, jump_to_element, locate, value_text
 
 INK = '#111827'
 INK_MUT = '#4b5563'
@@ -96,10 +96,7 @@ class DirtyGuard:
     def items(self):
         """(控件名, 当前值, tab, 分区, 控件)，按页面与控件顺序。"""
         rows = []
-        for element_id in self._dirty:
-            element = self._elements.get(element_id)
-            if element is None or element.is_deleted:
-                continue
+        for element in self._live():
             label = field_name(element)
             if not label:
                 continue
@@ -108,8 +105,13 @@ class DirtyGuard:
         rows.sort(key=lambda r: (r[2], r[3], r[0]))
         return rows
 
+    def _live(self):
+        """还看得见的那些脏控件：删到一半收起的那一组，它的改动不再算「待保存」。"""
+        return [element for element in (self._elements.get(i) for i in self._dirty)
+                if element is not None and not element.is_deleted and not hidden(element)]
+
     def count(self) -> int:
-        return len(self._dirty)
+        return len(self._live())
 
     def watch(self, force: bool = False) -> None:
         """给还没盯过的输入控件挂上变更记录，可重复调用。"""
@@ -135,7 +137,7 @@ class DirtyGuard:
         self.sync()
 
     def sync(self) -> None:
-        count = len(self._dirty)
+        count = self.count()
         if self._sent != count and context.client.has_socket_connection:
             self._sent = count
             context.client.run_javascript(f'window.__unsavedGuard({count})')
@@ -143,13 +145,13 @@ class DirtyGuard:
 
     def _on_connect(self, client) -> None:
         # 第二个标签页连进来时，页面脚本是全新的，得把当前状态补发一次
-        count = len(self._dirty)
+        count = self.count()
         self._sent = count
         client.run_javascript(f'window.__unsavedGuard({count})')
         self._paint_label()
 
     def _paint_label(self) -> None:
-        count = len(self._dirty)
+        count = self.count()
         if self._label is not None:
             self._label.set_text(f'● {count} 项未保存' if count else '● 配置已保存')
             # 角标是 ui.button，NiceGUI 给它挂的 Quasar text-primary 是 !important 规则，

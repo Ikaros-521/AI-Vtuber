@@ -106,6 +106,11 @@ def locate(element):
 INVALID_RING = '#dc2626'
 
 
+def hidden(element):
+    """自己或被收起来的祖先不可见：删除中的那一组就是这种状态。"""
+    return any(getattr(a, 'visible', True) is False for a in element.ancestors())
+
+
 def jump_to(label, ordinal, accent, select_tab=None, tab=None, expansion=None, color=None):
     """跳到某个配置框：先切页、展开所在折叠区，再让浏览器定位并描边。
 
@@ -123,12 +128,15 @@ def jump_to(label, ordinal, accent, select_tab=None, tab=None, expansion=None, c
 
 
 def ordinal_of(element):
-    """这个控件在同名控件里排第几个——浏览器按「标签文本 + 序号」找，所以跳之前要算准。"""
+    """这个控件在同名控件里排第几个——浏览器按「标签文本 + 序号」找，所以跳之前要算准。
+
+    只数还看得见的：浏览器在 DOM 里找也只会找得着可见的那些。
+    """
     label = field_name(element)
     tab = locate(element)[0]
     return sum(1 for other in context.client.elements.values()
                if other.id < element.id and isinstance(other, INPUT_TYPES)
-               and field_name(other) == label and locate(other)[0] == tab)
+               and not hidden(other) and field_name(other) == label and locate(other)[0] == tab)
 
 
 def jump_to_element(element, accent, select_tab=None, color=None):
@@ -148,6 +156,8 @@ def build_index():
         if not isinstance(element, INPUT_TYPES):
             continue
         if getattr(element, 'is_config_field', True) is False:
+            continue
+        if hidden(element):
             continue
         label = field_name(element)
         if not label:

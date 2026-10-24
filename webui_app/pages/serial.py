@@ -95,7 +95,6 @@ def build_serial_tab(config, card_css, switch_internal_css, button_internal_colo
 
     def serial_config_del(pos):
         try:
-            serial_config_card.remove(pos)
             keys_to_delete = [str(8 * pos + i) for i in range(8)]
             for key in keys_to_delete:
                 if key in serial_config_var:
@@ -116,7 +115,7 @@ def build_serial_tab(config, card_css, switch_internal_css, button_internal_colo
         ui.label("此页完成串口配置后，可以在“按键与命令”的 串口映射配置功能\n 注意！！！此处连接测试完成后，请 关闭串口，因为程序是跨进程使用的，所以不关掉会占用串口，导致无法正常使用！")
 
     with ui.row():
-        picker_serial = GroupPicker(lambda: serial_config_card, '串口', serial_config_del).build()
+        picker_serial = GroupPicker(lambda: serial_config_card, '串口', serial_config_del, lambda: serial_config_var).build()
         button_serial_config_add = ui.button('增加串口配置组', on_click=lambda: (serial_config_add(), picker_serial.refresh()), color=button_internal_color).style(button_internal_css)
         button_serial_config_del = delete_button('删除串口配置组', picker_serial.ask_delete).style(button_internal_css)
 

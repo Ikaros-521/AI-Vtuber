@@ -10,21 +10,24 @@ from nicegui import ui
 from webui_app import confirm as confirm_module
 from webui_app.confirm import GROUP_DETAIL
 from webui_app.fields import field_name, value_text
+from webui_app.undo import undo
 
 SELECT_WIDTH = 'width:320px;'
 
 
 class GroupPicker:
-    """一张「一组一行」的卡片 + 一个下拉。删除动作由各页面传进来的 action(位置) 完成。
+    """一张「一组一行」的卡片 + 一个下拉。
 
-    card 传的是「取卡片的函数」：真实页面里那几张卡片是在这一行之后才 ui.card() 出来的，
-    直接传元素会变成 UnboundLocalError；同理第一次列行也要等建页循环跑完，交给一次性定时器补。
+    card 与 var 传的都是「取值函数」：真实页面里卡片和控件字典是在这一行之后才创建的，
+    直接传会变成 UnboundLocalError；同理第一次列行要等建页循环跑完，交给一次性定时器补。
+    action(位置) 只负责把这一组的键从 var 里挪走——行的收起与撤销在这里做。
     """
 
-    def __init__(self, card, name, action):
+    def __init__(self, card, name, action, var):
         self._card = card
         self._name = name
         self._action = action
+        self._var = var
         self._titles = {}
         self.select = None
 
@@ -37,9 +40,13 @@ class GroupPicker:
         return self
 
     def rows(self):
-        """(卡片里的位置, 行元素)，只数还看得见的行。"""
-        return [(i, row) for i, row in enumerate(self._card())
-                if getattr(row, 'visible', True) is not False]
+        """(第几组, 行元素)：只数还看得见的行，序号从 0 连续。
+
+        连续序号同时是 var 里的组号——各页面删完会把后面的键往前挪，所以两边对得上；
+        收起的行仍占着卡片里的位置，不能拿它当序号。
+        """
+        visible = [row for row in self._card() if getattr(row, 'visible', True) is not False]
+        return list(enumerate(visible))
 
     def _title(self, row):
         for element in row.descendants():
@@ -63,8 +70,26 @@ class GroupPicker:
     def ask_delete(self):
         """没选组就不删；删之前把「删的是哪一行」写在确认框里。"""
         pos = self.position
-        if pos is None:
+        row = dict(self.rows()).get(pos)
+        if row is None:
             ui.notify(position='top', type='warning', message=f'请先选要删除的「{self._name}」组')
             return
-        confirm_module.confirm.ask(f'确认删除「{self._name}」这一组？（{self._titles.get(pos, pos)}）',
-                                   lambda: (self._action(pos), self.refresh()), GROUP_DETAIL)
+        title = self._titles.get(pos, f'第 {pos + 1} 组')
+        confirm_module.confirm.ask(
+            f'确认删除「{self._name}」这一组？（{title}）',
+            lambda: self._delete(row, pos, dict(self._var()), title), GROUP_DETAIL)
+
+    def _delete(self, row, pos, snapshot, title):
+        # 行一旦被 card.remove() 掉，NiceGUI 会清空它整棵子树的 slot 与事件监听，重建不回来；
+        # 所以「删除」= 收起这一行 + 把它的键从 var 挪走。保存链路读的是 var，效果与硬删一致。
+        row.set_visibility(False)
+        self._action(pos)
+        self.refresh()
+        undo.offer(f'已删除「{self._name}」{title}', lambda: self._restore(row, snapshot))
+
+    def _restore(self, row, snapshot):
+        var = self._var()
+        var.clear()
+        var.update(snapshot)
+        row.set_visibility(True)
+        self.refresh()

@@ -57,7 +57,6 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
     # -删除
     def schedule_del(pos):
         try:
-            schedule_config_card.remove(pos)
             # 删除操作
             keys_to_delete = [str(4 * pos + i) for i in range(4)]
             for key in keys_to_delete:
@@ -101,7 +100,6 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
     # 动态文案-删除
     def trends_copywriting_del(pos):
         try:
-            trends_copywriting_config_card.remove(pos)
             # 删除操作
             keys_to_delete = [str(3 * pos + i) for i in range(3)]
             for key in keys_to_delete:
@@ -146,7 +144,6 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
     # 联动程序-删除
     def coordination_program_del(pos):
         try:
-            coordination_program_config_card.remove(pos)
             # 删除操作
             keys_to_delete = [str(4 * pos + i) for i in range(4)]
             for key in keys_to_delete:
@@ -201,7 +198,6 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
     def key_mapping_del(pos):
         try:
             num = 9
-            key_mapping_config_card.remove(pos)
             # 删除操作
             keys_to_delete = [str(num * pos + i) for i in range(num)]
             for key in keys_to_delete:
@@ -254,7 +250,6 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
     # 自定义命令-删除
     def custom_cmd_del(pos):
         try:
-            custom_cmd_config_card.remove(pos)
             # 删除操作
             keys_to_delete = [str(7 * pos + i) for i in range(7)]
             for key in keys_to_delete:
@@ -584,7 +579,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
             with ui.card().style(card_css):
                 ui.label('定时任务')
                 with ui.row():
-                    picker_schedule = GroupPicker(lambda: schedule_config_card, '定时任务', schedule_del).build()
+                    picker_schedule = GroupPicker(lambda: schedule_config_card, '定时任务', schedule_del, lambda: schedule_var).build()
                     button_schedule_add = ui.button('增加任务组', on_click=lambda: (schedule_add(), picker_schedule.refresh()), color=button_internal_color).style(button_internal_css)
                     button_schedule_del = delete_button('删除任务组', picker_schedule.ask_delete).style(button_internal_css)
                 
@@ -738,7 +733,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                     input_trends_copywriting_play_interval = ui.input(label='文案播放间隔', value=config.get("trends_copywriting", "play_interval"), placeholder='文案于文案之间的播放间隔时间（秒）').style("width:200px;").tooltip('文案于文案之间的播放间隔时间（秒）')
                 
                 with ui.row():
-                    picker_trends_copywriting = GroupPicker(lambda: trends_copywriting_config_card, '动态文案', trends_copywriting_del).build()
+                    picker_trends_copywriting = GroupPicker(lambda: trends_copywriting_config_card, '动态文案', trends_copywriting_del, lambda: trends_copywriting_copywriting_var).build()
                     button_trends_copywriting_add = ui.button('增加文案组', on_click=lambda: (trends_copywriting_add(), picker_trends_copywriting.refresh()), color=button_internal_color).style(button_internal_css)
                     button_trends_copywriting_del = delete_button('删除文案组', picker_trends_copywriting.ask_delete).style(button_internal_css)
                 
@@ -800,7 +795,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                     switch_key_mapping_img_path_single_sentence_trigger_once_enable = ui.switch('单句仅触发一次（图片显示）', value=config.get("key_mapping", "img_path_single_sentence_trigger_once")).style(switch_internal_css).tooltip('一句话的数据，是否只让这句话触发一次文案映射，因为一句话中可能会有多个关键词，触发多次')
                     
                 with ui.row():
-                    picker_key_mapping = GroupPicker(lambda: key_mapping_config_card, '按键/文案映射', key_mapping_del).build()
+                    picker_key_mapping = GroupPicker(lambda: key_mapping_config_card, '按键/文案映射', key_mapping_del, lambda: key_mapping_config_var).build()
                     button_key_mapping_add = ui.button('增加配置组', on_click=lambda: (key_mapping_add(), picker_key_mapping.refresh()), color=button_internal_color).style(button_internal_css)
                     button_key_mapping_del = delete_button('删除配置组', picker_key_mapping.ask_delete).style(button_internal_css)
                 
@@ -1000,7 +995,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                         value=config.get("custom_cmd", "type")
                     ).style("width:200px")
                 with ui.row():
-                    picker_custom_cmd = GroupPicker(lambda: custom_cmd_config_card, '自定义命令', custom_cmd_del).build()
+                    picker_custom_cmd = GroupPicker(lambda: custom_cmd_config_card, '自定义命令', custom_cmd_del, lambda: custom_cmd_config_var).build()
                     button_custom_cmd_add = ui.button('增加配置组', on_click=lambda: (custom_cmd_add(), picker_custom_cmd.refresh()), color=button_internal_color).style(button_internal_css)
                     button_custom_cmd_del = delete_button('删除配置组', picker_custom_cmd.ask_delete).style(button_internal_css)
                 
@@ -1103,7 +1098,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "coordination_program"):
             with ui.expansion('联动程序', icon="settings", value=True).classes('w-full'):
                 with ui.row():
-                    picker_coordination_program = GroupPicker(lambda: coordination_program_config_card, '联动程序', coordination_program_del).build()
+                    picker_coordination_program = GroupPicker(lambda: coordination_program_config_card, '联动程序', coordination_program_del, lambda: coordination_program_var).build()
                     button_coordination_program_add = ui.button('增加配置组', on_click=lambda: (coordination_program_add(), picker_coordination_program.refresh()), color=button_internal_color).style(button_internal_css)
                     button_coordination_program_del = delete_button('删除配置组', picker_coordination_program.ask_delete).style(button_internal_css)
                 

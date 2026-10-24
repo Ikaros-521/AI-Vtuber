@@ -42,6 +42,7 @@ from webui_app.processes import (
     stop_external_program,
 )
 from webui_app.search import ConfigSearch
+from webui_app.undo import undo
 from webui_app.sections import add_section_indexes
 from webui_app.state import state
 
@@ -397,6 +398,8 @@ def goto_func_page():
             # 写盘成功后才清脏状态：放在最后是因为 on_save 回调里还会回写控件值，
             # 提前清会让守卫把「自己写的值」重新记成未保存
             dirty_guard.mark_saved()
+            # 已经写盘了，再让撤销把控件恢复回去只会和文件对不上
+            undo.forget()
 
             return True
         except Exception as e:
@@ -617,6 +620,8 @@ def goto_func_page():
     dirty_guard.install()
     dirty_guard.bind_nav(select_tab, button_bottom_color)
     dirty_guard.build_list()
+    # 删除的 5 秒撤销托盘：和确认框同理，必须在构建期建好再显隐
+    undo.build()
     ui.add_head_html(PAGE_SCRIPTS)
     dirty_guard.bind_label(dirty_badge)
     dirty_guard.watch(force=True)

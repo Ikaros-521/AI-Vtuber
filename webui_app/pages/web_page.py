@@ -29,7 +29,6 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
     # -删除
     def webui_local_dir_to_endpoint_del(pos):
         try:
-            webui_local_dir_to_endpoint_config_card.remove(pos)
             # 删除操作
             keys_to_delete = [str(2 * pos + i) for i in range(2)]
             for key in keys_to_delete:
@@ -106,7 +105,7 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
     with ui.card().style(card_css):
         ui.label("本地路径指定URL路径访问")
         with ui.row():
-            picker_local_dir = GroupPicker(lambda: webui_local_dir_to_endpoint_config_card, '本地路径映射', webui_local_dir_to_endpoint_del).build()
+            picker_local_dir = GroupPicker(lambda: webui_local_dir_to_endpoint_config_card, '本地路径映射', webui_local_dir_to_endpoint_del, lambda: webui_local_dir_to_endpoint_config_var).build()
             button_webui_local_dir_to_endpoint_add = ui.button('增加配置组', on_click=lambda: (webui_local_dir_to_endpoint_add(), picker_local_dir.refresh()), color=button_internal_color).style(button_internal_css)
             button_webui_local_dir_to_endpoint_del = delete_button('删除配置组', picker_local_dir.ask_delete).style(button_internal_css)
         
