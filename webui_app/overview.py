@@ -8,6 +8,7 @@ from nicegui import ui
 from webui_app.fields import jump_to
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
 from webui_app.options import CHAT_TYPE_OPTIONS, VISUAL_BODY_OPTIONS, platform_options
+from webui_app.theme import LINK, readable_on
 
 # 分组顺序按「自部署新主播」的落地顺序排：先连上直播间，再给脑子、给声音。
 # 页面清单与 webui_app/repage.py 的 PAGE_PLAN 对应（那边负责把区块搬进这些 tab）
@@ -47,13 +48,16 @@ def build_nav_chips(select, accent, search=None):
         if search is not None:
             ui.space()
             ui.button('搜索配置项', icon='search', on_click=search).props(
-                'flat dense no-caps size=sm').style('font-size:13px;')
+                'flat dense no-caps size=sm').style(f'font-size:13px;color:{LINK} !important;')
 
     def mark(tab_name):
         active = group_of(tab_name)
         for name, chip in chips.items():
-            chip.style('background:' + (accent if name == active else 'transparent') +
-                       ';color:' + ('#ffffff' if name == active else INK_MUT) + ';')
+            on = accent if name == active else 'transparent'
+            # 按钮文字色必须带 !important：不带的话被 Quasar 的 text-primary 顶成默认蓝（3.06:1）。
+            # 选中那枚的前景按主题色亮度挑——5 套主题里 3 套是高饱和亮色，白字压上去根本看不清。
+            chip.style('background:' + on + ';color:' +
+                       (readable_on(on) if name == active else INK_MUT) + ' !important;')
 
     return mark
 
@@ -124,7 +128,8 @@ def build_overview_tab(config, state, dirty_guard, select, save_config, card_css
                         f'font-size:13px;color:{INK_MUT};')
                 # 「去配置」不止切页，还要落到那个框上并描一下边（story-1 的验收标准）
                 ui.button('去配置', on_click=lambda r=row: jump_to(
-                    r['field'], 0, accent, select, r['tab'])).props('flat dense no-caps size=sm')
+                    r['field'], 0, accent, select, r['tab'])).props(
+                    'flat dense no-caps size=sm').style(f'color:{LINK} !important;')
 
         ui.button('保存配置', on_click=save_config).props('outline no-caps dense').style(
             'margin-top:12px;')

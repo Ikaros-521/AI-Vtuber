@@ -4,6 +4,7 @@
     "Button": 122,
     "Card": 127,
     "Checkbox": 33,
+    "Colors": 1,
     "Column": 8,
     "DarkMode": 1,
     "Dialog": 3,
@@ -1072,5 +1073,5 @@
     "默认不填就是默认选中的发言人": 1,
     "默认为：1，但有时候可能文章内容解析出来是空的，可以适当扩大检索数": 1
   },
-  "total_elements": 2192
+  "total_elements": 2193
 }

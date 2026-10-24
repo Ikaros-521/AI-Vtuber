@@ -96,6 +96,6 @@ def add_section_indexes(accent):
             ui.label('本页区块').style(f'font-size:12px;color:{INK_MUT};align-self:center;')
             for name in sections:
                 ui.button(name, on_click=lambda target=name, a=accent: _scroll_to(target, a)).props(
-                    'flat dense no-caps size=xs').style(f'font-size:12px;color:{INK_MUT};')
+                    'flat dense no-caps size=xs').style(f'font-size:12px;color:{INK_MUT} !important;')
         row.move(panel, 0)
     return result

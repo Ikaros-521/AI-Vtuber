@@ -16,6 +16,7 @@ from webui_app.dirty_guard import DirtyGuard
 from webui_app.errors import explain
 from webui_app.fields import INVALID_RING, jump_to_element
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
+from webui_app.theme import LINK
 from webui_app.login import build_login, start_expiration_timer
 from webui_app.overview import OVERVIEW, build_nav_chips, build_overview_tab
 from webui_app.pages.assistant_anchor import build_assistant_anchor_tab
@@ -254,6 +255,38 @@ PAGE_SCRIPTS = """
 .tip-bar{padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.72);
          border-left:3px solid #2f6fad;box-shadow:0 1px 3px rgba(0,0,0,0.10);
          font-size:13px;line-height:1.6;color:#1f3552;}
+/* 字段宽度 token（走查 audit-13）：实测全站 26 种内联像素宽度（200×248、100×188、153×70、
+   300×99…），同一含义的字段在不同页宽度不一样、同一张卡里相邻两行也对不齐。
+   555 处 .style('width:XXXpx') 逐个改不现实，这里用属性选择器把它们吸到 4 档刻度：
+   120 / 200 / 300 / 520；max-width:100% 保证吸宽之后不会把网格顶出容器。
+   窄屏的整行覆盖写在后面的媒体查询里，顺序决定谁赢。 */
+.q-tab-panel .q-field{max-width:100%;}
+.q-tab-panel .q-field[style*="width: 50px"],
+.q-tab-panel .q-field[style*="width: 64px"],
+.q-tab-panel .q-field[style*="width: 80px"],
+.q-tab-panel .q-field[style*="width: 93px"],
+.q-tab-panel .q-field[style*="width: 97px"],
+.q-tab-panel .q-field[style*="width: 100px"],
+.q-tab-panel .q-field[style*="width: 106px"],
+.q-tab-panel .q-field[style*="width: 120px"]{width:120px !important;}
+.q-tab-panel .q-field[style*="width: 150px"],
+.q-tab-panel .q-field[style*="width: 153px"],
+.q-tab-panel .q-field[style*="width: 155px"],
+.q-tab-panel .q-field[style*="width: 158px"],
+.q-tab-panel .q-field[style*="width: 160px"],
+.q-tab-panel .q-field[style*="width: 177px"],
+.q-tab-panel .q-field[style*="width: 189px"],
+.q-tab-panel .q-field[style*="width: 200px"],
+.q-tab-panel .q-field[style*="width: 215px"],
+.q-tab-panel .q-field[style*="width: 250px"]{width:200px !important;}
+.q-tab-panel .q-field[style*="width: 300px"],
+.q-tab-panel .q-field[style*="width: 320px"],
+.q-tab-panel .q-field[style*="width: 350px"],
+.q-tab-panel .q-field[style*="width: 400px"]{width:300px !important;}
+.q-tab-panel .q-field[style*="width: 500px"],
+.q-tab-panel .q-field[style*="width: 700px"],
+.q-tab-panel .q-field[style*="width: 800px"],
+.q-tab-panel .q-field[style*="width: 1000px"]{width:520px !important;}
 /* 聊天记录面板浮在右侧，500px 宽：窗口不够宽就会压住配置项（1024 实测遮 1 个，
    640 遮 7 个）。不够宽时改成正常流，代价是要滚到页面上方才看得到日志 */
 @media (max-width:1279px){.chat-log-float{position:static !important;}}
@@ -444,6 +477,11 @@ def goto_func_page():
 
     # 聊天类型所有配置项
     page_config_mappings = []
+
+    # NiceGUI 的默认 primary 是 #5898d4：白字压上去只有 3.06:1，全站没设颜色的按钮、
+    # 芯片、链接全都用它（实测 64 处低于 WCAG AA 的 4.5:1）。换成同色系的深色版，
+    # 白字变 6.3:1，一处改动收掉整类。
+    ui.colors(primary=LINK)
 
     # 窄屏提示：定宽控件在 <900px 已被上面那段样式表改成单列，不再裁；
     # 这条只说明「窄屏能看到的东西少」，别再写会被裁掉那种已经不实的话
