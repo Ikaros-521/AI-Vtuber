@@ -19,7 +19,7 @@ from webui_app.groups import refresh_pickers
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
 from webui_app.hints import move_long_placeholders_to_hints
 from webui_app.labels import name_bare_enable_switches
-from webui_app.theme import LINK
+from webui_app.theme import LINK, internal_button_color
 from webui_app.login import build_login, start_expiration_timer
 from webui_app.overview import OVERVIEW, build_nav_chips, build_overview_tab, page_order
 from webui_app.pages.assistant_anchor import build_assistant_anchor_tab
@@ -199,7 +199,9 @@ card_css = config.get("webui", "theme", "list", theme_choose, "card")
 button_bottom_css = config.get("webui", "theme", "list", theme_choose, "button_bottom")
 button_bottom_color = config.get("webui", "theme", "list", theme_choose, "button_bottom_color")
 button_internal_css = config.get("webui", "theme", "list", theme_choose, "button_internal")
-button_internal_color = config.get("webui", "theme", "list", theme_choose, "button_internal_color")
+# 五套主题这里的 button_internal_color 全是空串，留空的意思就是「用主题主色」，见 theme.py
+button_internal_color = internal_button_color(
+    config.get("webui", "theme", "list", theme_choose, "button_internal_color"))
 switch_internal_css = config.get("webui", "theme", "list", theme_choose, "switch_internal")
 echart_css = config.get("webui", "theme", "list", theme_choose, "echart")
 

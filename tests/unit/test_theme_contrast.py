@@ -5,7 +5,7 @@
 """
 import pytest
 
-from webui_app.theme import INK, LINK, readable_on
+from webui_app.theme import INK, LINK, internal_button_color, readable_on
 
 
 def test_dark_text_on_light_accents():
@@ -38,3 +38,15 @@ def test_link_color_clears_wcag_aa():
     ratio = (lum((255, 255, 255)) + 0.05) / (lum(rgb) + 0.05)
     assert ratio > 4.5
     assert LINK != '#5898d4'
+
+
+def test_empty_internal_button_color_falls_back_to_primary():
+    """五套主题的 button_internal_color 全是空串（走查 audit-14）。
+
+    NiceGUI 把空串当成一个真的 CSS 颜色处理：color prop 不写、内联样式里塞一条
+    background-color:;，结果按钮没底色。留空的意思就是「跟主题走」。
+    """
+    assert internal_button_color('') == 'primary'
+    assert internal_button_color(None) == 'primary'
+    assert internal_button_color('#3e78bd;') == '#3e78bd;'
+    assert internal_button_color('negative') == 'negative'

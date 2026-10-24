@@ -58,3 +58,14 @@ def readable_on(background, dark=INK, light='#ffffff'):
     if rgb is None:
         return dark
     return light if _ratio(_luminance(rgb), WHITE_L) >= 4.5 else dark
+
+
+def internal_button_color(value):
+    """主题没给内部按钮配色时兜到主色（走查 audit-14）。
+
+    NiceGUI 把空串当成「一个 CSS 颜色」：既不写 color prop（按钮因此没了底色），
+    又往内联样式塞一条 background-color:;。实测 5 套主题的这个钩子全是空串，
+    于是「加载模型 / 试听 / 发送 / 增加配置组」这 24 个按钮全是白框，
+    而同页另外 79 个按钮是主色实底——同样的动作，两种长相。
+    """
+    return value or 'primary'
