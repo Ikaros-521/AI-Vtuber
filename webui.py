@@ -597,7 +597,7 @@ def goto_func_page():
                 config, common, config_path, webui_config_to_dict, card_css, switch_internal_css, button_internal_color, button_internal_css))
 
         with ui.tab_panel(docs_page).style(tab_panel_css):
-            build_docs_tab()
+            build_docs_tab(card_css)
 
         with ui.tab_panel(about_page).style(tab_panel_css):
             build_about_tab(card_css)
