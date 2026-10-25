@@ -6,7 +6,7 @@
 """
 from nicegui import ui
 
-from webui_app.theme import INK, INK_MUT
+from webui_app.theme import INK
 
 DOCS_URL = 'https://ikaros521.eu.org/site/'
 DOCS_BACKUP_URL = 'https://ikaros-521.gitee.io/luna-docs/site/index.html'
@@ -32,14 +32,18 @@ RESOURCES = (
 def _card(item, card_css):
     with ui.card().style(card_css):
         ui.label(item['title']).style(f'font-size:16px;font-weight:600;color:{INK};')
-        ui.label(item['summary']).style(f'font-size:13px;line-height:1.6;color:{INK_MUT};')
+        # 摘要用近黑而不是次级灰：卡片底是主题的高饱和渐变（蓝天白云是 #e3e8ef→#8dceff），
+        # INK_MUT 压上去实测最低 2.78:1，过不了 AA；近黑在渐变两端都还有 7:1 以上。
+        ui.label(item['summary']).style(f'font-size:13px;line-height:1.6;color:{INK};')
         with ui.row().classes('items-center').style('gap:8px;flex-wrap:wrap;'):
+            # 「打开」与标签都做成白底药丸：底色由自己给，就不受主题渐变影响
             ui.link('打开', item['url'], new_tab=True).props('no-caps dense').style(
-                f'color:#2b5d9b !important;font-size:13px;')
+                'font-size:13px;padding:2px 10px;border-radius:12px;background:#ffffff;'
+                f'color:{INK};box-shadow:0 1px 2px rgba(0,0,0,0.18);')
             for tag in item['tags']:
                 ui.label(tag).style(
-                    'font-size:12px;padding:1px 8px;border-radius:9px;background:rgba(0,0,0,0.06);'
-                    f'color:{INK_MUT};')
+                    'font-size:12px;padding:1px 8px;border-radius:9px;background:rgba(255,255,255,0.72);'
+                    f'color:{INK};')
 
 
 def _preview(title, icon, url, note):
