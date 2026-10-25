@@ -309,9 +309,6 @@ PAGE_SCRIPTS = """
 .q-tab-panel .q-field[style*="width: 700px"],
 .q-tab-panel .q-field[style*="width: 800px"],
 .q-tab-panel .q-field[style*="width: 1000px"]{width:520px !important;}
-/* 聊天记录面板浮在右侧，500px 宽：窗口不够宽就会压住配置项（1024 实测遮 1 个，
-   640 遮 7 个）。不够宽时改成正常流，代价是要滚到页面上方才看得到日志 */
-@media (max-width:1279px){.chat-log-float{position:static !important;}}
 @media (max-width:899px){
   .narrow-tip{display:flex !important;}
   /* 页面里 850 多处 .style('width:XXXpx') 不可能逐个改，窄屏用样式表的 !important

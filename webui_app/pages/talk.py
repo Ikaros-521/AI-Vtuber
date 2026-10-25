@@ -23,9 +23,12 @@ FASTER_WHISPER_LANGUAGES = [
 
 def build_talk_tab(config, common, state, chat_log, card_css, switch_internal_css,
                    button_internal_color, button_internal_css):
-    with ui.row().style("position:fixed; top: 100px; right: 20px;").classes("chat-log-float"):
-        with ui.expansion('聊天记录', icon="question_answer", value=True):
-            scroll_area_chat_box = ui.scroll_area().style("width:500px; height:700px;")
+    # 聊天记录从 fixed 浮层改成页面内常规一栏（走查 audit-27）：1440 下实测压住 8 个控件
+    # （「播放中不进行录音的检测间隔(秒)」「语音对话」「停录秒数」CHANNELS/RATE 都在下面），
+    # 收起后那个图标还留在原处，等于凭空多一块点不着的区域。展开也不再从右侧永久拿走 500px。
+    with ui.row().classes('w-full'):
+        with ui.expansion('聊天记录', icon="question_answer", value=False).classes('w-full'):
+            scroll_area_chat_box = ui.scroll_area().style("width:100%;max-width:760px;height:420px;")
     chat_log.mount(scroll_area_chat_box)
 
     with ui.row():
