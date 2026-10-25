@@ -1,4 +1,4 @@
-"""互动 · 过滤页：违禁词、触发前后缀、遗忘与保留数、队列优先级、黑名单。
+"""互动 · 过滤页：违禁词、触发前后缀、消息历史清理、队列优先级、黑名单。
 
 从 通用配置 拆出来的第一个页面。控件变量名与原来完全一致，方便和 git diff 对照；
 「板块显示/隐藏」里关掉 过滤 时不再静默空白，而是说明去哪儿打开。
@@ -40,33 +40,34 @@ def build_interact_filter_tab(config, card_css, switch_internal_css):
             input_filter_badwords_bad_pinyin_path = ui.input(label='违禁拼音路径', value=config.get("filter", "badwords", "bad_pinyin_path"), placeholder='本地违禁拼音数据路径（你如果不需要，可以清空文件内容）').style("width:200px;").tooltip('本地违禁拼音数据路径（你如果不需要，可以清空文件内容）')
             input_filter_badwords_replace = ui.input(label='违禁词替换', value=config.get("filter", "badwords", "replace"), placeholder='在不丢弃违禁语句的前提下，将违禁词替换成此项的文本').style("width:200px;").tooltip('在不丢弃违禁语句的前提下，将违禁词替换成此项的文本')
 
-        with ui.expansion('消息遗忘&保留设置', icon="settings", value=True).classes('w-full'):
+        with ui.expansion('消息历史清理设置', icon="settings", value=True).classes('w-full'):
             with ui.element('div').classes('tip-bar'):
-                ui.label("遗忘间隔 指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，但会保留最新的n个数据；保留数 指的是保留最新收到的数据的数量")
+                ui.label("程序会把收到的弹幕/礼物等留在内存里。清理间隔 是每隔多少秒丢一次这段时间内收到的旧消息，"
+                         "保留条数 是每次清理之后仍留在内存里的最新条数。两类都只影响内存，不动数据库文件。")
             with ui.grid(columns=4):
                 input_filter_comment_forget_duration = ui.input(
-                    label='弹幕遗忘间隔', 
+                    label='弹幕清理间隔（秒）', 
                     placeholder='例：1', 
                     value=config.get("filter", "comment_forget_duration")
-                ).style("width:200px;").tooltip('指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义')
-                input_filter_comment_forget_reserve_num = ui.input(label='弹幕保留数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "comment_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
-                input_filter_gift_forget_duration = ui.input(label='礼物遗忘间隔', placeholder='指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义', value=config.get("filter", "gift_forget_duration")).style("width:200px;").tooltip('指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义')
-                input_filter_gift_forget_reserve_num = ui.input(label='礼物保留数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "gift_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
+                ).style("width:200px;").tooltip('每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」')
+                input_filter_comment_forget_reserve_num = ui.input(label='弹幕保留条数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "comment_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
+                input_filter_gift_forget_duration = ui.input(label='礼物清理间隔（秒）', placeholder='每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」', value=config.get("filter", "gift_forget_duration")).style("width:200px;").tooltip('每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」')
+                input_filter_gift_forget_reserve_num = ui.input(label='礼物保留条数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "gift_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
             with ui.grid(columns=4):
-                input_filter_entrance_forget_duration = ui.input(label='入场遗忘间隔', placeholder='指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义', value=config.get("filter", "entrance_forget_duration")).style("width:200px;").tooltip('指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义')
-                input_filter_entrance_forget_reserve_num = ui.input(label='入场保留数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "entrance_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
-                input_filter_follow_forget_duration = ui.input(label='关注遗忘间隔', placeholder='指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义', value=config.get("filter", "follow_forget_duration")).style("width:200px;").tooltip('指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义')
-                input_filter_follow_forget_reserve_num = ui.input(label='关注保留数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "follow_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
+                input_filter_entrance_forget_duration = ui.input(label='入场清理间隔（秒）', placeholder='每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」', value=config.get("filter", "entrance_forget_duration")).style("width:200px;").tooltip('每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」')
+                input_filter_entrance_forget_reserve_num = ui.input(label='入场保留条数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "entrance_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
+                input_filter_follow_forget_duration = ui.input(label='关注清理间隔（秒）', placeholder='每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」', value=config.get("filter", "follow_forget_duration")).style("width:200px;").tooltip('每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」')
+                input_filter_follow_forget_reserve_num = ui.input(label='关注保留条数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "follow_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
             with ui.grid(columns=4):
-                input_filter_talk_forget_duration = ui.input(label='聊天遗忘间隔', placeholder='指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义', value=config.get("filter", "talk_forget_duration")).style("width:200px;").tooltip('指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义')
-                input_filter_talk_forget_reserve_num = ui.input(label='聊天保留数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "talk_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
-                input_filter_schedule_forget_duration = ui.input(label='定时遗忘间隔', placeholder='指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义', value=config.get("filter", "schedule_forget_duration")).style("width:200px;").tooltip('指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义')
-                input_filter_schedule_forget_reserve_num = ui.input(label='定时保留数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "schedule_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
+                input_filter_talk_forget_duration = ui.input(label='聊天清理间隔（秒）', placeholder='每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」', value=config.get("filter", "talk_forget_duration")).style("width:200px;").tooltip('每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」')
+                input_filter_talk_forget_reserve_num = ui.input(label='聊天保留条数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "talk_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
+                input_filter_schedule_forget_duration = ui.input(label='定时清理间隔（秒）', placeholder='每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」', value=config.get("filter", "schedule_forget_duration")).style("width:200px;").tooltip('每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」')
+                input_filter_schedule_forget_reserve_num = ui.input(label='定时保留条数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "schedule_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
             with ui.grid(columns=4):
-                input_filter_idle_time_task_forget_duration = ui.input(label='闲时任务遗忘间隔', placeholder='指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义', value=config.get("filter", "idle_time_task_forget_duration")).style("width:200px;").tooltip('指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义')
-                input_filter_idle_time_task_forget_reserve_num = ui.input(label='闲时任务保留数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "idle_time_task_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
-                input_filter_image_recognition_schedule_forget_duration = ui.input(label='图像识别遗忘间隔', placeholder='指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义', value=config.get("filter", "image_recognition_schedule_forget_duration")).style("width:200px;").tooltip('指的是每隔这个间隔时间（秒），就会丢弃这个间隔时间中接收到的数据，\n保留数据在以下配置中可以自定义')
-                input_filter_image_recognition_schedule_forget_reserve_num = ui.input(label='图像识别保留数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "image_recognition_schedule_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
+                input_filter_idle_time_task_forget_duration = ui.input(label='闲时任务清理间隔（秒）', placeholder='每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」', value=config.get("filter", "idle_time_task_forget_duration")).style("width:200px;").tooltip('每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」')
+                input_filter_idle_time_task_forget_reserve_num = ui.input(label='闲时任务保留条数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "idle_time_task_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
+                input_filter_image_recognition_schedule_forget_duration = ui.input(label='图像识别清理间隔（秒）', placeholder='每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」', value=config.get("filter", "image_recognition_schedule_forget_duration")).style("width:200px;").tooltip('每隔多少秒丢一次这段时间内收到的旧消息；留在内存里的条数看旁边的「保留条数」')
+                input_filter_image_recognition_schedule_forget_reserve_num = ui.input(label='图像识别保留条数', placeholder='保留最新收到的数据的数量', value=config.get("filter", "image_recognition_schedule_forget_reserve_num")).style("width:200px;").tooltip('保留最新收到的数据的数量')
         with ui.expansion('限定时间段内数据重复丢弃', icon="settings", value=True).classes('w-full'):
             with ui.row():
                 switch_filter_limited_time_deduplication_enable = ui.switch('启用', value=config.get("filter", "limited_time_deduplication", "enable")).style(switch_internal_css)
