@@ -9,10 +9,81 @@ from webui_app.config_store import update_config
 from webui_app.confirm import confirm, delete_button
 from webui_app.groups import GroupPicker
 from webui_app.pages import PageConfig
+from webui_app.theme import INK, background_of, preview_css, readable_on
+
+# 试穿用的覆盖样式表放在一个可增删的 <style> 里：退出预览只要清空它，
+# 不用去逐个还原 850 多个控件的内联样式（那些本来就是建页时按当前主题写的）。
+THEME_SCRIPT = """
+<script>
+window.__lunaThemeCss = %s;
+(function () {
+    const put = function (css) {
+        let el = document.getElementById('luna-theme-preview');
+        if (!el) {
+            el = document.createElement('style');
+            el.id = 'luna-theme-preview';
+            document.head.appendChild(el);
+        }
+        el.textContent = css || '';
+    };
+    window.__lunaThemePreview = function (name) { put(window.__lunaThemeCss[name]); return true; };
+    window.__lunaThemeClear = function () { put(''); return true; };
+})();
+</script>
+"""
+
+
+def _swatch(name, theme, on_pick, current=False):
+    """一小块色板：上面是这套主题的页面底，里面嵌一张卡，点一下当场试穿。"""
+    panel = background_of(theme.get('tab_panel')) or '#f2f5f8'
+    card = background_of(theme.get('card')) or '#ffffff'
+    box = ui.element('div').style(
+        f'background:{panel};border-radius:10px;padding:8px;width:158px;cursor:pointer;'
+        + ('border:2px solid #2b5d9b;box-shadow:0 1px 3px rgba(0,0,0,0.12);' if current else
+           'border:1px solid rgba(0,0,0,0.14);box-shadow:0 1px 3px rgba(0,0,0,0.12);'))
+    with box:
+        with ui.row().style('justify-content:space-between;align-items:baseline;width:100%;'):
+            ui.label(name).style(f'font-size:12px;font-weight:600;color:{readable_on(panel)};')
+            if current:
+                # 不标出来，试穿两轮之后就分不清「配置文件里到底是哪套」了
+                ui.label('当前').style(
+                    f'font-size:11px;color:{readable_on(panel)};opacity:0.85;')
+        inner = ui.element('div').style(f'background:{card};border-radius:6px;padding:6px 8px;margin-top:6px;')
+        with inner:
+            ui.label('配置卡片').style(f'font-size:11px;color:{readable_on(card)};')
+            accent = (theme.get('button_bottom_color') or '').strip()
+            ui.element('div').style(
+                f'width:44px;height:12px;border-radius:6px;margin-top:4px;'
+                f'background:{accent or "#5898d4"};')
+    box.on('click', lambda: on_pick(name))
+    return box
+
+
+def _theme_preview(select_theme, themes, dirty_guard, chosen):
+    """走查 audit-23：换主题原先要「改配置 → 保存 → 重启」才能看到效果。"""
+    payload = json.dumps({name: preview_css(theme) for name, theme in themes.items()},
+                         ensure_ascii=False).replace('</', '<\\/')
+    ui.add_head_html(THEME_SCRIPT % payload)
+
+    def pick(name):
+        select_theme.value = name
+        # 程序改的值不会触发 on_value_change，脏计数得自己记一笔，否则角标会说「没改动」
+        dirty_guard.note_change(select_theme.id)
+        ui.run_javascript(f'window.__lunaThemePreview({json.dumps(name, ensure_ascii=False)})')
+        ui.notify(f'已用「{name}」试穿。要固定下来还是得点「保存配置」再重启。', position='top')
+
+    with ui.element('div').classes('tip-bar'):
+        ui.label('点下面的色板可以在当前页面试穿这套主题（不改文件）；要固定下来，'
+                 '还是得「保存配置」+ 重启 webui——主题值是建页时写死在各控件上的。')
+    with ui.row().style('gap:10px;flex-wrap:wrap;'):
+        for name, theme in themes.items():
+            _swatch(name, theme, pick, current=name == chosen)
+        ui.button('退出预览', on_click=lambda: ui.run_javascript('window.__lunaThemeClear()')) \
+            .props('flat no-caps dense').style(f'align-self:center;color:{INK};')
 
 
 def build_web_page_tab(config, common, config_path, config_to_dict, card_css, switch_internal_css,
-                       button_internal_color, button_internal_css):
+                       button_internal_color, button_internal_css, dirty_guard):
     def webui_local_dir_to_endpoint_add():
         data_len = len(webui_local_dir_to_endpoint_config_var)
         tmp_config = {
@@ -123,16 +194,17 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
 
     with ui.card().style(card_css):
         ui.label("CSS")
-        with ui.row():
-            theme_list = config.get("webui", "theme", "list").keys()
-            data_json = {}
-            for line in theme_list:
-                data_json[line] = line
-            select_webui_theme_choose = ui.select(
-                label='主题', 
-                options=data_json, 
-                value=config.get("webui", "theme", "choose")
-            )
+        theme_list = config.get("webui", "theme", "list")
+        data_json = {}
+        for line in theme_list.keys():
+            data_json[line] = line
+        select_webui_theme_choose = ui.select(
+            label='主题',
+            options=data_json,
+            value=config.get("webui", "theme", "choose")
+        )
+        _theme_preview(select_webui_theme_choose, theme_list, dirty_guard,
+                       config.get("webui", "theme", "choose"))
 
     with ui.card().style(card_css):
         ui.label("配置模板")

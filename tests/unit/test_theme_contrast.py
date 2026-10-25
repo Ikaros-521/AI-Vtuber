@@ -5,7 +5,8 @@
 """
 import pytest
 
-from webui_app.theme import INK, LINK, internal_button_color, readable_on
+from webui_app.theme import (INK, LINK, background_of, declarations, internal_button_color,
+                          preview_css, readable_on)
 
 
 def test_dark_text_on_light_accents():
@@ -50,3 +51,29 @@ def test_empty_internal_button_color_falls_back_to_primary():
     assert internal_button_color(None) == 'primary'
     assert internal_button_color('#3e78bd;') == '#3e78bd;'
     assert internal_button_color('negative') == 'negative'
+
+
+def test_preview_css_overrides_panel_card_and_accent():
+    """点色板试穿：三条覆盖都要带 !important，否则盖不住建页时写上的内联样式。"""
+    css = preview_css({'tab_panel': 'background: linear-gradient(45deg, #3494E6, #EC6EAD);',
+                       'card': 'margin:10px 0px;background: linear-gradient(45deg, #3494E6, #EC6EAD);',
+                       'button_bottom_color': '#EC6EAD'})
+    assert '.q-tab-panel{background:linear-gradient(45deg, #3494E6, #EC6EAD) !important;}' in css
+    assert '.q-tab-panel .q-card{background:linear-gradient(45deg, #3494E6, #EC6EAD) !important;}' in css
+    assert 'background-color:#EC6EAD !important' in css
+    # 亮粉上放白字读不清，这条要自己挑深色字
+    assert 'color:#111827 !important' in css
+
+
+def test_preview_css_clears_backgrounds_for_plain_theme():
+    """默认黑白 那套没写渐变：预览它时必须把上一套的底清掉，而不是留着。"""
+    css = preview_css({'tab_panel': '', 'card': 'margin:10px 0px;', 'button_bottom_color': 'primary'})
+    assert '.q-tab-panel{background:none !important;}' in css
+    assert '.q-tab-panel .q-card{background:none !important;}' in css
+    # 'primary' 是 Quasar 颜色名，CSS 盖不动，别假装预览得出来
+    assert 'background-color' not in css
+
+
+def test_declarations_tolerates_trailing_semicolon_and_spaces():
+    assert declarations('margin:10px 0px; background:#fff ;') == {'margin': '10px 0px', 'background': '#fff'}
+    assert background_of('margin:5px') == ''

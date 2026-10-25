@@ -69,3 +69,41 @@ def internal_button_color(value):
     而同页另外 79 个按钮是主色实底——同样的动作，两种长相。
     """
     return value or 'primary'
+
+
+def declarations(css):
+    """把主题那种裸 CSS 串（'margin:10px 0px;background: linear-gradient(...);'）拆成 {属性: 值}。"""
+    out = {}
+    for part in (css or '').split(';'):
+        key, sep, value = part.partition(':')
+        key, value = key.strip().lower(), value.strip()
+        if sep and key and value:
+            out[key] = value
+    return out
+
+
+def background_of(css):
+    d = declarations(css)
+    return d.get('background') or d.get('background-image') or d.get('background-color') or ''
+
+
+def preview_css(theme):
+    """把一套主题翻译成「临时试穿」用的覆盖样式（走查 audit-23）。
+
+    建页时主题值是写在各元素的内联 style 上的，所以换主题要保存 + 重启才生效。
+    预览就在前端用 !important 盖掉内联值：样式表带 !important 赢过内联不带 !important。
+    某套主题没写 background 时要显式清成 none，否则「默认黑白」这种没渐变的主题
+    预览出来还是上一套的底。底栏按钮只盖带 button_bottom 内联 margin 的那些，
+    不然会把右下角两枚状态徽标的白底也染掉。
+    """
+    panel = background_of(theme.get('tab_panel')) or 'none'
+    card = background_of(theme.get('card')) or 'none'
+    rules = [
+        f'.q-tab-panel{{background:{panel} !important;}}',
+        f'.q-tab-panel .q-card{{background:{card} !important;}}',
+    ]
+    accent = (theme.get('button_bottom_color') or '').strip()
+    if _to_rgb(accent):          # 'primary' 这种 Quasar 颜色名盖不动，就别假装能预览它
+        rules.append('.q-page-sticky .q-btn[style*="margin: 5px"]{'
+                     f'background-color:{accent} !important;color:{readable_on(accent)} !important;}}')
+    return '\n'.join(rules)
