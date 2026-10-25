@@ -24,7 +24,7 @@ document.addEventListener('keydown', function (e) {
     const card = document.querySelector('.luna-search-card');
     if (!card || card.getBoundingClientRect().height <= 0) return;
     const items = [...card.querySelectorAll('button.q-btn')];
-    if (items.length < 2) return;
+    if (!items.length) return;          // 只命中一条也要能把焦点挪上去（原来要 ≥2，单条结果键盘选不了）
     e.preventDefault();
     let i = items.indexOf(document.activeElement);
     const step = e.key === 'ArrowDown' ? 1 : -1;
@@ -76,6 +76,9 @@ class ConfigSearch:
                 'width:100%;max-width:640px;padding:14px;'):
             self._input = ui.input(placeholder='搜配置项，例如 保留条数', on_change=self._paint).props(
                 'autofocus outlined dense clearable').classes('w-full')
+            # Enter 落在输入框里（还没 ↑↓ 过高亮）时也要能跳：命令面板的规矩是 Enter 选当前项，
+            # 没有当前项就选第一条命中
+            self._input.on('keydown.enter', self._pick_first)
             self._summary = ui.label('').style(f'font-size:12px;color:{INK_MUT};margin:6px 0 2px;')
             self._results = ui.column().style('width:100%;gap:2px;max-height:50vh;overflow-y:auto;')
         ui.keyboard(self._on_key)
@@ -134,6 +137,12 @@ class ConfigSearch:
                         where = ' · '.join(x for x in (tab, section, where_extra) if x)
                         if where:
                             ui.label(where).style(f'font-size:12px;color:{INK_MUT};')
+
+    def _pick_first(self, _e=None):
+        """Enter 没落在结果行上时（焦点还在输入框），跳第一条命中。"""
+        hits = self._hits((self._input.value or '').strip())
+        if hits:
+            self._jump(hits[0])
 
     def _jump(self, row):
         name, _section, tab, ordinal, expansion = row[0], row[1], row[2], row[3], row[4]

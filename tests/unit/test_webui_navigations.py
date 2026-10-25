@@ -108,6 +108,22 @@ def test_hits_match_name_and_section_case_insensitively():
     assert search._hits('   ') == []
 
 
+def test_enter_jumps_to_the_first_hit(in_client):
+    """只命中一条时 ↑↓ 走不到那行，Enter 必须能直接跳——命令面板的规矩。"""
+    search = ConfigSearch(lambda name: None, '#3e78bd;')
+    search.build()
+    search._index = [('保留条数', '定时任务', '定时与闲时', 0, None, None),
+                     ('保留条数', '聊天', '聊天', 1, None, None)]
+    jumped = []
+    search._jump = lambda row: jumped.append(row[0])
+    search._input.set_value('保留')
+    search._pick_first()
+    assert jumped == ['保留条数']
+    search._input.set_value('没这个东西')
+    search._pick_first()
+    assert jumped == ['保留条数']       # 没命中就别乱跳
+
+
 def test_hits_also_match_the_tab_and_the_collapsed_section():
     """折叠区里的字段搜折叠区名也要能捞出来，不然用户只知道"有这么个设置"时搜不到。"""
     class FakeExpansion:
