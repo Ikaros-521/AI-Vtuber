@@ -66,6 +66,8 @@ def test_readiness_reports_real_config_only():
     }))
     assert [r['ok'] for r in rows] == [True, True, True, True]
     assert '278333' in rows[0]['value']
+    # 总览把这四行标成 1→4 的首次配置路径，顺序就是引导本身，不能随便重排
+    assert [r['title'] for r in rows] == ['弹幕来源', '大语言模型', '文本转语音', '虚拟身体']
 
     empty = readiness(FakeConfig({'platform': 'talk', 'room_display_id': '', 'chat_type': 'none',
                                   'audio_synthesis_type': 'none', 'visual_body': None}))

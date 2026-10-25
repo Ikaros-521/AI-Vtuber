@@ -121,12 +121,19 @@ def build_overview_tab(config, state, dirty_guard, select, save_config, card_css
         refresh()
         ui.timer(2.0, refresh)
 
-        for row in readiness(config):
+        with ui.element('div').classes('tip-bar'):
+            ui.label('第一次搭：按 1→4 填完就能开播。填好的会打勾，点某一行右边的「去配置」直接跳到那个框。')
+
+        for step, row in enumerate(readiness(config), start=1):
             with ui.row().style(
                     'align-items:center;gap:10px;width:100%;padding:8px 0;'
                     'border-top:1px solid rgba(17,24,39,0.10);'):
-                ui.icon('check_circle' if row['ok'] else 'error_outline').style(
-                    f'color:{OK if row["ok"] else WARN};font-size:20px;')
+                # 没填的显示序号、填好的换成勾：既是一条有序路径，又一眼看出还差哪几步
+                if row['ok']:
+                    ui.icon('check_circle').style(f'color:{OK};font-size:20px;')
+                else:
+                    ui.badge(str(step)).style(
+                        f'background:{WARN};color:#ffffff;font-size:12px;min-width:20px;text-align:center;')
                 with ui.column().style('gap:0;flex:1;min-width:0;'):
                     ui.label(row['title']).style(f'font-size:14px;font-weight:600;color:{INK};')
                     ui.label(row['value'] if row['ok'] else f"{row['value']} —— {row['hint']}").style(
