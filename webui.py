@@ -14,8 +14,9 @@ from webui_app.chat_log import chat_log
 from webui_app.config_store import update_config
 from webui_app.confirm import confirm
 from webui_app.dirty_guard import DirtyGuard
+from webui_app.enabled_filter import EnabledFilter
 from webui_app.errors import explain
-from webui_app.fields import INVALID_RING, jump_to_element
+from webui_app.fields import INVALID_RING, jump_to_element, set_reveal_hook
 from webui_app.groups import refresh_pickers
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
 from webui_app.hints import move_long_placeholders_to_hints
@@ -344,6 +345,16 @@ PAGE_SCRIPTS = """
      图例挤出卡片：改成按宽度等比，ECharts 自己有 ResizeObserver 会重排 */
   .nicegui-echart{height:auto !important;aspect-ratio:1/1;max-height:70vh;}
 }
+/* 「只看已启用」（走查 audit-9）：藏只靠 tab_panels 上的 luna-only-on 命中卡上的 luna-off-card，
+   控件的 visible 一直是 True，所以全局搜索与未保存清单照旧收得到被藏起来的项
+   ——跳过去时先自动取消过滤。权重压过 .q-card 自己的 display:flex，不用 !important。 */
+.luna-only-on .luna-off-card{display:none;}
+/* 整页被藏光时补一句解释（走查 audit-9）：点歌页只有一张未启用的卡，过滤后什么都不剩，
+   看上去就是页面坏了。文字写在样式表里，服务端只负责给面板挂 luna-panel-empty。 */
+.luna-only-on .luna-panel-empty::after{content:'这一页的功能都没启用，所以没有可显示的卡片；'
+    '关掉上面的「只看已启用」就能看到全部配置。';
+    display:block;margin-top:8px;padding:14px 16px;border-radius:8px;background:#f3f4f6;
+    color:#4b5563;font-size:13px;line-height:1.6;}
 </style>
 <script>
 (function () {
@@ -518,7 +529,10 @@ def goto_func_page():
         tabs.set_value(name)
 
     config_search = ConfigSearch(select_tab, button_bottom_color)
-    mark_group = build_nav_chips(select_tab, button_bottom_color.rstrip(';'), config_search.open)
+    # 「只看已启用」开关（走查 audit-9）：开关建在导航条里，藏不藏由 tab_panels 上一个类决定
+    enabled_filter = EnabledFilter()
+    mark_group = build_nav_chips(select_tab, button_bottom_color.rstrip(';'),
+                                 config_search.open, enabled_filter.build_switch)
     # 运行日志的对话框也必须在建页时建好，点「运行日志」只是填内容 + 打开
     run_log = RunLog(lambda: log_file_path).build()
 
@@ -696,6 +710,9 @@ def goto_func_page():
     move_long_placeholders_to_hints()
     # 「要删除的XX组」下拉的选项：行是建页循环里现造的，所以要等这一遍跑完才列得全
     refresh_pickers()
+    # 「只看已启用」要在面板都建完之后才拿得着容器，开关本身已经在导航条里建好了
+    enabled_filter.bind_panels(tab_panels)
+    set_reveal_hook(enabled_filter.turn_off)
 
     # 未保存改动守卫接线：注入拦截脚本 + 角标 + 给页面上的输入控件挂变更记录
     dirty_guard.install()

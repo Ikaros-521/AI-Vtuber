@@ -42,16 +42,21 @@ def group_of(tab_name):
     return OVERVIEW
 
 
-def build_nav_chips(select, accent, search=None):
-    """分组导航条：点组名跳到该组第一页，当前所在组高亮。返回 mark(tab 名) 用来刷高亮。"""
+def build_nav_chips(select, accent, search=None, toggle=None):
+    """分组导航条：点组名跳到该组第一页，当前所在组高亮。返回 mark(tab 名) 用来刷高亮。
+
+    toggle 是个 callable，在搜索按钮后面就地建出「只看已启用」开关（走查 audit-9）。
+    """
     chips = {}
-    with ui.row().style('gap:4px;flex-wrap:wrap;align-items:center;padding:2px 8px 0;width:100%;'):
+    with ui.row().style('gap:8px;flex-wrap:wrap;align-items:center;padding:2px 8px 0;width:100%;'):
         for name, members in [(OVERVIEW, None)] + NAV_GROUPS:
             first = OVERVIEW if members is None else members[0]
             chips[name] = ui.button(name, on_click=lambda target=first: select(target)).props(
                 'flat dense no-caps size=sm').style('font-size:13px;font-weight:500;')
         if search is not None:
             ui.space()
+            if toggle is not None:
+                toggle()
             ui.button('搜索配置项', icon='search', on_click=search).props(
                 'flat dense no-caps size=sm').style(f'font-size:13px;color:{LINK} !important;')
 

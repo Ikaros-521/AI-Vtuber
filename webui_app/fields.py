@@ -111,11 +111,23 @@ def hidden(element):
     return any(getattr(a, 'visible', True) is False for a in element.ancestors())
 
 
+# 跳转前一刻要做的收尾，目前只有「只看已启用」要注册：被 CSS 藏起来的框还在 DOM 里，
+# 但 display:none 让 scrollIntoView 滚不过去，等于跳了个寂寞（走查 audit-9）。
+_reveal_hook = None
+
+
+def set_reveal_hook(fn) -> None:
+    global _reveal_hook
+    _reveal_hook = fn
+
+
 def jump_to(label, ordinal, accent, select_tab=None, tab=None, expansion=None, color=None):
     """跳到某个配置框：先切页、展开所在折叠区，再让浏览器定位并描边。
 
     color 给校验失败用（描红圈），不传就用主题色。
     """
+    if _reveal_hook is not None:
+        _reveal_hook()
     if tab and select_tab is not None:
         select_tab(tab)
     if expansion is not None:
