@@ -108,6 +108,20 @@ def test_hits_match_name_and_section_case_insensitively():
     assert search._hits('   ') == []
 
 
+def test_hits_also_match_the_tab_and_the_collapsed_section():
+    """折叠区里的字段搜折叠区名也要能捞出来，不然用户只知道"有这么个设置"时搜不到。"""
+    class FakeExpansion:
+        def __init__(self, label):
+            self._props = {'label': label}
+
+    index = [('消息保留条数', '过滤', '过滤', 0, FakeExpansion('消息历史清理设置'), None),
+             ('房间号', '平台接入', '平台接入', 0, None, None)]
+    search = ConfigSearch(lambda name: None, '#3e78bd;')
+    search._index = index
+    assert [r[0] for r in search._hits('历史清理')] == ['消息保留条数']
+    assert [r[0] for r in search._hits('平台接入')] == ['房间号']
+
+
 def test_duplicate_labels_get_distinct_ordinals(in_client):
     """同名控件（音频存储路径#1/#2）跳过去要落在对的那一个。"""
     from webui_app.search import build_index

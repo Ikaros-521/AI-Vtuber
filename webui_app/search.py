@@ -3,16 +3,56 @@
 近 900 个输入控件散在 29 个页面上——找不到控件比配错控件更常见。
 索引不另存一份清单，直接从元素树现建，所以运行期「增加配置组」新加的控件也搜得到。
 定位与高亮走 webui_app/fields.py，和总览的「去配置」、未保存清单共用同一套。
-"""
-from nicegui import context, ui
 
-from webui_app.dirty_guard import INPUT_TYPES
-from webui_app.fields import build_index, jump_to
+结果行必须带上「当前值」：全站光叫「API地址」的框就有 24 个，只列名字等于没列。
+"""
+from nicegui import ui
+
+from webui_app.fields import build_index, jump_to, value_text
 
 MAX_HITS = 12
 
 INK = '#111827'
 INK_MUT = '#4b5563'
+
+# ↑/↓ 在结果里移动焦点，Enter 交给浏览器原生触发（VSCode 命令面板就是这么做的）。
+# 判"对话框开着"不能靠 offsetParent——对话框是 position:fixed，它恒为 null（实测踩过）。
+NAV_SCRIPT = """
+<script>
+document.addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    const card = document.querySelector('.luna-search-card');
+    if (!card || card.getBoundingClientRect().height <= 0) return;
+    const items = [...card.querySelectorAll('button.q-btn')];
+    if (items.length < 2) return;
+    e.preventDefault();
+    let i = items.indexOf(document.activeElement);
+    const step = e.key === 'ArrowDown' ? 1 : -1;
+    items[((i < 0 ? (step > 0 ? -1 : 0) : i) + step + items.length) % items.length].focus();
+}, true);
+</script>
+"""
+
+# 选中行用「底色 + 内阴影描边」而不是 outline：Quasar 给按钮挂了 .no-outline{outline:0!important}，
+# 实测即使自己写 outline:2px solid !important 且选择器确实匹配（b.matches 为真、计算色都进来了），
+# 计算值仍是 0px none——不再跟它争，直接换成一定生效的背景色。
+FOCUS_CSS = """
+<style>
+.luna-search-card button.q-btn:focus{background:#e8f0fb !important;
+                                     box-shadow:inset 0 0 0 2px #2b5d9b !important;}
+</style>
+"""
+
+
+def expansion_name(row):
+    """这一行所在折叠区的名字（没有就空串）。"""
+    expansion = row[4]
+    return str(getattr(expansion, '_props', {}).get('label') or '') if expansion else ''
+
+
+def needles(row):
+    """一行里能拿来搜的字符串：控件名、分区、页签、折叠区名。"""
+    return [x.lower() for x in (row[0], row[1], row[2], expansion_name(row)) if x]
 
 
 class ConfigSearch:
@@ -30,7 +70,10 @@ class ConfigSearch:
     def build(self):
         dialog = ui.dialog()
         self.dialog = dialog
-        with dialog, ui.card().style('width:100%;max-width:640px;padding:14px;'):
+        ui.add_head_html(NAV_SCRIPT)
+        ui.add_head_html(FOCUS_CSS)
+        with dialog, ui.card().classes('luna-search-card').style(
+                'width:100%;max-width:640px;padding:14px;'):
             self._input = ui.input(placeholder='搜配置项，例如 保留条数', on_change=self._paint).props(
                 'autofocus outlined dense clearable').classes('w-full')
             self._summary = ui.label('').style(f'font-size:12px;color:{INK_MUT};margin:6px 0 2px;')
@@ -53,19 +96,24 @@ class ConfigSearch:
             self.open()
 
     def _hits(self, query):
+        """名字、分区、页签名、折叠区名都能搜。"""
         q = (query or '').strip().lower()
         if not q:
             return []
-        return [row for row in self._index if q in row[0].lower() or q in row[1].lower()]
+        return [row for row in self._index if any(q in n for n in needles(row))]
 
     def _paint(self, e):
         query = ((e.value if e is not None else self._input.value) or '').strip()
         self._results.clear()
         if not query:
-            self._summary.set_text(f'共 {len(self._index)} 个配置项，输入关键词开始找')
+            self._summary.set_text(f'共 {len(self._index)} 个配置项，输入关键词开始找'
+                                   '（↑↓ 选，Enter 跳）')
             return
         hits = self._hits(query)
-        self._summary.set_text(f'命中 {len(hits)} 项' + (f'（只显示前 {MAX_HITS} 项）' if len(hits) > MAX_HITS else ''))
+        more = len(hits) - MAX_HITS
+        self._summary.set_text(
+            f'命中 {len(hits)} 项' + (f'，只显示前 {MAX_HITS} 项，还有 {more} 项请换个更精确的词' if more > 0 else '')
+            + ('；↑↓ 选，Enter 跳' if hits else ''))
         with self._results:
             if not hits:
                 with ui.row().style('align-items:center;gap:10px;padding:18px 6px;'):
@@ -74,12 +122,16 @@ class ConfigSearch:
                         f'font-size:13px;color:{INK_MUT};')
                 return
             for row in hits[:MAX_HITS]:
-                name, section, tab = row[0], row[1], row[2]
+                name, section, tab, element = row[0], row[1], row[2], row[5]
+                where_extra = expansion_name(row)
                 with ui.button(on_click=lambda r=row: self._jump(r)).props(
                         'flat no-caps align=left dense').classes('w-full'):
                     with ui.column().style('gap:0;align-items:flex-start;'):
-                        ui.label(name).style(f'font-size:14px;color:{INK};font-weight:500;')
-                        where = ' · '.join(x for x in (tab, section) if x)
+                        with ui.row().classes('items-baseline').style('gap:8px;flex-wrap:wrap;'):
+                            ui.label(name).style(f'font-size:14px;color:{INK};font-weight:500;')
+                            # 同名控件太多，值才是区分它们的依据
+                            ui.label(f'当前 {value_text(element)}').style(f'font-size:12px;color:{INK_MUT};')
+                        where = ' · '.join(x for x in (tab, section, where_extra) if x)
                         if where:
                             ui.label(where).style(f'font-size:12px;color:{INK_MUT};')
 
