@@ -4,6 +4,7 @@ import traceback
 from pathlib import Path
 
 from utils.my_log import logger
+from utils.my_log import file_path as log_file_path
 from utils.config import Config
 from utils.common import Common
 from utils.audio import Audio
@@ -39,6 +40,7 @@ from webui_app.pages.tts import build_tts_tab
 from webui_app.pages.visual_body import build_visual_body_tab
 from webui_app.pages.web_page import build_web_page_tab
 from webui_app.repage import apply_page_plan, order_tabs
+from webui_app.run_log import RunLog
 from webui_app.processes import (
     restart_application,
     run_external_program,
@@ -517,6 +519,8 @@ def goto_func_page():
 
     config_search = ConfigSearch(select_tab, button_bottom_color)
     mark_group = build_nav_chips(select_tab, button_bottom_color.rstrip(';'), config_search.open)
+    # 运行日志的对话框也必须在建页时建好，点「运行日志」只是填内容 + 打开
+    run_log = RunLog(lambda: log_file_path).build()
 
     with ui.tabs().classes('w-full') as tabs:
         overview_page = ui.tab('总览')
@@ -658,6 +662,10 @@ def goto_func_page():
                 button_run = ui.button('一键运行', on_click=lambda: run_external_program(config), color=button_bottom_color).style(button_bottom_css).tooltip("运行main.py")
                 # 创建一个按钮，用于停止正在运行的程序
                 button_stop = ui.button("停止运行", on_click=ask_stop, color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py")
+                # 运行结果原先只有一条会自行消失的 toast，出问题得自己去翻文件（走查 audit-3）
+                ui.button('运行日志', icon='receipt_long', on_click=run_log.open,
+                          color=button_bottom_color).style(button_bottom_css).tooltip(
+                    '看今天的日志末尾 400 行；日志文件在 log/ 下，按大小滚动')
                 button_light = ui.button('关灯', on_click=lambda: change_light_status(), color=button_bottom_color).style(button_bottom_css)
                 button_restart = ui.button('重启', on_click=ask_restart, color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py并重启webui")
                 ui.button('回到顶部', icon='keyboard_arrow_up', on_click=lambda: scroll_to_top(), color=button_bottom_color).style(button_bottom_css)
