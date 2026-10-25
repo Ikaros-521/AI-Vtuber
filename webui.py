@@ -265,6 +265,10 @@ PAGE_SCRIPTS = """
 .q-tab-panel .q-field__messages{white-space:pre-line;}
 .q-tab-panel .has-persistent-hint .q-field__bottom--animated{position:static;transform:none;}
 .q-tab-panel .q-field:not(.q-field--error) .q-field__messages{color:#4b5563;}
+/* 卡片是 align-items:flex-start 的纵向 flex：里面的栅格只会按「自己内容」收缩，
+   同一张卡里两块栅格因此列宽不同（实测 834 vs 1064），字段纵向对不齐、右侧还留一大块空洞
+   （走查 audit-11/12/26 的同一个根因）。给满宽，列宽才由卡片决定而不是由内容决定。 */
+.q-tab-panel .q-card > .nicegui-grid{width:100%;}
 /* 提示条：原先三处写死 Tailwind 的 bg-blue-100，换深色主题就成了一块突兀的浅蓝。
    半透明白底 + 左侧色条，在渐变背景和卡片上都读得清 */
 .tip-bar{padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.72);

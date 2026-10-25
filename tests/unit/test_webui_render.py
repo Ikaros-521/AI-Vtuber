@@ -43,7 +43,7 @@ def ui_root(tmp_path_factory):
 
     helper = tmp_path_factory.mktemp("helper") / "build.py"
     helper_source = f"""\
-import os, sys, json
+import os, sys, json, re
 sys.stdout.reconfigure(encoding='utf-8')
 os.environ['LUNA_CONFIG_PATH'] = {str(cfg)!r}
 sys.path.insert(0, {str(ROOT)!r})
@@ -104,8 +104,36 @@ for el in walk(root):
     if v:
         texts[v] = texts.get(v, 0) + 1
 
+# 走查 audit-12 的不变量：同一张卡（或折叠区）里的几块栅格必须同列数，
+# 否则相邻两行的字段对不齐。列数写在 grid-template-columns: repeat(N, ...) 上；
+# 非固定列数（auto-fill 那类流式栅格）不参与比较。
+all_elements = list(walk(root))
+grids = [e for e in all_elements if type(e).__name__ == 'Grid']
+cards = [e for e in all_elements if type(e).__name__ in ('Card', 'Expansion')]
+
+def grid_columns(g):
+    spec = ((getattr(g, '_style', None) or {{}}).get('grid-template-columns') or '').strip()
+    m = re.match(r'repeat\\((\\d+),', spec)
+    return int(m.group(1)) if m else None
+
+mixed = 0
+for c in cards:
+    inside = set(id(e) for e in walk(c))
+    inner_cards = [o for o in cards if o is not c and id(o) in inside]
+    own = []
+    for g in grids:
+        if id(g) not in inside:
+            continue
+        if any(id(g) in set(id(e) for e in walk(o)) for o in inner_cards):
+            continue      # 属于更内层那张卡，交给那一层判
+        own.append(g)
+    nums = [n for n in (grid_columns(g) for g in own) if n]
+    if len(set(nums)) > 1:
+        mixed += 1
+
 print('@@FINGERPRINT@@' + json.dumps(
-    {{'kinds': kinds, 'texts': texts, 'total_elements': total, 'distinct_texts': len(texts)}},
+    {{'kinds': kinds, 'texts': texts, 'total_elements': total, 'distinct_texts': len(texts),
+      'mixed_grid_columns': mixed}},
     ensure_ascii=False, sort_keys=True))
 """
     helper.write_text(helper_source, encoding="utf-8")
@@ -138,7 +166,7 @@ def _diff(baseline, current):
         for key in sorted(set(b) | set(c)):
             if b.get(key) != c.get(key):
                 out.append(f"  {section}.{key}: {b.get(key)} -> {c.get(key)}")
-    for key in ("total_elements", "distinct_texts"):
+    for key in ("total_elements", "distinct_texts", "mixed_grid_columns"):
         if baseline.get(key) != current.get(key):
             out.append(f"  {key}: {baseline.get(key)} -> {current.get(key)}")
     return out
@@ -156,6 +184,8 @@ def test_webui_builds_and_matches_structure(ui_root, request):
 
     baseline = json.loads(BASELINE.read_text(encoding="utf-8"))
     delta = _diff(baseline, ui_root)
+    if ui_root.get("mixed_grid_columns"):
+        delta.append(f"  有 {ui_root['mixed_grid_columns']} 张卡里的栅格列数不一致（相邻两行的字段对不齐，走查 audit-12）")
 
     assert not delta, "UI 结构相对基线发生变化：\n" + "\n".join(delta[:60])
 

@@ -11,7 +11,7 @@
     "EChart": 3,
     "Element": 13,
     "Expansion": 21,
-    "Grid": 41,
+    "Grid": 44,
     "Html": 2,
     "Icon": 4,
     "Image": 1,
@@ -20,7 +20,7 @@
     "Label": 171,
     "Link": 5,
     "PageSticky": 2,
-    "Row": 232,
+    "Row": 229,
     "ScrollArea": 1,
     "Select": 134,
     "Space": 1,
@@ -33,6 +33,7 @@
     "Timer": 5,
     "Tooltip": 403
   },
+  "mixed_grid_columns": 0,
   "texts": {
     "ACCESS_KEY_ID": 1,
     "ACCESS_KEY_SECRET": 1,

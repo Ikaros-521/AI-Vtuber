@@ -407,13 +407,16 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                     switch_read_comment_read_username_enable = ui.switch('念用户名', value=config.get("read_comment", "read_username_enable")).style(switch_internal_css)
                     input_read_comment_username_max_len = ui.input(label='用户名最大长度', value=config.get("read_comment", "username_max_len"), placeholder='需要保留的用户名的最大长度，超出部分将被丢弃').style("width:100px;").tooltip('需要保留的用户名的最大长度，超出部分将被丢弃')
                     switch_read_comment_voice_change = ui.switch('变声', value=config.get("read_comment", "voice_change")).style(switch_internal_css)
-                with ui.grid(columns=2):
+                # 与上面那 4 个字段同一个列数，宽字段跨两列：两块才能纵向对齐（走查 audit-12）
+                with ui.grid(columns=4):
                     textarea_read_comment_read_username_copywriting = ui.textarea(
                         label='念用户名文案', 
                         placeholder='念用户名时使用的文案，可以自定义编辑多个（换行分隔），实际中会随机一个使用', 
                         value=textarea_data_change(config.get("read_comment", "read_username_copywriting"))
-                    ).style("width:500px;").tooltip('念用户名时使用的文案，可以自定义编辑多个（换行分隔），实际中会随机一个使用')
-                with ui.row():
+                    ).style("width:500px;grid-column:span 2;").tooltip('念用户名时使用的文案，可以自定义编辑多个（换行分隔），实际中会随机一个使用')
+                # 这块 5 个字段原先排成一行 ui.row()，与上面两块栅格的列对不上；
+                # 按 4 列排成两行，左边缘就与整张卡一致了（走查 audit-12）
+                with ui.grid(columns=4):
                     switch_read_comment_periodic_trigger_enable = ui.switch('周期性触发启用', value=config.get("read_comment", "periodic_trigger", "enable")).style(switch_internal_css)
                     input_read_comment_periodic_trigger_periodic_time_min = ui.input(
                         label='触发周期最小值', 
@@ -439,7 +442,8 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "local_qa"):
             with ui.card().style(card_css):
                 ui.label('本地问答')
-                with ui.row():
+                # 原先是 ui.row()，与下面两块栅格对不齐；这块 5 个字段，正好按 5 列排（走查 audit-12）
+                with ui.grid(columns=5):
                     switch_local_qa_periodic_trigger_enable = ui.switch('周期性触发启用', value=config.get("local_qa", "periodic_trigger", "enable")).style(switch_internal_css)
                     input_local_qa_periodic_trigger_periodic_time_min = ui.input(label='触发周期最小值', value=config.get("local_qa", "periodic_trigger", "periodic_time_min"), placeholder='每隔这个周期的时间会触发n次此功能').style("width:100px;").tooltip('每隔这个周期的时间会触发n次此功能，周期时间从最大最小值之间随机生成')
                     input_local_qa_periodic_trigger_periodic_time_max = ui.input(label='触发周期最大值', value=config.get("local_qa", "periodic_trigger", "periodic_time_max"), placeholder='每隔这个周期的时间会触发n次此功能').style("width:100px;").tooltip('每隔这个周期的时间会触发n次此功能，周期时间从最大最小值之间随机生成')
@@ -456,7 +460,8 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                     input_local_qa_text_file_path = ui.input(label='文本问答数据路径', placeholder='本地问答文本数据存储路径', value=config.get("local_qa", "text", "file_path")).style("width:200px;")
                     input_local_qa_text_similarity = ui.input(label='文本最低相似度', placeholder='最低文本匹配相似度，就是说用户发送的内容和本地问答库中设定的内容的最低相似度。\n低了就会被当做一般弹幕处理', value=config.get("local_qa", "text", "similarity")).style("width:200px;")
                     input_local_qa_text_username_max_len = ui.input(label='用户名最大长度', value=config.get("local_qa", "text", "username_max_len"), placeholder='需要保留的用户名的最大长度，超出部分将被丢弃').style("width:100px;")       
-                with ui.grid(columns=4):
+                # 与上面「文本匹配」那块同列数，两块的字段才能纵向对齐（走查 audit-12）
+                with ui.grid(columns=5):
                     switch_local_qa_audio_enable = ui.switch('启用音频匹配', value=config.get("local_qa", "audio", "enable")).style(switch_internal_css)
                     input_local_qa_audio_file_path = ui.input(label='音频存储路径', placeholder='本地问答音频文件存储路径', value=config.get("local_qa", "audio", "file_path")).style("width:200px;")
                     input_local_qa_audio_similarity = ui.input(label='音频最低相似度', placeholder='最低音频匹配相似度，就是说用户发送的内容和本地音频库中音频文件名的最低相似度。\n低了就会被当做一般弹幕处理', value=config.get("local_qa", "audio", "similarity")).style("width:200px;")
