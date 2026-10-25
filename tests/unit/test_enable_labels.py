@@ -7,7 +7,7 @@ import pytest
 from nicegui import Client, ui
 from nicegui.page import page
 
-from webui_app.labels import name_bare_enable_switches
+from webui_app.labels import SHOW_CARD_NAMES, name_bare_enable_switches, rename_show_card_switches
 
 TEST_PAGE = page('/webui-enable-labels-test')
 
@@ -57,3 +57,39 @@ def test_switch_with_no_titled_container_and_no_tab_stays(in_client):
         box = ui.switch('启用', value=False)
     assert name_bare_enable_switches() == {}
     assert box.text == '启用'
+
+
+def test_wall_switches_get_one_spelling(in_client):
+    """开关墙不再「念弹幕」和 gpt_sovits 并排站着（走查 audit-5）。"""
+    with in_client:
+        with ui.card():
+            ui.label('文本转语音')
+            a = ui.switch('gpt_sovits', value=True)
+            b = ui.switch('Edge TTS', value=True)
+            c = ui.switch('音频播放', value=True)
+    changed = rename_show_card_switches()
+    assert changed == {a.id: 'GPT-SoVITS', b.id: 'Edge-TTS'}
+    assert c.text == '音频播放'          # 本来就是中文的不动
+
+
+def test_opaque_keys_keep_the_key_in_the_label(in_client):
+    """拼音键补中文，但键必须留在文案里：这些文字就是全局搜索的键，
+    而且用户会拿它去对 config.json 和文档。"""
+    with in_client:
+        with ui.card():
+            ui.label('虚拟身体')
+            a = ui.switch('xuniren', value=True)
+            b = ui.switch('live2d_TTS_LLM_GPT_SoVITS_Vtuber', value=True)
+    rename_show_card_switches()
+    for switch in (a, b):
+        key = [k for k in SHOW_CARD_NAMES if SHOW_CARD_NAMES[k] == switch.text][0]
+        assert key.lower() in switch.text.lower()
+
+
+def test_glossary_only_renames_whole_texts(in_client):
+    """按完整文案匹配，别拿子串去改「自定义LLM」这类已经规范了的标签。"""
+    with in_client:
+        untouched = ui.switch('自定义LLM', value=True)
+        renamed = ui.switch('gemini', value=True)
+    assert rename_show_card_switches() == {renamed.id: 'Gemini'}
+    assert untouched.text == '自定义LLM'

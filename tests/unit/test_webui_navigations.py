@@ -108,6 +108,34 @@ def test_hits_match_name_and_section_case_insensitively():
     assert search._hits('   ') == []
 
 
+def test_search_ignores_separators_so_raw_keys_still_hit():
+    """标签从 openai_tts 换成 OpenAI TTS 之后（走查 audit-5），
+    从 config.json 抄来的键名不能就搜不到了。"""
+    index = [('OpenAI TTS', '文本转语音', '文本转语音', 0, None, None),
+             ('Bert-VITS2', '文本转语音', '文本转语音', 1, None, None)]
+    search = ConfigSearch(lambda name: None, '#3e78bd;')
+    search._index = index
+    for query in ('openai_tts', 'openai tts', 'OPENAI-TTS'):
+        assert [r[0] for r in search._hits(query)] == ['OpenAI TTS'], query
+    assert [r[0] for r in search._hits('bert_vits2')] == ['Bert-VITS2']
+    assert search._hits('azure_tts') == []
+
+
+def test_name_hits_rank_above_section_hits():
+    """GPT-SoVITS 卡里 11 个字段都按折叠区名命中，把开关本身挤到了显示上限之外（实测）。"""
+    class Exp:
+        def __init__(self, label):
+            self._props = {'label': label}
+
+    gpt = Exp('GPT-SoVITS')
+    index = [('preset', '文本转语音', '文本转语音', 0, gpt, None),
+             ('temperature', '文本转语音', '文本转语音', 1, gpt, None),
+             ('GPT-SoVITS', '文本转语音', '页面配置', 0, None, None)]
+    search = ConfigSearch(lambda name: None, '#3e78bd;')
+    search._index = index
+    assert [r[0] for r in search._hits('gpt_sovits')] == ['GPT-SoVITS', 'preset', 'temperature']
+
+
 def test_enter_jumps_to_the_first_hit(in_client):
     """只命中一条时 ↑↓ 走不到那行，Enter 必须能直接跳——命令面板的规矩。"""
     search = ConfigSearch(lambda name: None, '#3e78bd;')

@@ -29,3 +29,44 @@ def name_bare_enable_switches():
         element.text = f'启用{object_name}'
         changed[element.id] = element.text
     return changed
+
+
+# 板块开关墙（页面配置）里有 31 个开关的文案就是配置键本身（走查 audit-5）：
+# 「念弹幕 / 答谢 / 点歌」旁边站着 chat_with_file、gpt_sovits、xuniren、unity，
+# 同一类东西两套称谓，用户分不清哪些是功能、哪些是厂商。
+# 规则两条：英文品牌名统一成官方写法；拼音键与复合键补一个中文名，但**把键留在文案里**——
+# 一是这些文案就是全局搜索的键，抹掉键就搜不到了；二是有人要拿去对文档/对 config.json。
+SHOW_CARD_NAMES = {
+    'gemini': 'Gemini',
+    'gradio': 'Gradio',
+    'unity': 'Unity',
+    'elevenlabs': 'ElevenLabs',
+    'openai_tts': 'OpenAI TTS',
+    'gpt_sovits': 'GPT-SoVITS',
+    'azure_tts': 'Azure TTS',
+    'langchain_chatchat': 'Langchain_ChatChat',
+    'Edge TTS': 'Edge-TTS',
+    'VITS': 'VITS-Simple-API',
+    'Bert VITS2': 'Bert-VITS2',
+    'VITS Fast': 'VITS-Fast',
+    'DDSP SVC': 'DDSP-SVC',
+    '通义千问': '通义千问/阿里云百炼',
+    'chat_with_file': '本地文件问答 chat_with_file',
+    'xuniren': '虚拟人 xuniren',
+    'metahuman_stream': 'MetaHuman 推流 metahuman_stream',
+    'digital_human_video_player': '数字人视频播放器',
+    'live2d_TTS_LLM_GPT_SoVITS_Vtuber': 'Vtuber 组合方案 live2d_TTS_LLM_GPT_SoVITS_Vtuber',
+}
+
+
+def rename_show_card_switches():
+    """把开关墙上裸键/不规范写法换成统一文案。返回 {控件 id: 新文案}。"""
+    changed = {}
+    for element in list(context.client.elements.values()):
+        if not isinstance(element, ui.switch):
+            continue
+        text = (element.text or '').strip()
+        if text in SHOW_CARD_NAMES:
+            element.text = SHOW_CARD_NAMES[text]
+            changed[element.id] = element.text
+    return changed

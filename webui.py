@@ -20,7 +20,7 @@ from webui_app.fields import INVALID_RING, jump_to_element, set_reveal_hook
 from webui_app.groups import refresh_pickers
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
 from webui_app.hints import move_long_placeholders_to_hints
-from webui_app.labels import name_bare_enable_switches
+from webui_app.labels import name_bare_enable_switches, rename_show_card_switches
 from webui_app.theme import LINK, internal_button_color
 from webui_app.login import build_login, start_expiration_timer
 from webui_app.overview import OVERVIEW, build_nav_chips, build_overview_tab, page_order
@@ -703,6 +703,8 @@ def goto_func_page():
     add_section_indexes(button_bottom_color)
     # 把 30 个只写「启用」的开关补成「启用+对象名」，要在挂脏状态监听之前做（文案是搜索与清单的键）
     name_bare_enable_switches()
+    # 板块开关墙里 31 个裸配置键开关换成「品牌名/中文名 + 键」（走查 audit-5），同样要在挂监听前
+    rename_show_card_switches()
     # 把塞在 placeholder 里的长解释挪到字段下方常驻（placeholder 一输入就没了，规则不能跟着没）
     move_long_placeholders_to_hints()
     # 「要删除的XX组」下拉的选项：行是建页循环里现造的，所以要等这一遍跑完才列得全

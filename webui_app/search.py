@@ -50,9 +50,18 @@ def expansion_name(row):
     return str(getattr(expansion, '_props', {}).get('label') or '') if expansion else ''
 
 
+def norm(text):
+    """搜的时候把大小写与 _ - 空格 三种分隔符统一掉。
+
+    配置键写 openai_tts、界面标签写 OpenAI TTS（走查 audit-5 换的中文名），
+    用户从 config.json 还是从屏幕上抄，都应该命中同一个东西。
+    """
+    return (text or '').lower().replace('_', '').replace('-', '').replace(' ', '')
+
+
 def needles(row):
     """一行里能拿来搜的字符串：控件名、分区、页签、折叠区名。"""
-    return [x.lower() for x in (row[0], row[1], row[2], expansion_name(row)) if x]
+    return [norm(x) for x in (row[0], row[1], row[2], expansion_name(row)) if x]
 
 
 class ConfigSearch:
@@ -100,10 +109,13 @@ class ConfigSearch:
 
     def _hits(self, query):
         """名字、分区、页签名、折叠区名都能搜。"""
-        q = (query or '').strip().lower()
+        q = norm((query or '').strip())
         if not q:
             return []
-        return [row for row in self._index if any(q in n for n in needles(row))]
+        rows = [row for row in self._index if any(q in n for n in needles(row))]
+        # 名字本身命中的排在前面：搜「gpt_sovits」时 GPT-SoVITS 卡里 11 个字段都按折叠区名命中，
+        # 那个开关本身反而沉到显示上限（12 行）之外——实测就是这样翻不到。
+        return sorted(rows, key=lambda row: (0 if q in norm(row[0]) else 1, row[2], row[1], row[0]))
 
     def _paint(self, e):
         query = ((e.value if e is not None else self._input.value) or '').strip()
