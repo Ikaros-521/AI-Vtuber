@@ -373,18 +373,17 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                         options={'pygame': 'pygame', 'audio_player_v2': 'audio_player_v2', 'audio_player': 'audio_player'},
                         value=config.get("play_audio", "player")
                     ).style("width:200px").tooltip('选用的音频播放器，默认pygame不需要再安装其他程序。audio player需要单独安装对接，详情看视频教程')
-            
-                with ui.card().style(card_css):
-                    ui.label('audio_player')
-                    with ui.row():
-                        input_audio_player_api_ip_port = ui.input(
-                            label='API地址', 
-                            value=config.get("audio_player", "api_ip_port"), 
-                            placeholder='audio_player的API地址，只需要 http://ip:端口 即可',
-                            validation={
-                                '请输入正确格式的URL': lambda value: common.is_url_check(value),
-                            }
-                        ).style("width:200px;").tooltip('仅在 音频播放器：audio_player等，情况下填写。audio_player的API地址，只需要 http://ip:端口 即可')
+                    # 原先这是套在「音频播放」里的又一张子卡，卡里只有这一个框（走查 audit-24/26 点名的
+                    # 那种"一字段一卡"，全站三层嵌套也就这一处）；并到播放器旁边，标签带上对象名，
+                    # 免得全站那好几个叫「API地址」的框在搜索与跳转里分不清谁是谁
+                    input_audio_player_api_ip_port = ui.input(
+                        label='audio_player API地址',
+                        value=config.get("audio_player", "api_ip_port"),
+                        placeholder='audio_player的API地址，只需要 http://ip:端口 即可',
+                        validation={
+                            '请输入正确格式的URL': lambda value: common.is_url_check(value),
+                        }
+                    ).style("width:200px;").tooltip('仅在 音频播放器：audio_player等，情况下填写。audio_player的API地址，只需要 http://ip:端口 即可')
 
                 with ui.card().style(card_css):
                     ui.label('音频随机变速')     

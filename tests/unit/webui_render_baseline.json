@@ -2,7 +2,7 @@
   "distinct_texts": 1095,
   "kinds": {
     "Button": 130,
-    "Card": 132,
+    "Card": 131,
     "Checkbox": 33,
     "Colors": 1,
     "Column": 8,
@@ -17,10 +17,10 @@
     "Image": 1,
     "Input": 490,
     "Keyboard": 1,
-    "Label": 183,
+    "Label": 182,
     "Link": 5,
     "PageSticky": 2,
-    "Row": 234,
+    "Row": 233,
     "ScrollArea": 1,
     "Select": 134,
     "Space": 1,
@@ -49,7 +49,7 @@
     "API URL#5": 1,
     "API URL#6": 1,
     "API URL#7": 1,
-    "API地址": 25,
+    "API地址": 24,
     "API地址（http）": 1,
     "API密钥": 4,
     "API密钥，API页面获取": 2,
@@ -144,7 +144,7 @@
     "api_0819": 1,
     "api_key": 2,
     "api密钥": 1,
-    "audio_player": 1,
+    "audio_player API地址": 1,
     "azure_tts": 3,
     "batch_size": 4,
     "batch_size_s": 2,
@@ -1131,5 +1131,5 @@
     "默认为：1，但有时候可能文章内容解析出来是空的，可以适当扩大检索数": 1,
     "默认黑白": 1
   },
-  "total_elements": 2268
+  "total_elements": 2265
 }
