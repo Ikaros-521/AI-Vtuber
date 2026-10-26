@@ -85,6 +85,8 @@ class ConfigSearch:
                 'width:100%;max-width:640px;padding:14px;'):
             self._input = ui.input(placeholder='搜配置项，例如 保留条数', on_change=self._paint).props(
                 'autofocus outlined dense clearable').classes('w-full')
+            # 搜索框是界面控件不是配置项：不打这个标，DirtyGuard 会把输入记成「1 项未保存」
+            self._input.is_config_field = False
             # Enter 落在输入框里（还没 ↑↓ 过高亮）时也要能跳：命令面板的规矩是 Enter 选当前项，
             # 没有当前项就选第一条命中
             self._input.on('keydown.enter', self._pick_first)

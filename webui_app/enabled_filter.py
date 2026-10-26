@@ -80,6 +80,8 @@ class EnabledFilter:
         self._switch = ui.switch('只看已启用', on_change=self._toggled).props(
             'dense size=sm').tooltip('只藏起「启用…」开关关着的卡片和折叠区；'
                                      '配置不会丢，搜索或点未保存清单跳过去时会自动取消过滤')
+        # 视图过滤开关不是配置项：不打这个标，DirtyGuard 会把切换记成「1 项未保存」
+        self._switch.is_config_field = False
         self._tip = ui.label('').style(f'font-size:12px;color:{INK_MUT};')
         # 运行期点「增加配置组」会现造带启用开关的行，开关开着时得跟得上
         self._timer = ui.timer(2.0, self.resweep, active=False)

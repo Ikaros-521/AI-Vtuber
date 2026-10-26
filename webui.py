@@ -25,6 +25,7 @@ from webui_app.theme import LINK, internal_button_color
 from webui_app.login import build_login, start_expiration_timer
 from webui_app.overview import OVERVIEW, build_nav_chips, build_overview_tab, page_order
 from webui_app.pages.assistant_anchor import build_assistant_anchor_tab
+from webui_app.pages.chat import build_chat_tab
 from webui_app.pages.common_config import build_common_config_tab, validate_config, write_local_qa_file
 from webui_app.pages.copywriting import build_copywriting_tab
 from webui_app.pages.data_analysis import build_data_analysis_tab
@@ -171,8 +172,9 @@ if config.get("webui", "local_dir_to_endpoint", "enable"):
 # 对 main.py 暴露的 HTTP 接口，注册一次即可
 register_api(config, common, audio)
 
-# 暗夜模式
-dark = ui.dark_mode()
+# 暗夜模式：五套主题全是按浅色设计的（深色字、白渐变卡），锁死浅色，
+# 不再跟随系统——深色系统下透明页面底会透出黑色画布，tab 条黑字直接隐身
+ui.dark_mode(False)
 
 """
 通用函数
@@ -227,6 +229,10 @@ PILL_CSS = ("font-size:12px;padding:4px 10px;border-radius:14px;background:#ffff
 """
 PAGE_SCRIPTS = """
 <style>
+/* 页面外壳底色：html/body/布局层全是透明的，画布色由浏览器说了算——
+   深色浏览器/内核里整页透出黑色，tab 条的黑字直接隐身。给一层中性浅灰打底，
+   渐变面板和卡片都自带底色，不受影响（audit 后续走查） */
+html,body{background:#f1f5f9;}
 .q-page{padding-bottom:100px;}
 </style>
 <script>
@@ -272,6 +278,9 @@ PAGE_SCRIPTS = """
    同一张卡里两块栅格因此列宽不同（实测 834 vs 1064），字段纵向对不齐、右侧还留一大块空洞
    （走查 audit-11/12/26 的同一个根因）。给满宽，列宽才由卡片决定而不是由内容决定。 */
 .q-tab-panel .q-card > .nicegui-grid{width:100%;}
+/* 面板直接子卡也随内容收缩，同一页卡片就一条边对不齐（实测大语言模型页 870 vs 1070）。
+   只拉直接子卡：卡里嵌的小卡（开放平台那种）保持内容宽，不然四五个字段撑一大块白 */
+.q-tab-panel > .q-card{width:100%;}
 /* 提示条：原先三处写死 Tailwind 的 bg-blue-100，换深色主题就成了一块突兀的浅蓝。
    半透明白底 + 左侧色条，在渐变背景和卡片上都读得清 */
 .tip-bar{padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.72);
@@ -338,6 +347,9 @@ PAGE_SCRIPTS = """
                  width:100% !important;max-width:100% !important;min-width:0;}
   /* 芯片本身不能被压缩，否则一行 21 个会被挤成一列一个字 */
   .section-index > *{flex:none;}
+  /* 平铺页面导航同理：29 个页面在窄屏折行要占七八行，收成横向滑 */
+  .luna-nav{flex-wrap:nowrap !important;overflow-x:auto;}
+  .luna-nav > *{flex:none;}
   /* 图表容器的 height:600px 写在主题里（width:100%;height:600px），390 下饼图被裁、
      图例挤出卡片：改成按宽度等比，ECharts 自己有 ResizeObserver 会重排 */
   .nicegui-echart{height:auto !important;aspect-ratio:1/1;max-height:70vh;}
@@ -352,6 +364,11 @@ PAGE_SCRIPTS = """
     '关掉上面的「只看已启用」就能看到全部配置。';
     display:block;margin-top:8px;padding:14px 16px;border-radius:8px;background:#f3f4f6;
     color:#4b5563;font-size:13px;line-height:1.6;}
+/* 区块索引栏吸顶与卡片跳转防遮挡偏移量 */
+.q-tab-panel .q-card,
+.q-tab-panel .q-expansion-item {
+  scroll-margin-top: 85px;
+}
 </style>
 <script>
 (function () {
@@ -371,9 +388,11 @@ PAGE_SCRIPTS = """
     }
 
     document.addEventListener('click', function (ev) {
-        var el = ev.target.closest ? ev.target.closest('.q-tab') : null;
-        if (!el) { return; }
-        history.replaceState(null, '', '?tab=' + encodeURIComponent(el.textContent.trim()));
+        if (!ev.target.closest) { return; }
+        // 地址栏 ?tab= 的常规同步在 mark() 回调里做（分组芯片点的组名不是页面名，不能直接写）。
+        // 这里保留 .q-tab 一支：深链恢复时对隐藏 tab 的程序化 click 仍走这里
+        var el = ev.target.closest('.q-tab');
+        if (el) { history.replaceState(null, '', '?tab=' + encodeURIComponent(el.textContent.trim())); }
     }, true);
 })();
 </script>
@@ -387,13 +406,7 @@ def goto_func_page():
         # 十分钟一次的检测
         start_expiration_timer(config, common)
 
-    # 开关灯
-    def change_light_status(type="webui"):
-        if dark.value:
-            button_light.set_text("关灯")
-        else:
-            button_light.set_text("开灯")
-        dark.toggle()
+    # 开关灯已移除：锁死浅色后按钮只会把页面切成「黑壳 + 浅色卡」的坏样子（见 ui.dark_mode(False) 处）
 
     # 读取webui配置到dict变量
     def webui_config_to_dict(config_data):
@@ -533,25 +546,19 @@ def goto_func_page():
     # 运行日志的对话框也必须在建页时建好，点「运行日志」只是填内容 + 打开
     run_log = RunLog(lambda: log_file_path).build()
 
-    with ui.tabs().classes('w-full') as tabs:
+    # 9 大核心工作区 tab 条已隐藏：导航由上方的单排工作区按钮负责，
+    # 这条只保留作 tab_panels 的绑定与 ?tab= 深链脚本 el.click() 的落点
+    # （display:none 的元素程序化 click 依然生效）
+    with ui.tabs().classes('w-full').style('display:none;') as tabs:
         overview_page = ui.tab('总览')
-        common_config_page = ui.tab('平台接入')
-        llm_page = ui.tab('大语言模型')
-        tts_page = ui.tab('文本转语音')
-        svc_page = ui.tab('变声')
-        visual_body_page = ui.tab('虚拟身体')
-        copywriting_page = ui.tab('文案')
-        interact_filter_page = ui.tab('过滤')
-        talk_page = ui.tab('聊天')
-        image_recognition_page = ui.tab('图像识别')
-        integral_page = ui.tab('积分')
-        assistant_anchor_page = ui.tab('助播')
-        translate_page = ui.tab('翻译')
-        serial_page = ui.tab('串口')
-        data_analysis_page = ui.tab('数据分析')
-        web_page = ui.tab('页面配置')
-        docs_page = ui.tab('文档&教程')
-        about_page = ui.tab('关于')
+        chat_page = ui.tab('聊天')
+        live_connect_page = ui.tab('直播接入')
+        brain_page = ui.tab('人设与大脑')
+        voice_stage_page = ui.tab('声音与表现')
+        danmu_page = ui.tab('弹幕与礼仪')
+        interaction_page = ui.tab('互动与玩法')
+        hardware_page = ui.tab('外设与联动')
+        system_page = ui.tab('运维与系统')
 
     tabs.on_value_change(lambda e: mark_group(e.value))
     mark_group(OVERVIEW)
@@ -561,65 +568,49 @@ def goto_func_page():
             build_overview_tab(config, state, dirty_guard, select_tab, save_config, card_css,
                                button_bottom_color)
 
-        with ui.tab_panel(common_config_page).style(tab_panel_css) as common_config_panel:
+        with ui.tab_panel(chat_page).style(tab_panel_css) as chat_panel:
+            page_config_mappings.append(build_chat_tab(
+                config, common, state, chat_log, card_css, switch_internal_css, button_internal_color, button_internal_css))
+
+        with ui.tab_panel(live_connect_page).style(tab_panel_css) as live_connect_panel:
             page_config_mappings.append(build_common_config_tab(
                 config, common, card_css, switch_internal_css, button_internal_color, button_internal_css))
 
-        with ui.tab_panel(llm_page).style(tab_panel_css):
+        with ui.tab_panel(brain_page).style(tab_panel_css) as brain_panel:
             page_config_mappings.append(build_llm_tab(
                 config, common, card_css, switch_internal_css, button_bottom_color, button_bottom_css, button_internal_color, button_internal_css))
-
-        with ui.tab_panel(tts_page).style(tab_panel_css):
-            page_config_mappings.append(build_tts_tab(
-                config, common, audio, card_css, switch_internal_css, button_internal_color, button_internal_css))
-
-        with ui.tab_panel(svc_page).style(tab_panel_css):
-            page_config_mappings.append(build_svc_tab(config, common, card_css, switch_internal_css))
-
-        with ui.tab_panel(visual_body_page).style(tab_panel_css):
-            page_config_mappings.append(build_visual_body_tab(config, common, card_css, switch_internal_css))
-
-        with ui.tab_panel(copywriting_page).style(tab_panel_css):
-            page_config_mappings.append(build_copywriting_tab(
-                config, common, audio, card_css, switch_internal_css, button_internal_color, button_internal_css))
-
-        with ui.tab_panel(integral_page).style(tab_panel_css):
-            page_config_mappings.append(build_integral_tab(config, card_css, switch_internal_css))
-
-        with ui.tab_panel(interact_filter_page).style(tab_panel_css):
-            page_config_mappings.append(build_interact_filter_tab(config, card_css, switch_internal_css))
-
-        with ui.tab_panel(talk_page).style(tab_panel_css):
-            page_config_mappings.append(build_talk_tab(
-                config, common, state, chat_log, card_css, switch_internal_css, button_internal_color, button_internal_css))
-
-        with ui.tab_panel(image_recognition_page).style(tab_panel_css):
             page_config_mappings.append(build_image_recognition_tab(
                 config, common, state, card_css, switch_internal_css, button_internal_color, button_internal_css))
-
-        with ui.tab_panel(assistant_anchor_page).style(tab_panel_css):
-            page_config_mappings.append(build_assistant_anchor_tab(
-                config, common, audio_synthesis_type_options, card_css, switch_internal_css))
-
-        with ui.tab_panel(translate_page).style(tab_panel_css):
             page_config_mappings.append(build_translate_tab(config, card_css, switch_internal_css))
 
-        with ui.tab_panel(serial_page).style(tab_panel_css):
+        with ui.tab_panel(voice_stage_page).style(tab_panel_css) as voice_stage_panel:
+            page_config_mappings.append(build_tts_tab(
+                config, common, audio, card_css, switch_internal_css, button_internal_color, button_internal_css))
+            page_config_mappings.append(build_svc_tab(config, common, card_css, switch_internal_css))
+            page_config_mappings.append(build_talk_tab(
+                config, common, state, card_css, switch_internal_css, button_internal_color, button_internal_css))
+            page_config_mappings.append(build_visual_body_tab(config, common, card_css, switch_internal_css))
+
+        with ui.tab_panel(danmu_page).style(tab_panel_css) as danmu_panel:
+            page_config_mappings.append(build_interact_filter_tab(config, card_css, switch_internal_css))
+
+        with ui.tab_panel(interaction_page).style(tab_panel_css) as interaction_panel:
+            page_config_mappings.append(build_copywriting_tab(
+                config, common, audio, card_css, switch_internal_css, button_internal_color, button_internal_css))
+            page_config_mappings.append(build_integral_tab(config, card_css, switch_internal_css))
+
+        with ui.tab_panel(hardware_page).style(tab_panel_css) as hardware_panel:
+            page_config_mappings.append(build_assistant_anchor_tab(
+                config, common, audio_synthesis_type_options, card_css, switch_internal_css))
             page_config_mappings.append(build_serial_tab(
                 config, card_css, switch_internal_css, button_internal_color, button_internal_css))
 
-        with ui.tab_panel(data_analysis_page).style(tab_panel_css):
+        with ui.tab_panel(system_page).style(tab_panel_css) as system_panel:
             page_config_mappings.append(build_data_analysis_tab(config, config_path, echart_css))
-
-        with ui.tab_panel(web_page).style(tab_panel_css):
             page_config_mappings.append(build_web_page_tab(
                 config, common, config_path, webui_config_to_dict, card_css, switch_internal_css,
                 button_internal_color, button_internal_css, dirty_guard))
-
-        with ui.tab_panel(docs_page).style(tab_panel_css):
             build_docs_tab(card_css)
-
-        with ui.tab_panel(about_page).style(tab_panel_css):
             build_about_tab(card_css)
 
     # 底部操作条：原来是一张 position:fixed 的定宽 grid，永久压住内容——1440 宽遮 46px 一条，
@@ -677,19 +668,27 @@ def goto_func_page():
                 ui.button('运行日志', icon='receipt_long', on_click=run_log.open,
                           color=button_bottom_color).style(button_bottom_css).tooltip(
                     '看今天的日志末尾 400 行；日志文件在 log/ 下，按大小滚动')
-                button_light = ui.button('关灯', on_click=lambda: change_light_status(), color=button_bottom_color).style(button_bottom_css)
                 button_restart = ui.button('重启', on_click=ask_restart, color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py并重启webui")
-                ui.button('回到顶部', icon='keyboard_arrow_up', on_click=lambda: scroll_to_top(), color=button_bottom_color).style(button_bottom_css)
             ops_row.set_visibility(False)
 
-            button_ops = ui.button('操作', icon='settings', on_click=switch_ops, color=button_bottom_color).style(button_bottom_css)
+            with ui.row().style("align-items:center;gap:6px;"):
+                button_top = ui.button('回到顶部', icon='keyboard_arrow_up', on_click=lambda: scroll_to_top(), color=button_bottom_color).style(button_bottom_css).tooltip("平滑滚动到页面顶部")
+                button_ops = ui.button('操作', icon='settings', on_click=switch_ops, color=button_bottom_color).style(button_bottom_css)
 
     ui.timer(1.0, paint_run_state)
 
-    # 24 页拆分：把 通用配置 的区块按 sitemap 的分组改挂到各自的新 tab 上。
+    # 8 大工作区区块挂载：把 通用配置 的区块分流改挂到对应的宿主 TabPanel 上。
     # 只搬 DOM 归属，控件与 save_common 留在原文件，保存链路不动
-    apply_page_plan(tabs, tab_panels, common_config_panel, tab_panel_css, card_css)
-    # 新页是 append 上去的，排一遍才跟分组芯片的顺序一致
+    panel_map = {
+        '直播接入': live_connect_panel,
+        '人设与大脑': brain_panel,
+        '声音与表现': voice_stage_panel,
+        '弹幕与礼仪': danmu_panel,
+        '互动与玩法': interaction_panel,
+        '外设与联动': hardware_panel,
+        '运维与系统': system_panel,
+    }
+    apply_page_plan(panel_map, live_connect_panel, card_css)
     order_tabs(tabs, page_order())
 
     # 危险操作确认框：NiceGUI 3 没有 ui.confirm，对话框又是元素（关闭只是隐藏），

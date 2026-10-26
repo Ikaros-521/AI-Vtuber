@@ -146,6 +146,9 @@ def build_login(config, common, login_card_css, on_success):
             label_login = ui.label('AI    Vtuber').style("font-size: 30px;letter-spacing: 5px;color: #3b3838;")
             input_login_username = ui.input(label='用户名', placeholder='您的账号，请找管理员申请', value="").style("width:250px;")
             input_login_password = ui.input(label='密码', password=True, placeholder='您的密码，请找管理员申请', value="").style("width:250px;")
+            # 登录表单不写 config.json：不打这个标，DirtyGuard 会把输入记成「未保存」
+            input_login_username.is_config_field = False
+            input_login_password.is_config_field = False
             button_login = ui.button('登录', on_click=lambda: my_login()).style("width:250px;")
             button_login_forget_password = ui.button('忘记账号/密码怎么办？', on_click=lambda: forget_password()).style("width:250px;")
 

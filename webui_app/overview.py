@@ -3,30 +3,36 @@
 数据全部读自真实 config 与运行态：需要 main.py 才有的指标（连接时长、弹幕速率、
 下次定时任务）这里一律不显示，宁可少几行也不放原型式的假数。
 """
-from nicegui import ui
+import json
+
+from nicegui import context, ui
 
 from webui_app.fields import jump_to
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
 from webui_app.options import CHAT_TYPE_OPTIONS, VISUAL_BODY_OPTIONS, platform_options
 from webui_app.theme import LINK, readable_on
 
-# 分组顺序按「自部署新主播」的落地顺序排：先连上直播间，再给脑子、给声音。
-# 页面清单与 webui_app/repage.py 的 PAGE_PLAN 对应（那边负责把区块搬进这些 tab）
-NAV_GROUPS = [
-    ('开播', ['平台接入', '播报与输出']),
-    ('大脑', ['大语言模型', '本地问答', '图像识别', '翻译']),
-    ('声音', ['文本转语音', '变声', '文案']),
-    ('互动', ['过滤', '念弹幕与答谢', '点歌', '定时与闲时', '联网与动态文案', '聊天', '积分', '助播']),
-    ('舞台', ['虚拟身体', '出图', '按键与命令', '外部软件对接', '串口']),
-    ('后台', ['数据分析', '日志与数据库', '异常报警', '页面配置', '文档&教程', '关于']),
+# 9 大核心工作区：总览 + 聊天 + 7 大业务配置域，单排平铺
+PAGE_LIST = [
+    '总览',
+    '聊天',
+    '直播接入',
+    '人设与大脑',
+    '声音与表现',
+    '弹幕与礼仪',
+    '互动与玩法',
+    '外设与联动',
+    '运维与系统',
 ]
+
+NAV_GROUPS = [(p, [p]) for p in PAGE_LIST if p != '总览']
 
 OVERVIEW = '总览'
 
 
 def page_order():
-    """tab 条应有的顺序：总览打头，然后按分组走。"""
-    return [OVERVIEW] + [name for _group, pages in NAV_GROUPS for name in pages]
+    """tab 条应有的顺序：总览打头，然后按 8 大工作区走。"""
+    return list(PAGE_LIST)
 
 INK = '#111827'
 INK_MUT = '#4b5563'
@@ -35,24 +41,25 @@ WARN = '#b45309'
 
 
 def group_of(tab_name):
-    """某个 tab 属于哪一组；总览自己一组。"""
-    for name, members in NAV_GROUPS:
-        if tab_name in members:
-            return name
+    """某个 tab 属于哪一组；8 大工作区自身即为顶层。"""
+    if tab_name in PAGE_LIST:
+        return tab_name
     return OVERVIEW
 
 
 def build_nav_chips(select, accent, search=None, toggle=None):
-    """分组导航条：点组名跳到该组第一页，当前所在组高亮。返回 mark(tab 名) 用来刷高亮。
+    """单排平铺的 8 大核心工作区导航。
 
-    toggle 是个 callable，在搜索按钮后面就地建出「只看已启用」开关（走查 audit-9）。
+    彻底移除混杂在导航中间的不可点击一级文本标签，将 29 个碎片微 Tab 收敛为 8 个高内聚核心工作区。
+    常驻单排，点击直达，无折行无视觉噪音。
+    toggle 是个 callable，在搜索按钮后面就地建出「只看已启用」开关。
     """
-    chips = {}
-    with ui.row().style('gap:8px;flex-wrap:wrap;align-items:center;padding:2px 8px 0;width:100%;'):
-        for name, members in [(OVERVIEW, None)] + NAV_GROUPS:
-            first = OVERVIEW if members is None else members[0]
-            chips[name] = ui.button(name, on_click=lambda target=first: select(target)).props(
-                'flat dense no-caps size=sm').style('font-size:13px;font-weight:500;')
+    page_chips = {}
+    with ui.row().classes('luna-nav').style(
+            'gap:6px;row-gap:6px;flex-wrap:wrap;align-items:center;width:100%;padding:4px 8px;'):
+        for page in PAGE_LIST:
+            page_chips[page] = ui.button(page, on_click=lambda target=page: select(target)).props(
+                'flat dense no-caps size=md').style('font-size:13px;font-weight:500;padding:2px 10px;border-radius:6px;')
         if search is not None:
             ui.space()
             if toggle is not None:
@@ -61,13 +68,19 @@ def build_nav_chips(select, accent, search=None, toggle=None):
                 'flat dense no-caps size=sm').style(f'font-size:13px;color:{LINK} !important;')
 
     def mark(tab_name):
-        active = group_of(tab_name)
-        for name, chip in chips.items():
-            on = accent if name == active else 'transparent'
-            # 按钮文字色必须带 !important：不带的话被 Quasar 的 text-primary 顶成默认蓝（3.06:1）。
-            # 选中那枚的前景按主题色亮度挑——5 套主题里 3 套是高饱和亮色，白字压上去根本看不清。
-            chip.style('background:' + on + ';color:' +
-                       (readable_on(on) if name == active else INK_MUT) + ' !important;')
+        # 当前页整枚高亮，其余深灰，一眼看到自己在哪；组名标签只做路标不参与高亮。
+        # 按钮文字色必须带 !important：不带的话被 Quasar 的 text-primary 顶成默认蓝（3.06:1），
+        # 选中那枚的前景按主题色亮度挑——5 套主题里 3 套是高饱和亮色，白字压上去根本看不清。
+        for page, chip in page_chips.items():
+            on = page == tab_name
+            chip.style('background:' + (accent if on else 'transparent') + ';color:' +
+                       (readable_on(accent) if on else INK) + ' !important;')
+        # 地址栏 ?tab= 跟着真实页面名走（全量 tab 条隐藏后收不到点击，原先靠它同步的路径断了）。
+        # 建页期的那次 mark 不写：深链 ?tab=聊天 这时还没被恢复脚本点回去，提前写会把地址栏冲成总览
+        if context.client.has_socket_connection:
+            context.client.run_javascript(
+                'history.replaceState(null, "", "?tab=" + encodeURIComponent(%s));'
+                % json.dumps(tab_name, ensure_ascii=False))
 
     return mark
 
@@ -85,32 +98,32 @@ def readiness(config):
         'title': '弹幕来源',
         'value': plat_label + (f' · 房间号 {room}' if room else ' · 未填房间号'),
         'ok': bool(platform) and platform != 'talk' and bool(room),
-        'tab': '平台接入', 'field': '平台',
+        'tab': '直播接入', 'field': '平台',
         'hint': '不接平台就只能按文案念，收不到任何弹幕',
     }, {
         'title': '大语言模型',
         'value': CHAT_TYPE_OPTIONS.get(chat_type, chat_type or '未选择'),
         'ok': bool(chat_type) and chat_type != 'none',
-        'tab': '平台接入', 'field': '大语言模型',
+        'tab': '直播接入', 'field': '大语言模型',
         'hint': '不选则数字人不会回答，只会复读或只念文案',
     }, {
         'title': '文本转语音',
         'value': AUDIO_SYNTHESIS_TYPE_OPTIONS.get(tts_type, tts_type or '未选择'),
         'ok': bool(tts_type) and tts_type != 'none',
-        'tab': '平台接入', 'field': '语音合成',
+        'tab': '直播接入', 'field': '语音合成',
         'hint': '不选就没有声音，弹幕回复只会出现在字幕页',
     }, {
         'title': '虚拟身体',
         'value': VISUAL_BODY_OPTIONS.get(body, body or '未选择'),
         'ok': bool(body),
-        'tab': '平台接入', 'field': '虚拟身体',
+        'tab': '直播接入', 'field': '虚拟身体',
         'hint': '只要画面的话，留「其他（外置）」由外部窗口显示',
     }]
 
 
 def build_overview_tab(config, state, dirty_guard, select, save_config, card_css, accent):
     """总览面板：运行态 + 未保存计数 + 开播就绪度，每行都能一键跳到对应配置页。"""
-    with ui.card().style(card_css + 'width:100%;max-width:760px;'):
+    with ui.card().style(card_css + 'width:100%;max-width:760px;margin:10px auto;'):
         ui.label('开播就绪度').style(f'font-size:17px;font-weight:600;color:{INK};')
 
         running_flag = ui.label().style(f'font-size:13px;color:{INK_MUT};margin-top:6px;')

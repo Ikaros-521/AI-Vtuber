@@ -8,8 +8,9 @@ from nicegui import context, ui
 
 from webui_app.fields import locate
 
-# 这些标题本身就是「一堆开关的容器」，拼上去只会得到「启用通用」这种废话——这种情况退回用页面名
-GENERIC = {'通用', '其它', '其他', '设置', '配置'}
+# 这些标题本身就是「一堆开关的容器」，拼上去只会得到「启用通用」「启用基本」这种废话——
+# 这种情况退回用页面名
+GENERIC = {'通用', '其它', '其他', '设置', '配置', '基本'}
 
 
 def name_bare_enable_switches():

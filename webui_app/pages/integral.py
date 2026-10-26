@@ -7,7 +7,7 @@ from webui_app.pages import PageConfig
 
 def build_integral_tab(config, card_css, switch_internal_css):
     with ui.card().style(card_css):
-        ui.label("通用")
+        ui.label("积分系统")
         with ui.grid(columns=3):
             switch_integral_enable = ui.switch('启用', value=config.get("integral", "enable")).style(switch_internal_css)
     with ui.card().style(card_css):

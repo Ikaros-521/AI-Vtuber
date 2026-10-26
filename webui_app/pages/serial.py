@@ -114,10 +114,12 @@ def build_serial_tab(config, card_css, switch_internal_css, button_internal_colo
     with ui.element('div').classes('tip-bar'):
         ui.label("此页完成串口配置后，可以在“按键与命令”的 串口映射配置功能\n 注意！！！此处连接测试完成后，请 关闭串口，因为程序是跨进程使用的，所以不关掉会占用串口，导致无法正常使用！")
 
-    with ui.row():
-        picker_serial = GroupPicker(lambda: serial_config_card, '串口', serial_config_del, lambda: serial_config_var).build()
-        button_serial_config_add = ui.button('增加串口配置组', on_click=lambda: (serial_config_add(), picker_serial.refresh()), color=button_internal_color).style(button_internal_css)
-        button_serial_config_del = delete_button('删除串口配置组', picker_serial.ask_delete).style(button_internal_css)
+    # 串口配置组的增删原来直接铺在渐变面板上（同页其余区块都在卡片里），包进一张卡
+    with ui.card().style(card_css + 'width:100%;'):
+        with ui.row():
+            picker_serial = GroupPicker(lambda: serial_config_card, '串口', serial_config_del, lambda: serial_config_var).build()
+            button_serial_config_add = ui.button('增加串口配置组', on_click=lambda: (serial_config_add(), picker_serial.refresh()), color=button_internal_color).style(button_internal_css)
+            button_serial_config_del = delete_button('删除串口配置组', picker_serial.ask_delete).style(button_internal_css)
 
     with serial_config_card:
         for index, serial_config in enumerate(config.get("serial", "config")):

@@ -2,21 +2,25 @@
 from nicegui import ui
 
 from webui_app.pages import PageConfig
+from webui_app.theme import INK
 
 
 def build_translate_tab(config, card_css, switch_internal_css):
-    with ui.row():
-        switch_translate_enable = ui.switch('启用', value=config.get("translate", "enable")).style(switch_internal_css)
-        select_translate_type = ui.select(
-            label='类型',
-            options={'baidu': '百度翻译', 'google': '谷歌翻译'},
-            value=config.get("translate", "type")
-        ).style("width:100px;")
-        select_translate_trans_type = ui.select(
-            label='翻译类型',
-            options={'弹幕': '弹幕', '回复': '回复', '弹幕+回复': '弹幕+回复'},
-            value=config.get("translate", "trans_type")
-        ).style("width:150px;")
+    # 启用开关与类型选择原来直接铺在渐变面板上（同页其余区块都在卡片里），包进一张卡
+    with ui.card().style(card_css + 'width:100%;'):
+        ui.label('翻译设置').style(f'font-size:14px;font-weight:600;color:{INK};')
+        with ui.row():
+            switch_translate_enable = ui.switch('启用', value=config.get("translate", "enable")).style(switch_internal_css)
+            select_translate_type = ui.select(
+                label='类型',
+                options={'baidu': '百度翻译', 'google': '谷歌翻译'},
+                value=config.get("translate", "type")
+            ).style("width:100px;")
+            select_translate_trans_type = ui.select(
+                label='翻译类型',
+                options={'弹幕': '弹幕', '回复': '回复', '弹幕+回复': '弹幕+回复'},
+                value=config.get("translate", "trans_type")
+            ).style("width:150px;")
 
     with ui.card().style(card_css):
         ui.label("百度翻译")

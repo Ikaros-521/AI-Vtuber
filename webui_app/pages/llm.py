@@ -86,7 +86,7 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
 
     if config.get("webui", "show_card", "llm", "chatgpt"):
         with ui.card().style(card_css):
-            ui.label("ChatGLM3 | Kimi Chat | Ollama | One-API等OpenAI接口模型 ")
+            ui.label("OpenAI / Ollama / 通用模型")
             with ui.row():
                 input_openai_api = ui.input(
                     label='API地址', 

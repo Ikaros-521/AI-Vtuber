@@ -81,7 +81,7 @@ def build_image_recognition_tab(config, common, state, card_css, switch_internal
             screenshot_path = common.capture_image(input_image_recognition_img_save_path.value, int(select_image_recognition_cam_index.value))
             await get_llm_resp(screenshot_path)
 
-        ui.label("通用")
+        ui.label("图像识别")
         with ui.row():
             button_image_recognition_enable = ui.switch('启用', value=config.get("image_recognition", "enable")).style(switch_internal_css)
             select_image_recognition_model = ui.select(

@@ -8,21 +8,18 @@ from nicegui import ui
 from nicegui.elements.card import Card
 from nicegui.elements.expansion import Expansion
 from nicegui.elements.label import Label
+from nicegui.elements.tabs import TabPanel
 
 # (新 tab 名, [要搬走的区块标题])；标题对不上时会直接抛错，不会静默少搬。
 # '@row:字段名' 表示把面板里那条没包成卡片的裸 row 搬走——按行里某个字段定位它。
+# 8 大核心工作区挂载计划：将通用配置中的区块分流归入对应的业务域 TabPanel
 PAGE_PLAN = [
-    ('播报与输出', ['@row:提示词前缀', '音频播放', 'web字幕打印机']),
-    ('念弹幕与答谢', ['念弹幕', '答谢']),
-    ('本地问答', ['本地问答']),
-    ('点歌', ['点歌模式']),
-    ('定时与闲时', ['定时任务', '闲时任务', '动态配置']),
-    ('联网与动态文案', ['联网搜索', '动态文案']),
-    ('按键与命令', ['按键/文案/音频/串口/图片 映射', '自定义命令']),
-    ('外部软件对接', ['洛曦 直播弹幕助手', '联动程序']),
-    ('出图', ['Stable Diffusion']),
-    ('日志与数据库', ['日志', '数据库']),
-    ('异常报警', ['异常报警']),
+    ('直播接入', ['音频播放', 'web字幕打印机']),
+    ('人设与大脑', ['@row:提示词前缀', '本地问答']),
+    ('弹幕与礼仪', ['念弹幕', '答谢']),
+    ('互动与玩法', ['点歌模式', '定时任务', '闲时任务', '动态配置', '联网搜索', '动态文案', 'Stable Diffusion']),
+    ('外设与联动', ['按键/文案/音频/串口/图片 映射', '自定义命令', '洛曦 直播弹幕助手', '联动程序']),
+    ('运维与系统', ['日志', '数据库', '异常报警']),
 ]
 
 # 裸 row 搬走后要有个标题，不然在新页面上是悬着的一片输入框
@@ -108,26 +105,42 @@ def _loose_row(root, label):
     raise LookupError('找不到含「%s」的裸 row' % label)
 
 
-def apply_page_plan(tabs, tab_panels, source_panel, panel_css, card_css):
-    """按计划新建 tab 并把区块搬过去。返回新建的 tab 名列表。"""
+def apply_page_plan(target_panels, source_panel, card_css="", *args, **kwargs):
+    """把 source_panel (原 通用配置) 的各区块按计划搬到对应的目标 tab_panel 中。
+    支持传入 target_panels dict: {tab_name: panel}，也兼容原先传入 (tabs, tab_panels, source_panel, panel_css, card_css)。
+    """
+    if not isinstance(target_panels, dict):
+        if args:
+            tab_panels = source_panel
+            source_panel = card_css
+            card_css = args[1] if len(args) > 1 else ""
+            target_panels = {str(p._props.get('name') or ''): p for p in tab_panels if isinstance(p, TabPanel)}
+        elif hasattr(target_panels, '__iter__'):
+            target_panels = {str(p._props.get('name') or ''): p for p in target_panels if isinstance(p, TabPanel)}
+
     blocks = _blocks(source_panel)
     made = []
     for name, wanted in PAGE_PLAN:
+        panel = target_panels.get(name)
+        if panel is None:
+            raise LookupError('找不到目标 TabPanel: ' + name)
         rows = [w.split(':', 1)[1] for w in wanted if w.startswith('@row:')]
         picked = _with_following(source_panel, blocks, [w for w in wanted if not w.startswith('@row:')])
-        with tabs:
-            tab = ui.tab(name)
-        with tab_panels:
-            panel = ui.tab_panel(tab).style(panel_css)
         for label in rows:
             with panel:
                 shell = ui.card().style(card_css)
             with shell:
                 ui.label(ROW_TITLES.get(label, label))
             _loose_row(source_panel, label).move(shell)
-            shell.move(panel, 0)
+            if name == '人设与大脑':
+                shell.move(panel, 1)
+            else:
+                shell.move(panel, 0)
         for block in picked:
-            block.move(panel)
+            if name == '人设与大脑' and _title_of(block) == '本地问答':
+                block.move(panel, 2)
+            else:
+                block.move(panel)
         made.append(name)
     _wrap_in_place(source_panel, card_css)
     _drop_empty_containers(source_panel)

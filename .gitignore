@@ -253,3 +253,4 @@ static/
 
 add_dependencies.py
 
+spark-output/

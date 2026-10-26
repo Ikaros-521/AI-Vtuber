@@ -138,7 +138,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
         
         
     with ui.card().style(card_css):
-        ui.label("合成测试（只是测试，若确认使用此TTS，请前往 平台接入 选 语音合成）")
+        ui.label("TTS 语音合成调试")
         with ui.row():
             select_tts_common_audio_synthesis_type = ui.select(
                 label='语音合成', 

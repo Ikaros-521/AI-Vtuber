@@ -182,6 +182,6 @@ def factory(config, src_path='config.json.bak', dst_path='config.json', type="we
 
 
 def scroll_to_top():
-    """页面滑到顶部"""
-    # 这段JavaScript代码将页面滚动到顶部
-    ui.run_javascript("window.scrollTo(0, 0);")
+    """页面平滑滑到顶部"""
+    # 平滑滚动到页面顶部
+    ui.run_javascript("window.scrollTo({top: 0, behavior: 'smooth'});")

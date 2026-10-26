@@ -4,6 +4,7 @@ from nicegui import ui
 from utils.my_log import logger
 from webui_app.helpers import textarea_data_change
 from webui_app.pages import PageConfig
+from webui_app.theme import INK
 
 TALK_INTERRUPT_CLEAN_TYPE_LIST = ["message_queue", "voice_tmp_path_queue", "audio_play"]
 TALK_INTERRUPT_CLEAN_TYPE_MAPPING = {
@@ -21,175 +22,71 @@ FASTER_WHISPER_LANGUAGES = [
 ]
 
 
-def build_talk_tab(config, common, state, chat_log, card_css, switch_internal_css,
-                   button_internal_color, button_internal_css):
-    # 聊天记录从 fixed 浮层改成页面内常规一栏（走查 audit-27）：1440 下实测压住 8 个控件
-    # （「播放中不进行录音的检测间隔(秒)」「语音对话」「停录秒数」CHANNELS/RATE 都在下面），
-    # 收起后那个图标还留在原处，等于凭空多一块点不着的区域。展开也不再从右侧永久拿走 500px。
-    with ui.row().classes('w-full'):
-        with ui.expansion('聊天记录', icon="question_answer", value=False).classes('w-full'):
-            scroll_area_chat_box = ui.scroll_area().style("width:100%;max-width:760px;height:420px;")
-    chat_log.mount(scroll_area_chat_box)
+def build_talk_tab(config, common, state, card_css, switch_internal_css,
+                   button_internal_color=None, button_internal_css=None, chat_log=None):
+    # 语音拾音与 STT 配置卡片
+    with ui.card().style(card_css + 'width:100%;'):
+        ui.label('语音对话与拾音').style(f'font-size:14px;font-weight:600;color:{INK};')
+        with ui.row():
+            switch_talk_key_listener_enable = ui.switch('启用按键监听', value=config.get("talk", "key_listener_enable")).style(switch_internal_css).tooltip("启用后，可以通过键盘单击下放配置的录音按键，启动语音识别对话功能")
+            switch_talk_direct_run_talk = ui.switch('直接语音对话', value=config.get("talk", "direct_run_talk")).style(switch_internal_css).tooltip("如果启用了，将在首次运行时直接进行语音识别，而不需手动点击开始按键。针对有些系统按键无法触发的情况下，配合连续对话和唤醒词使用")
 
-    with ui.row():
-        switch_talk_key_listener_enable = ui.switch('启用按键监听', value=config.get("talk", "key_listener_enable")).style(switch_internal_css).tooltip("启用后，可以通过键盘单击下放配置的录音按键，启动语音识别对话功能")
-        switch_talk_direct_run_talk = ui.switch('直接语音对话', value=config.get("talk", "direct_run_talk")).style(switch_internal_css).tooltip("如果启用了，将在首次运行时直接进行语音识别，而不需手动点击开始按键。针对有些系统按键无法触发的情况下，配合连续对话和唤醒词使用")
+            # 无声卡的机器（CI、裸服务器、被禁用的音频驱动）上 PyAudio 会直接抛异常，
+            # 不兜住的话整个 webui 都打不开，而不是只有这一页不能用
+            try:
+                audio_device_info_list = common.get_all_audio_device_info("in")
+            except Exception as e:
+                logger.warning(f"声卡输入设备枚举失败，声卡下拉将为空：{e}")
+                audio_device_info_list = []
+            logger.info(f"声卡输入设备={audio_device_info_list}")
+            audio_device_info_dict = {str(device['device_index']): device['device_info'] for device in audio_device_info_list}
 
-        # 无声卡的机器（CI、裸服务器、被禁用的音频驱动）上 PyAudio 会直接抛异常，
-        # 不兜住的话整个 webui 都打不开，而不是只有这一页不能用
-        try:
-            audio_device_info_list = common.get_all_audio_device_info("in")
-        except Exception as e:
-            logger.warning(f"声卡输入设备枚举失败，声卡下拉将为空：{e}")
-            audio_device_info_list = []
-        logger.info(f"声卡输入设备={audio_device_info_list}")
-        audio_device_info_dict = {str(device['device_index']): device['device_info'] for device in audio_device_info_list}
+            select_talk_device_index = ui.select(
+                label='声卡输入设备',
+                options=audio_device_info_dict,
+                value=config.get("talk", "device_index")
+            ).style("width:300px;").tooltip('这就是语言对话输入的声卡（麦克风），选择你对应的麦克风即可，如果需要监听电脑声卡可以配合虚拟声卡来实现')
 
-        select_talk_device_index = ui.select(
-            label='声卡输入设备',
-            options=audio_device_info_dict,
-            value=config.get("talk", "device_index")
-        ).style("width:300px;").tooltip('这就是语言对话输入的声卡（麦克风），选择你对应的麦克风即可，如果需要监听电脑声卡可以配合虚拟声卡来实现')
+            switch_talk_no_recording_during_playback = ui.switch('播放中不进行录音', value=config.get("talk", "no_recording_during_playback")).style(switch_internal_css).tooltip('AI在播放音频的过程中不进行录音，从而防止麦克风和扬声器太近导致的循环录音的问题')
+            input_talk_no_recording_during_playback_sleep_interval = ui.input(label='播放中不进行录音的检测间隔(秒)', value=config.get("talk", "no_recording_during_playback_sleep_interval"), placeholder='这个值设置正常不需要太大，因为在启用了“播放中不进行录音”时，不会出现录音到AI说的话的情况，设置太大会导致恢复录音的时间变慢').style("width:200px;").tooltip('这个值设置正常不需要太大，因为不会出现录音到AI说的话的情况')
 
-        switch_talk_no_recording_during_playback = ui.switch('播放中不进行录音', value=config.get("talk", "no_recording_during_playback")).style(switch_internal_css).tooltip('AI在播放音频的过程中不进行录音，从而防止麦克风和扬声器太近导致的循环录音的问题')
-        input_talk_no_recording_during_playback_sleep_interval = ui.input(label='播放中不进行录音的检测间隔(秒)', value=config.get("talk", "no_recording_during_playback_sleep_interval"), placeholder='这个值设置正常不需要太大，因为在启用了“播放中不进行录音”时，不会出现录音到AI说的话的情况，设置太大会导致恢复录音的时间变慢').style("width:200px;").tooltip('这个值设置正常不需要太大，因为不会出现录音到AI说的话的情况')
+            switch_talk_continuous_talk = ui.switch('连续对话', value=config.get("talk", "continuous_talk")).style(switch_internal_css).tooltip('仅需按一次录音按键，后续就不需要按了，会自动根据沉默阈值切分等待后，继续录音')
 
-        input_talk_username = ui.input(label='你的名字', value=config.get("talk", "username"), placeholder='日志中你的名字，暂时没有实质作用').style("width:200px;")
-        switch_talk_continuous_talk = ui.switch('连续对话', value=config.get("talk", "continuous_talk")).style(switch_internal_css).tooltip('仅需按一次录音按键，后续就不需要按了，会自动根据沉默阈值切分等待后，继续录音')
+        with ui.row():
+            data_json = {}
+            for line in ["google", "baidu", "faster_whisper", "sensevoice"]:
+                data_json[line] = line
+            select_talk_type = ui.select(
+                label='录音类型',
+                options=data_json,
+                value=config.get("talk", "type")
+            ).style("width:200px;").tooltip('选择使用的STT类型')
 
-    with ui.row():
-        data_json = {}
-        for line in ["google", "baidu", "faster_whisper", "sensevoice"]:
-            data_json[line] = line
-        select_talk_type = ui.select(
-            label='录音类型',
-            options=data_json,
-            value=config.get("talk", "type")
-        ).style("width:200px;").tooltip('选择使用的STT类型')
+            with open('data/keyboard.txt', 'r') as file:
+                file_content = file.read()
+            lines = file_content.strip().split('\n')
+            data_json = {}
+            for line in lines:
+                data_json[line] = line
+            select_talk_trigger_key = ui.select(
+                label='录音按键',
+                options=data_json,
+                value=config.get("talk", "trigger_key"),
+                with_input=True,
+                clearable=True
+            ).style("width:200px;").tooltip('按压此按键就可以触发录音了，按一次就行了')
+            select_talk_stop_trigger_key = ui.select(
+                label='停录按键',
+                options=data_json,
+                value=config.get("talk", "stop_trigger_key"),
+                with_input=True,
+                clearable=True
+            ).style("width:200px;").tooltip('按压此按键就可以停止录音了，按一次就行了')
 
-        with open('data/keyboard.txt', 'r') as file:
-            file_content = file.read()
-        lines = file_content.strip().split('\n')
-        data_json = {}
-        for line in lines:
-            data_json[line] = line
-        select_talk_trigger_key = ui.select(
-            label='录音按键',
-            options=data_json,
-            value=config.get("talk", "trigger_key"),
-            with_input=True,
-            clearable=True
-        ).style("width:200px;").tooltip('按压此按键就可以触发录音了，按一次就行了')
-        select_talk_stop_trigger_key = ui.select(
-            label='停录按键',
-            options=data_json,
-            value=config.get("talk", "stop_trigger_key"),
-            with_input=True,
-            clearable=True
-        ).style("width:200px;").tooltip('按压此按键就可以停止录音了，按一次就行了')
-
-        input_talk_volume_threshold = ui.input(label='音量阈值', value=config.get("talk", "volume_threshold"), placeholder='音量阈值，指的是触发录音的起始音量值，请根据自己的麦克风进行微调到最佳').style("width:100px;").tooltip('音量阈值，指的是触发录音的起始音量值，请根据自己的麦克风进行微调到最佳')
-        input_talk_silence_threshold = ui.input(label='停录计数', value=config.get("talk", "silence_threshold"), placeholder='停录计数，指的是音量低于起始值的计数，这个值越大，切分音频越慢，即需要等待更长时间才会停止录音，但也不能太小，不然说一半就停了').style("width:100px;").tooltip('沉默阈值，指的是触发停止路径的最低音量值，请根据自己的麦克风进行微调到最佳')
-        input_talk_silence_CHANNELS = ui.input(label='CHANNELS', value=config.get("talk", "CHANNELS"), placeholder='录音用的参数').style("width:100px;")
-        input_talk_silence_RATE = ui.input(label='RATE', value=config.get("talk", "RATE"), placeholder='录音用的参数').style("width:100px;")
-        switch_talk_show_chat_log = ui.switch('聊天记录', value=config.get("talk", "show_chat_log")).style(switch_internal_css)
-
-    with ui.row():
-        textarea_talk_chat_box = ui.textarea(label='聊天框-和AI对话', value="", placeholder='此处填写对话内容可以直接进行对话（前面配置好聊天模式，记得运行先）').style("width:500px;").tooltip("此处填写对话内容可以直接进行对话（前面配置好聊天模式，记得运行先）")
-
-        async def talk_chat_box_send():
-            if state.running_flag != 1:
-                ui.notify(position="top", type="info", message="请先点击“一键运行”，然后再进行聊天")
-                return
-
-            username = input_talk_username.value
-            content = textarea_talk_chat_box.value
-            textarea_talk_chat_box.value = ""
-
-            data = {
-                "type": "comment",
-                "data": {
-                    "type": "comment",
-                    "platform": "webui",
-                    "username": username,
-                    "content": content
-                }
-            }
-
-            logger.debug(f"data={data}")
-            main_api_ip = "127.0.0.1" if config.get("api_ip") == "0.0.0.0" else config.get("api_ip")
-            await common.send_async_request(f'http://{main_api_ip}:{config.get("api_port")}/send', "POST", data)
-
-        async def talk_chat_box_reread(insert_index=-1, type="reread"):
-            if state.running_flag != 1:
-                ui.notify(position="top", type="warning", message="请先点击“一键运行”，然后再进行聊天")
-                return
-
-            username = input_talk_username.value
-            content = textarea_talk_chat_box.value
-            textarea_talk_chat_box.value = ""
-
-            if insert_index == -1:
-                data = {
-                    "type": type,
-                    "data": {
-                        "type": type,
-                        "username": username,
-                        "content": content
-                    }
-                }
-            else:
-                data = {
-                    "type": type,
-                    "data": {
-                        "type": type,
-                        "username": username,
-                        "content": content,
-                        "insert_index": insert_index
-                    }
-                }
-
-            if switch_talk_show_chat_log.value:
-                show_chat_log_json = {
-                    "type": "llm",
-                    "data": {
-                        "type": type,
-                        "username": username,
-                        "content_type": "question",
-                        "content": content,
-                        "timestamp": common.get_bj_time(0)
-                    }
-                }
-                chat_log.add(show_chat_log_json)
-
-            main_api_ip = "127.0.0.1" if config.get("api_ip") == "0.0.0.0" else config.get("api_ip")
-            await common.send_async_request(f'http://{main_api_ip}:{config.get("api_port")}/send', "POST", data)
-
-        async def talk_chat_box_tuning():
-            if state.running_flag != 1:
-                ui.notify(position="top", type="warning", message="请先点击“一键运行”，然后再进行聊天")
-                return
-
-            username = input_talk_username.value
-            content = textarea_talk_chat_box.value
-            textarea_talk_chat_box.value = ""
-
-            data = {
-                "type": "tuning",
-                "data": {
-                    "type": "tuning",
-                    "username": username,
-                    "content": content
-                }
-            }
-
-            main_api_ip = "127.0.0.1" if config.get("api_ip") == "0.0.0.0" else config.get("api_ip")
-            await common.send_async_request(f'http://{main_api_ip}:{config.get("api_port")}/send', "POST", data)
-
-        button_talk_chat_box_send = ui.button('发送', on_click=lambda: talk_chat_box_send(), color=button_internal_color).style(button_internal_css).tooltip("发送文本给LLM，模拟弹幕触发操作")
-        button_talk_chat_box_reread = ui.button('直接复读', on_click=lambda: talk_chat_box_reread(), color=button_internal_color).style(button_internal_css).tooltip("发送文本给内部机制，触发TTS 复读类型的消息")
-        button_talk_chat_box_tuning = ui.button('调教', on_click=lambda: talk_chat_box_tuning(), color=button_internal_color).style(button_internal_css).tooltip("发送文本给LLM，但不会进行TTS等操作")
-        button_talk_chat_box_reread_first = ui.button('直接复读-插队首', on_click=lambda: talk_chat_box_reread(0, "reread_top_priority"), color=button_internal_color).style(button_internal_css).tooltip("最高优先级 发送文本给内部机制，触发TTS 直接复读类型的消息")
+            input_talk_volume_threshold = ui.input(label='音量阈值', value=config.get("talk", "volume_threshold"), placeholder='音量阈值，指的是触发录音的起始音量值，请根据自己的麦克风进行微调到最佳').style("width:100px;").tooltip('音量阈值，指的是触发录音的起始音量值，请根据自己的麦克风进行微调到最佳')
+            input_talk_silence_threshold = ui.input(label='停录计数', value=config.get("talk", "silence_threshold"), placeholder='停录计数，指的是音量低于起始值的计数，这个值越大，切分音频越慢，即需要等待更长时间才会停止录音，但也不能太小，不然说一半就停了').style("width:100px;").tooltip('沉默阈值，指的是触发停止路径的最低音量值，请根据自己的麦克风进行微调到最佳')
+            input_talk_silence_CHANNELS = ui.input(label='CHANNELS', value=config.get("talk", "CHANNELS"), placeholder='录音用的参数').style("width:100px;")
+            input_talk_silence_RATE = ui.input(label='RATE', value=config.get("talk", "RATE"), placeholder='录音用的参数').style("width:100px;")
 
     with ui.expansion('对话打断', icon="settings", value=True).classes('w-2/3'):
         with ui.row():
@@ -305,7 +202,6 @@ def build_talk_tab(config, common, state, chat_log, card_css, switch_internal_cs
                 "device_index": (select_talk_device_index, 'str'),
                 "no_recording_during_playback": (switch_talk_no_recording_during_playback, 'bool'),
                 "no_recording_during_playback_sleep_interval": (input_talk_no_recording_during_playback_sleep_interval, 'float'),
-                "username": (input_talk_username, 'str'),
                 "continuous_talk": (switch_talk_continuous_talk, 'bool'),
                 "trigger_key": (select_talk_trigger_key, 'str'),
                 "stop_trigger_key": (select_talk_stop_trigger_key, 'str'),
@@ -313,7 +209,6 @@ def build_talk_tab(config, common, state, chat_log, card_css, switch_internal_cs
                 "silence_threshold": (input_talk_silence_threshold, 'float'),
                 "CHANNELS": (input_talk_silence_CHANNELS, 'int'),
                 "RATE": (input_talk_silence_RATE, 'int'),
-                "show_chat_log": (switch_talk_show_chat_log, 'bool'),
                 "interrupt_talk": {
                     "enable": (switch_talk_interrupt_talk_enable, 'bool'),
                     "keywords": (textarea_talk_interrupt_talk_keywords, 'textarea'),
