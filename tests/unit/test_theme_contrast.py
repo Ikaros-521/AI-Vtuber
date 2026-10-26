@@ -20,6 +20,12 @@ def test_white_text_on_dark_accents():
     assert readable_on('#3e78bd') == '#ffffff'
     assert readable_on('#111827') == '#ffffff'
     assert readable_on('rgb(17, 24, 39)') == '#ffffff'
+    # 5套新现代主题的主题强调色均应保证清晰纯白字
+    assert readable_on('#2563eb') == '#ffffff'  # 极简科技蓝
+    assert readable_on('#db2777') == '#ffffff'  # 落樱暮色
+    assert readable_on('#b45309') == '#ffffff'  # 温暖纸墨
+    assert readable_on('#047857') == '#ffffff'  # 翡翠青竹
+    assert readable_on('#7c3aed') == '#ffffff'  # 紫罗兰星芒
 
 
 def test_unknown_color_falls_back_to_dark():

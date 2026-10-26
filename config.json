@@ -1629,12 +1629,12 @@
       "max_file_size": "100 MB"
     },
     "theme": {
-      "choose": "蓝天白云",
+      "choose": "极简科技蓝",
       "list": {
         "蓝粉渐变": {
           "login_card": "width: 100%;height: 100%;display: flex;justify-content: center;align-items: center;position: fixed;left: 0;top: 0;background: linear-gradient(45deg, #3494E6, #EC6EAD);",
           "tab_panel": "background: linear-gradient(45deg, #3494E6, #EC6EAD);",
-          "card": "margin:10px 0px;background: linear-gradient(45deg, #3494E6, #EC6EAD);",
+          "card": "margin:10px 0px;background: linear-gradient(45deg, #3494E6, #EC6EAD);border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);",
           "button_bottom": "margin:5px",
           "button_bottom_color": "#EC6EAD",
           "button_internal": "margin:5px",
@@ -1645,7 +1645,7 @@
         "默认黑白": {
           "login_card": "width: 100%;height: 100%;display: flex;justify-content: center;align-items: center;position: fixed;left: 0;top: 0;",
           "tab_panel": "",
-          "card": "margin:10px 0px;",
+          "card": "margin:10px 0px;background:#ffffff;border-radius:12px;border:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,0.05);",
           "button_bottom": "margin:5px",
           "button_bottom_color": "primary",
           "button_internal": "margin:5px",
@@ -1656,7 +1656,7 @@
         "蓝天白云": {
           "login_card": "background:linear-gradient(45deg, #6eb9f2, #8dceff);width: 100%;height: 100%;display: flex;justify-content: center;align-items: center;position: fixed;left: 0;top: 0;",
           "tab_panel": "background: linear-gradient(45deg, #6eb9f2, #8dceff);",
-          "card": "margin:10px 0px;background: linear-gradient(45deg, #e3e8ef, #ffffff);",
+          "card": "margin:10px 0px;background: linear-gradient(45deg, #e3e8ef, #ffffff);border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);",
           "button_bottom": "margin:5px",
           "button_bottom_color": "#3e78bd;",
           "button_internal": "margin:5px",
@@ -1667,7 +1667,7 @@
         "极地极光": {
           "login_card": "background:linear-gradient(45deg, #027333, #025959);width: 100%;height: 100%;display: flex;justify-content: center;align-items: center;position: fixed;left: 0;top: 0;",
           "tab_panel": "background: linear-gradient(45deg, #027333, #025959);",
-          "card": "margin:10px 0px;background: linear-gradient(45deg, #027333, #04D939);",
+          "card": "margin:10px 0px;background: linear-gradient(45deg, #027333, #04D939);border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);",
           "button_bottom": "margin:5px",
           "button_bottom_color": "#04D939;",
           "button_internal": "margin:5px",
@@ -1678,9 +1678,64 @@
         "曲奇饼干": {
           "login_card": "background:linear-gradient(45deg, #F2BC8D, #73341D);width: 100%;height: 100%;display: flex;justify-content: center;align-items: center;position: fixed;left: 0;top: 0;",
           "tab_panel": "background: linear-gradient(45deg, #F2BC8D, #73341D);",
-          "card": "margin:10px 0px;background: linear-gradient(45deg, #F2BC8D, #73341D);",
+          "card": "margin:10px 0px;background: linear-gradient(45deg, #F2BC8D, #73341D);border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);",
           "button_bottom": "margin:5px;",
           "button_bottom_color": "#A65F37",
+          "button_internal": "margin:5px",
+          "button_internal_color": "",
+          "switch_internal": "",
+          "echart": "width:100%; height:600px;"
+        },
+        "极简科技蓝": {
+          "login_card": "width: 100%;height: 100%;display: flex;justify-content: center;align-items: center;position: fixed;left: 0;top: 0;background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);",
+          "tab_panel": "background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);",
+          "card": "margin:10px 0px;background: #ffffff;border-radius:12px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);",
+          "button_bottom": "margin:5px",
+          "button_bottom_color": "#2563eb",
+          "button_internal": "margin:5px",
+          "button_internal_color": "",
+          "switch_internal": "",
+          "echart": "width:100%; height:600px;"
+        },
+        "落樱暮色": {
+          "login_card": "width: 100%;height: 100%;display: flex;justify-content: center;align-items: center;position: fixed;left: 0;top: 0;background: linear-gradient(135deg, #fdf2f8 0%, #fae8ff 50%, #e0f2fe 100%);",
+          "tab_panel": "background: linear-gradient(135deg, #fdf2f8 0%, #fae8ff 50%, #e0f2fe 100%);",
+          "card": "margin:10px 0px;background: rgba(255,255,255,0.92);backdrop-filter:blur(8px);border-radius:12px;border:1px solid rgba(244,114,182,0.25);box-shadow:0 4px 16px rgba(236,72,153,0.06);",
+          "button_bottom": "margin:5px",
+          "button_bottom_color": "#db2777",
+          "button_internal": "margin:5px",
+          "button_internal_color": "",
+          "switch_internal": "",
+          "echart": "width:100%; height:600px;"
+        },
+        "温暖纸墨": {
+          "login_card": "width: 100%;height: 100%;display: flex;justify-content: center;align-items: center;position: fixed;left: 0;top: 0;background: linear-gradient(180deg, #fafaf9 0%, #e7e5e4 100%);",
+          "tab_panel": "background: linear-gradient(180deg, #fafaf9 0%, #e7e5e4 100%);",
+          "card": "margin:10px 0px;background: #ffffff;border-radius:12px;border:1px solid #e7e5e4;box-shadow:0 1px 3px rgba(41,37,36,0.05);",
+          "button_bottom": "margin:5px",
+          "button_bottom_color": "#b45309",
+          "button_internal": "margin:5px",
+          "button_internal_color": "",
+          "switch_internal": "",
+          "echart": "width:100%; height:600px;"
+        },
+        "翡翠青竹": {
+          "login_card": "width: 100%;height: 100%;display: flex;justify-content: center;align-items: center;position: fixed;left: 0;top: 0;background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);",
+          "tab_panel": "background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);",
+          "card": "margin:10px 0px;background: #ffffff;border-radius:12px;border:1px solid #bbf7d0;box-shadow:0 1px 3px rgba(21,128,61,0.06);",
+          "button_bottom": "margin:5px",
+          "button_bottom_color": "#047857",
+          "button_internal": "margin:5px",
+          "button_internal_color": "",
+          "switch_internal": "",
+          "echart": "width:100%; height:600px;"
+        },
+        "紫罗兰星芒": {
+          "login_card": "width: 100%;height: 100%;display: flex;justify-content: center;align-items: center;position: fixed;left: 0;top: 0;background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #e0e7ff 100%);",
+          "tab_panel": "background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #e0e7ff 100%);",
+          "card": "margin:10px 0px;background: #ffffff;border-radius:12px;border:1px solid #ddd6fe;box-shadow:0 1px 4px rgba(109,40,217,0.06);",
+          "button_bottom": "margin:5px",
+          "button_bottom_color": "#7c3aed",
           "button_internal": "margin:5px",
           "button_internal_color": "",
           "switch_internal": "",

@@ -98,9 +98,14 @@ def preview_css(theme):
     """
     panel = background_of(theme.get('tab_panel')) or 'none'
     card = background_of(theme.get('card')) or 'none'
+    card_styles = [f'background:{card} !important;']
+    d_card = declarations(theme.get('card'))
+    for prop in ('border-radius', 'border', 'box-shadow', 'backdrop-filter'):
+        if prop in d_card:
+            card_styles.append(f'{prop}:{d_card[prop]} !important;')
     rules = [
         f'.q-tab-panel{{background:{panel} !important;}}',
-        f'.q-tab-panel .q-card{{background:{card} !important;}}',
+        f'.q-tab-panel .q-card{{{"" .join(card_styles)}}}',
     ]
     accent = (theme.get('button_bottom_color') or '').strip()
     if _to_rgb(accent):          # 'primary' 这种 Quasar 颜色名盖不动，就别假装能预览它
