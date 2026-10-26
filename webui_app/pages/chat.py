@@ -80,6 +80,7 @@ def build_chat_tab(config, common, state, chat_log, card_css, switch_internal_cs
                 input_text = ui.input(
                     placeholder='输入消息与 AI 对话... (按 Enter 发送)'
                 ).props('outlined dense').classes('flex-grow').style('font-size:14px;')
+                input_text.is_config_field = False
 
                 btn_send = ui.button('发送', on_click=lambda: do_send()).props('unelevated').style(
                     'padding:0 22px;height:40px;background:#6366f1;color:#ffffff;font-weight:600;border-radius:6px;'

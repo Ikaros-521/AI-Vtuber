@@ -99,7 +99,8 @@ class DirtyGuard:
         for element in self._live():
             label = field_name(element)
             if not label:
-                continue
+                props = getattr(element, '_props', {}) or {}
+                label = str(props.get('placeholder') or props.get('hint') or f'未命名配置项#{element.id}').strip()
             tab, section, _expansion = locate(element)
             rows.append((label, value_text(element), tab, section, element))
         rows.sort(key=lambda r: (r[2], r[3], r[0]))
@@ -111,7 +112,7 @@ class DirtyGuard:
                 if element is not None and not element.is_deleted and not hidden(element)]
 
     def count(self) -> int:
-        return len(self._live())
+        return len(self.items())
 
     def watch(self, force: bool = False) -> None:
         """给还没盯过的输入控件挂上变更记录，可重复调用。"""
@@ -122,6 +123,8 @@ class DirtyGuard:
             if not isinstance(element, INPUT_TYPES) or element.id in self._watched:
                 continue
             if getattr(element, 'is_config_field', True) is False:   # 选择器之类的界面控件
+                continue
+            if not field_name(element) and getattr(element, 'is_config_field', None) is not True:
                 continue
             self._watched.add(element.id)
             self._elements[element.id] = element

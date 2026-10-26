@@ -214,3 +214,45 @@ def test_highlight_color_stays_valid_css(in_client, monkeypatch):
     assert len(calls) == 1
     assert "2px solid #3e78bd'" in calls[0]
     assert "solid #3e78bd;'" not in calls[0]
+
+
+def test_unnamed_or_non_config_inputs_are_not_watched(in_client):
+    """无名称控件（如聊天调试框）或标记 is_config_field=False 的控件不应计入脏状态。"""
+    guard = DirtyGuard()
+    with in_client:
+        valid_box = ui.input('配置字段', value='1')
+        unnamed_box = ui.input(placeholder='临时输入')
+        explicit_non_cfg = ui.input('临时UI', value='a')
+        explicit_non_cfg.is_config_field = False
+    guard.watch(force=True)
+    assert len(guard._watched) == 1
+    assert valid_box.id in guard._watched
+
+    unnamed_box.value = 'hello'
+    explicit_non_cfg.value = 'b'
+    assert guard.count() == 0
+
+    valid_box.value = '2'
+    assert guard.count() == 1
+    assert guard.count() == len(guard.items())
+
+
+def test_count_and_items_never_diverge(in_client):
+    """count() 与 items() 数量必须绝对一致，防止出现'有N项未保存但弹窗为空'。"""
+    guard = DirtyGuard()
+    with in_client:
+        box = ui.input('直播间号', value='100')
+        # 即使极端情况下有无 label 控件被显式标记为 config 字段且脏了
+        mystery = ui.input(placeholder='神秘输入框', value='xyz')
+        mystery.is_config_field = True
+    guard.watch(force=True)
+    box.value = '200'
+    mystery.value = 'uvw'
+
+    assert guard.count() == 2
+    items = guard.items()
+    assert len(items) == 2
+    assert guard.count() == len(items)
+    labels = [r[0] for r in items]
+    assert '直播间号' in labels
+    assert '神秘输入框' in labels
