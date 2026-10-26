@@ -1,6 +1,7 @@
 """助播页：助播名、触发类型与本地问答匹配配置。"""
 from nicegui import ui
 
+from webui_app.descriptions import show_card_desc
 from webui_app.pages import PageConfig
 from webui_app.theme import INK
 
@@ -31,6 +32,7 @@ def build_assistant_anchor_tab(config, common, audio_synthesis_type_options, car
     # 基本信息行原来直接铺在渐变面板上（同页其余区块都在卡片里），包进一张卡
     with ui.card().style(card_css + 'width:100%;'):
         ui.label('基本').style(f'font-size:14px;font-weight:600;color:{INK};')
+        show_card_desc('基本')
         with ui.row():
             switch_assistant_anchor_enable = ui.switch('启用', value=config.get("assistant_anchor", "enable")).style(switch_internal_css)
             input_assistant_anchor_username = ui.input(label='助播名', value=config.get("assistant_anchor", "username"), placeholder='助播的用户名，暂时没啥用')
@@ -42,6 +44,7 @@ def build_assistant_anchor_tab(config, common, audio_synthesis_type_options, car
 
     with ui.card().style(card_css):
         ui.label("触发类型")
+        show_card_desc("触发类型")
         with ui.row():
             assistant_anchor_type_var = {}
             for index, assistant_anchor_type in enumerate(ASSISTANT_ANCHOR_TYPE_LIST):
@@ -53,6 +56,7 @@ def build_assistant_anchor_tab(config, common, audio_synthesis_type_options, car
     # 文本匹配栅格原来直接铺在渐变面板上，包进一张卡
     with ui.card().style(card_css + 'width:100%;'):
         ui.label('文本匹配').style(f'font-size:14px;font-weight:600;color:{INK};')
+        show_card_desc('文本匹配')
         with ui.grid(columns=4):
             switch_assistant_anchor_local_qa_text_enable = ui.switch('启用文本匹配', value=config.get("assistant_anchor", "local_qa", "text", "enable")).style(switch_internal_css)
             select_assistant_anchor_local_qa_text_format = ui.select(
@@ -66,6 +70,7 @@ def build_assistant_anchor_tab(config, common, audio_synthesis_type_options, car
     # 音频匹配栅格原来直接铺在渐变面板上，包进一张卡
     with ui.card().style(card_css + 'width:100%;'):
         ui.label('音频匹配').style(f'font-size:14px;font-weight:600;color:{INK};')
+        show_card_desc('音频匹配')
         with ui.grid(columns=4):
             switch_assistant_anchor_local_qa_audio_enable = ui.switch('启用音频匹配', value=config.get("assistant_anchor", "local_qa", "audio", "enable")).style(switch_internal_css)
             select_assistant_anchor_local_qa_audio_type = ui.select(

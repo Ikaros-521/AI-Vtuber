@@ -4,7 +4,6 @@ CHAT_TYPE_OPTIONS = {
     'none': '不启用',
     'reread': '复读机',
     'chatgpt': 'ChatGPT',
-    'chat_with_file': 'chat_with_file',
     'langchain_chatchat': 'langchain_chatchat',
     'zhipu': '智谱AI',
     'gemini': 'Gemini',
@@ -13,7 +12,6 @@ CHAT_TYPE_OPTIONS = {
     'anythingllm': 'AnythingLLM',
     'dify': 'Dify',
     'volcengine': '火山引擎',
-    'llm_tpu': 'LLM_TPU',
     'custom_llm': '自定义LLM',
 }
 

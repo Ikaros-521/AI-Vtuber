@@ -6,6 +6,7 @@ from nicegui import ui
 
 from utils.my_log import logger
 from webui_app.confirm import confirm_delete_file, delete_button
+from webui_app.descriptions import show_card_desc
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS
 from webui_app.pages import PageConfig
 
@@ -139,6 +140,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
         
     with ui.card().style(card_css):
         ui.label("TTS 语音合成调试")
+        show_card_desc("TTS 语音合成调试")
         with ui.row():
             select_tts_common_audio_synthesis_type = ui.select(
                 label='语音合成', 
@@ -155,6 +157,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
     if config.get("webui", "show_card", "tts", "edge-tts"):
         with ui.card().style(card_css):
             ui.label("Edge-TTS")
+            show_card_desc("Edge-TTS")
             with ui.row():
                 with open('data/edge-tts-voice-list.txt', 'r') as file:
                     file_content = file.read()
@@ -177,6 +180,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
     if config.get("webui", "show_card", "tts", "vits"):
         with ui.card().style(card_css):
             ui.label("VITS-Simple-API")
+            show_card_desc("VITS-Simple-API")
             with ui.row():
                 select_vits_type = ui.select(
                     label='类型', 
@@ -287,6 +291,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
     if config.get("webui", "show_card", "tts", "bert_vits2"):
         with ui.card().style(card_css):
             ui.label("bert_vits2")
+            show_card_desc("bert_vits2")
             with ui.row():
                 select_bert_vits2_type = ui.select(
                     label='类型', 
@@ -357,32 +362,10 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
                     input_bert_vits2_liuyue_zh_api_style_weight = ui.input(label='风格权重', value=config.get("bert_vits2", "刘悦-中文特化API", "style_weight"), placeholder='主文本和辅助文本的bert混合比率，0表示仅主文本，1表示仅辅助文本0.7').style("width:200px;")
                     switch_bert_vits2_cut_by_sent = ui.switch('cut_by_sent', value=config.get("bert_vits2", "刘悦-中文特化API", "cut_by_sent")).style(switch_internal_css)
                     
-    if config.get("webui", "show_card", "tts", "vits_fast"):
-        with ui.card().style(card_css):
-            ui.label("VITS-Fast")
-            with ui.row():
-                input_vits_fast_config_path = ui.input(label='配置文件路径', placeholder='配置文件的路径，例如：E:\\inference\\finetune_speaker.json', value=config.get("vits_fast", "config_path"))
-
-                input_vits_fast_api_ip_port = ui.input(
-                    label='API地址', 
-                    placeholder='推理服务运行的链接（需要完整的URL）', 
-                    value=config.get("vits_fast", "api_ip_port"),
-                    validation={
-                        '请输入正确格式的URL': lambda value: common.is_url_check(value),
-                    }
-                )
-                input_vits_fast_character = ui.input(label='说话人', placeholder='选择的说话人，配置文件中的speaker中的其中一个', value=config.get("vits_fast", "character"))
-
-                select_vits_fast_language = ui.select(
-                    label='语言', 
-                    options={'自动识别': '自动识别', '日本語': '日本語', '简体中文': '简体中文', 'English': 'English', 'Mix': 'Mix'}, 
-                    value=config.get("vits_fast", "language")
-                )
-                input_vits_fast_speed = ui.input(label='语速', placeholder='语速，默认为1', value=config.get("vits_fast", "speed"))
-    
     if config.get("webui", "show_card", "tts", "elevenlabs"):
         with ui.card().style(card_css):
             ui.label("elevenlabs")
+            show_card_desc("elevenlabs")
             with ui.row():
                 input_elevenlabs_api_key = ui.input(label='api密钥', placeholder='elevenlabs密钥，可以不填，默认也有一定额度的免费使用权限，具体多少不知道', value=config.get("elevenlabs", "api_key"))
 
@@ -394,6 +377,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
     if config.get("webui", "show_card", "tts", "openai_tts"): 
         with ui.card().style(card_css):
             ui.label("OpenAI TTS")
+            show_card_desc("OpenAI TTS")
             with ui.row():
                 select_openai_tts_type = ui.select(
                     label='类型', 
@@ -424,12 +408,14 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
     if config.get("webui", "show_card", "tts", "gradio_tts"): 
         with ui.card().style(card_css):
             ui.label("Gradio")
+            show_card_desc("Gradio")
             with ui.row():
                 textarea_gradio_tts_request_parameters = ui.textarea(label='请求参数', value=config.get("gradio_tts", "request_parameters"), placeholder='一定要注意格式啊！{content}用于替换待合成的文本。\nurl是请求地址；\nfn_index是api对应的索引；\ndata_analysis是数据解析规则，暂时只支持元组和列表数据的index索引，请参考模板进行配置\n键不影响请求，需要注意的是参数顺序需要和API请求保持一致\n那么数据可以用json库将dict转成str，这样再用来配置就可靠很多').style("width:800px;")
    
     if config.get("webui", "show_card", "tts", "gpt_sovits"): 
         with ui.card().style(card_css):
             ui.label("GPT-SoVITS")
+            show_card_desc("GPT-SoVITS")
             with ui.row():
                 select_gpt_sovits_type = ui.select(
                     label='API类型', 
@@ -652,6 +638,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
     if config.get("webui", "show_card", "tts", "azure_tts"): 
         with ui.card().style(card_css):
             ui.label("azure_tts")
+            show_card_desc("azure_tts")
             with ui.row():
                 input_azure_tts_subscription_key = ui.input(label='密钥', value=config.get("azure_tts", "subscription_key"), placeholder='申请开通服务后，自然就看见了').style("width:200px;")
                 input_azure_tts_region = ui.input(label='区域', value=config.get("azure_tts", "region"), placeholder='申请开通服务后，自然就看见了').style("width:200px;")
@@ -661,6 +648,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
     if config.get("webui", "show_card", "tts", "cosyvoice"): 
         with ui.card().style(card_css):
             ui.label("CosyVoice")
+            show_card_desc("CosyVoice")
             with ui.row():
                 select_cosyvoice_type = ui.select(
                     label='类型', 
@@ -713,6 +701,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
     if config.get("webui", "show_card", "tts", "f5_tts"): 
         with ui.card().style(card_css):
             ui.label("F5-TTS")
+            show_card_desc("F5-TTS")
             with ui.row():
                 select_f5_tts_type = ui.select(
                     label='类型', 
@@ -742,6 +731,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
     if config.get("webui", "show_card", "tts", "multitts"): 
         with ui.card().style(card_css):
             ui.label("MultiTTS")
+            show_card_desc("MultiTTS")
             with ui.row():
                 input_multitts_api_ip_port = ui.input(
                     label='API地址', 
@@ -758,6 +748,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
     if config.get("webui", "show_card", "tts", "melotts"): 
         with ui.card().style(card_css):
             ui.label("MeloTTS")
+            show_card_desc("MeloTTS")
             with ui.row():
                 input_melotts_api_ip_port = ui.input(
                     label='API地址', 
@@ -823,6 +814,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
     if config.get("webui", "show_card", "tts", "index_tts"): 
         with ui.card().style(card_css):
             ui.label("Index-TTS")
+            show_card_desc("Index-TTS")
             with ui.row():
                 input_index_tts_api_ip_port = ui.input(
                     label='API地址', 
@@ -904,14 +896,6 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
                 "style_weight": (input_bert_vits2_liuyue_zh_api_style_weight, 'str'),
                 "cut_by_sent": (switch_bert_vits2_cut_by_sent, 'bool'),
             }
-        }
-    if config.get("webui", "show_card", "tts", "vits_fast"):
-        mapping["vits_fast"] = {
-            "config_path": (input_vits_fast_config_path, 'str'),
-            "api_ip_port": (input_vits_fast_api_ip_port, 'str'),
-            "character": (input_vits_fast_character, 'str'),
-            "language": (select_vits_fast_language, 'str'),
-            "speed": (input_vits_fast_speed, 'float'),
         }
     if config.get("webui", "show_card", "tts", "elevenlabs"):
         mapping["elevenlabs"] = {

@@ -49,10 +49,8 @@ SHOW_CARD_NAMES = {
     'Edge TTS': 'Edge-TTS',
     'VITS': 'VITS-Simple-API',
     'Bert VITS2': 'Bert-VITS2',
-    'VITS Fast': 'VITS-Fast',
     'DDSP SVC': 'DDSP-SVC',
     '通义千问': '通义千问/阿里云百炼',
-    'chat_with_file': '本地文件问答 chat_with_file',
     'xuniren': '虚拟人 xuniren',
     'metahuman_stream': 'MetaHuman 推流 metahuman_stream',
     'digital_human_video_player': '数字人视频播放器',
@@ -70,4 +68,35 @@ def rename_show_card_switches():
         if text in SHOW_CARD_NAMES:
             element.text = SHOW_CARD_NAMES[text]
             changed[element.id] = element.text
+    return changed
+
+
+def add_show_card_tooltips():
+    """给板块开关墙上的开关补上功能描述 Tooltip。
+
+    使用 descriptions.py 里的统一描述库，按开关文案或裸键匹配。
+    已带 tooltip 的控件不再重复添加。
+    返回 {控件 id: tooltip 文本}，便于排查与测试。
+    """
+    from nicegui.elements.tooltip import Tooltip
+    from webui_app.descriptions import get_desc
+
+    elements = list(context.client.elements.values())
+    tipped = {str(t.props.get('target') or '') for t in elements if isinstance(t, Tooltip)}
+    changed = {}
+    for element in elements:
+        if not isinstance(element, ui.switch):
+            continue
+        text = (element.text or '').strip()
+        if text.startswith('启用'):
+            continue
+        desc = get_desc(text)
+        if not desc:
+            continue
+        target = f'#{element.html_id}'
+        if target not in tipped:
+            with element.parent_slot:
+                element.tooltip(desc)
+            tipped.add(target)
+            changed[element.id] = desc
     return changed

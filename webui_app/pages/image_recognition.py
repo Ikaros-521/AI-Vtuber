@@ -6,6 +6,7 @@ from nicegui import ui
 
 from utils.my_log import logger
 from webui_app.helpers import select_value_or_none
+from webui_app.descriptions import show_card_desc
 from webui_app.pages import PageConfig
 
 
@@ -95,6 +96,7 @@ def build_image_recognition_tab(config, common, state, card_css, switch_internal
 
         with ui.card().style(card_css):
             ui.label("电脑截图")
+            show_card_desc("电脑截图")
             with ui.row():
                 window_titles = common.list_visible_windows()
                 data_json = {}
@@ -113,6 +115,7 @@ def build_image_recognition_tab(config, common, state, card_css, switch_internal
 
         with ui.card().style(card_css):
             ui.label("摄像头截图")
+            show_card_desc("摄像头截图")
             with ui.row():
                 switch_image_recognition_cam_screenshot_enable = ui.switch('启用', value=config.get("image_recognition", "cam_screenshot_enable")).style(switch_internal_css)
 
@@ -136,6 +139,7 @@ def build_image_recognition_tab(config, common, state, card_css, switch_internal
 
     with ui.card().style(card_css):
         ui.label("Gemini")
+        show_card_desc("Gemini")
         with ui.row():
             select_image_recognition_gemini_model = ui.select(
                 label='模型',
@@ -148,6 +152,7 @@ def build_image_recognition_tab(config, common, state, card_css, switch_internal
 
     with ui.card().style(card_css):
         ui.label("智谱AI")
+        show_card_desc("智谱AI")
         with ui.row():
             select_image_recognition_zhipu_model = ui.select(
                 label='模型',

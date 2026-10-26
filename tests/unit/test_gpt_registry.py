@@ -22,12 +22,12 @@ SUPPORTED_PROVIDERS = {
     "gemini",
     "anythingllm",
     "custom_llm",
-    "llm_tpu",
     "dify",
     "volcengine",
 }
 
 RETIRED_PROVIDERS = {
+    "llm_tpu",
     "text_generation_webui",
     "chatterbot",
     "sparkdesk",

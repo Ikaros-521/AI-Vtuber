@@ -333,17 +333,6 @@
       "api_secret": ""
     }
   },
-  "chat_with_file": {
-    "chat_mode": "openai_gpt",
-    "data_path": "data/伊卡洛斯百度百科.zip",
-    "separator": "\n",
-    "chunk_size": 100,
-    "chunk_overlap": 50,
-    "chain_type": "stuff",
-    "show_token_cost": false,
-    "question_prompt": "请根据以上content信息进行归纳总结，并结合question的内容给出一个符合content和question语气、语调、背景的回答。不要出现'概括''综上''感谢'等字样，向朋友直接互相交流即可。如果发现不能content的信息与question不相符，抛弃content的提示，直接回答question即可。任何情况下都要简要地回答!",
-    "local_max_query": 3
-  },
   "langchain_chatchat": {
     "api_ip_port": "http://127.0.0.1:7861",
     "chat_type": "模型",
@@ -439,14 +428,6 @@
     "history_enable": true,
     "history_max_len": 1024,
     "stream": true
-  },
-  "llm_tpu": {
-    "api_ip_port": "http://127.0.0.1:8003",
-    "max_length": 1.0,
-    "top_p": 0.8,
-    "temperature": 0.95,
-    "history_enable": true,
-    "history_max_len": 100
   },
   "custom_llm": {
     "url": "http://127.0.0.1:11434/v1/chat/completions",
@@ -551,13 +532,6 @@
       "style_weight": "0.7-0.8",
       "stream": false
     }
-  },
-  "vits_fast": {
-    "config_path": "D:\\GitHub_pro\\VITS-fast-fine-tuning\\inference\\finetune_speaker.json",
-    "api_ip_port": "http://127.0.0.1:7860",
-    "character": "ikaros",
-    "language": "自动识别",
-    "speed": 1.0
   },
   "ddsp_svc": {
     "enable": false,
@@ -1740,7 +1714,6 @@
       "llm": {
         "chatgpt": true,
         "zhipu": true,
-        "chat_with_file": true,
         "langchain_chatchat": true,
         "tongyi": true,
         "my_wenxinworkshop": true,
@@ -1748,14 +1721,12 @@
         "anythingllm": true,
         "dify": true,
         "volcengine": true,
-        "llm_tpu": true,
         "custom_llm": true
       },
       "tts": {
         "edge-tts": true,
         "vits": true,
         "bert_vits2": true,
-        "vits_fast": true,
         "elevenlabs": true,
         "openai_tts": true,
         "gradio_tts": true,

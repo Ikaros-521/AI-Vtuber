@@ -126,7 +126,6 @@ class My_handle(metaclass=SingletonMeta):
             新增LLM后，这边先定义下各个变量，下面会用到
             """
             self.chatgpt = None
-            self.chat_with_file = None
             self.langchain_chatchat = None
             self.zhipu = None
             self.tongyi = None
@@ -134,15 +133,14 @@ class My_handle(metaclass=SingletonMeta):
             self.gemini = None
             self.anythingllm = None
             self.custom_llm = None
-            self.llm_tpu = None
             self.dify = None
             self.volcengine = None
 
             self.image_recognition_model = None
 
-            self.chat_type_list = ["chatgpt", "chat_with_file", "langchain_chatchat", "zhipu", \
+            self.chat_type_list = ["chatgpt",  "langchain_chatchat", "zhipu", \
                     "tongyi", "my_wenxinworkshop", "gemini", "anythingllm", \
-                    "custom_llm", "llm_tpu", "dify", "volcengine"]
+                    "custom_llm",  "dify", "volcengine"]
 
             # 配置加载
             self.config_load()
@@ -434,11 +432,7 @@ class My_handle(metaclass=SingletonMeta):
         return My_handle.audio.get_audio_info()
 
     def get_chat_model(self, chat_type, config):
-        if chat_type == "chat_with_file":
-            # 对这些类型做特殊处理
-            pass
-        else:
-            GPT_MODEL.set_model_config(chat_type, config.get(chat_type))
+        GPT_MODEL.set_model_config(chat_type, config.get(chat_type))
         self.__dict__[chat_type] = GPT_MODEL.get(chat_type)
 
     def get_vision_model(self, chat_type, config):
@@ -449,10 +443,7 @@ class My_handle(metaclass=SingletonMeta):
         chat_type = My_handle.config.get("chat_type")
         self.get_chat_model(chat_type, My_handle.config)
 
-        if chat_type == "chat_with_file":
-            from utils.chat_with_file.chat_with_file import Chat_with_file
-            self.chat_with_file = Chat_with_file(My_handle.config.get("chat_with_file"))
-        elif chat_type == "game":
+        if chat_type == "game":
             self.game = importlib.import_module("game." + My_handle.config.get("game", "module_name"))
 
     # 配置加载
@@ -1454,7 +1445,6 @@ class My_handle(metaclass=SingletonMeta):
                 # 新增LLM需要在这里追加
                 chat_model_methods = {
                     "chatgpt": lambda: self.chatgpt.get_gpt_resp(data["username"], data["content"]),
-                    "chat_with_file": lambda: self.chat_with_file.get_model_resp(data["content"]),
                     "langchain_chatchat": lambda: self.langchain_chatchat.get_resp(data["content"]),
                     "zhipu": lambda: self.zhipu.get_resp(data["content"]),
                     "tongyi": lambda: self.tongyi.get_resp(data["content"]),
@@ -1462,7 +1452,6 @@ class My_handle(metaclass=SingletonMeta):
                     "gemini": lambda: self.gemini.get_resp(data["content"]),
                     "anythingllm": lambda: self.anythingllm.get_resp({"prompt": data["content"]}),
                     "custom_llm": lambda: self.custom_llm.get_resp({"prompt": data["content"]}),
-                    "llm_tpu": lambda: self.llm_tpu.get_resp({"prompt": data["content"]}),
                     "dify": lambda: self.dify.get_resp({"prompt": data["content"]}),
                     "volcengine": lambda: self.volcengine.get_resp({"prompt": data["content"]}),
                     "reread": lambda: data["content"]

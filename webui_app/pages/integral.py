@@ -2,16 +2,19 @@
 from nicegui import ui
 
 from webui_app.helpers import common_textarea_handle, textarea_data_change
+from webui_app.descriptions import show_card_desc
 from webui_app.pages import PageConfig
 
 
 def build_integral_tab(config, card_css, switch_internal_css):
     with ui.card().style(card_css):
         ui.label("积分系统")
+        show_card_desc("积分系统")
         with ui.grid(columns=3):
             switch_integral_enable = ui.switch('启用', value=config.get("integral", "enable")).style(switch_internal_css)
     with ui.card().style(card_css):
         ui.label("签到")
+        show_card_desc("签到")
         with ui.grid(columns=3):
             switch_integral_sign_enable = ui.switch('启用', value=config.get("integral", "sign", "enable")).style(switch_internal_css)
             input_integral_sign_get_integral = ui.input(label='获得积分数', value=config.get("integral", "sign", "get_integral"), placeholder='签到成功可以获得的积分数，请填写正整数！')
@@ -49,6 +52,7 @@ def build_integral_tab(config, card_css, switch_internal_css):
                     integral_entrance_copywriting_var[str(2 * index + 1)] = ui.textarea(label=f"文案#{index}", value=textarea_data_change(integral_entrance_copywriting["copywriting"]), placeholder='在此入场区间内，触发的文案内容，换行分隔').style("width:400px;")
     with ui.card().style(card_css):
         ui.label("增删改查")
+        show_card_desc("增删改查")
         with ui.card().style(card_css):
             ui.label("查询")
             with ui.grid(columns=3):

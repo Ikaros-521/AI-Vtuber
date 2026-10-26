@@ -9,6 +9,7 @@ from nicegui import ui
 from utils.my_log import logger
 from webui_app.config_store import update_config
 from webui_app.confirm import delete_button
+from webui_app.descriptions import show_card_desc
 from webui_app.errors import explain
 from webui_app.groups import GroupPicker
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS, common_textarea_handle, textarea_data_change
@@ -322,6 +323,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
 
         with ui.card().style(card_css):
             ui.label('平台相关')
+            show_card_desc('平台相关')
             with ui.card().style(card_css):
                 ui.label('哔哩哔哩')
                 with ui.row():
@@ -349,6 +351,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                     input_twitch_proxy_port = ui.input(label='HTTP代理端口', value=config.get("twitch", "proxy_port"), placeholder='代理软件，http协议监听的端口，一般为：1080').style("width:200px;")
             with ui.card().style(card_css):
                 ui.label('直播弹幕监听助手')
+                show_card_desc('直播弹幕监听助手')
                 with ui.row():
                     input_live_monitor_assistant_ws_ip = ui.input(label='监听IP', value=config.get("live_monitor_assistant", "ws_ip") or '127.0.0.1', placeholder='本机监听地址，一般为：127.0.0.1').style("width:200px;").tooltip('快手2、拼多多、斗鱼、1688、淘宝这些平台的弹幕，是由「直播弹幕监听助手」(游猴) 通过 websocket 推给本机的，本机就监听这个地址。助手和本程序在同一台电脑就填 127.0.0.1；助手在别的设备上就填这台设备对内开放的地址')
                     input_live_monitor_assistant_ws_port = ui.input(label='监听端口', value=config.get("live_monitor_assistant", "ws_port") or 5001, placeholder='默认 5001').style("width:120px;").tooltip('助手侧要连接的端口，必须和这里一致。端口填得不合法时，程序会退回默认端口 5001 并在日志里报错')
@@ -356,6 +359,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "play_audio"):
             with ui.card().style(card_css):
                 ui.label('音频播放')
+                show_card_desc('音频播放')
                 with ui.row():
                     switch_play_audio_enable = ui.switch('启用', value=config.get("play_audio", "enable")).style(switch_internal_css)
                     switch_play_audio_text_split_enable = ui.switch('启用文本切分', value=config.get("play_audio", "text_split_enable")).style(switch_internal_css).tooltip('启用后会将LLM等待合成音频的消息根据内部切分算法切分成多个短句，以便TTS快速合成')
@@ -386,7 +390,8 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                     ).style("width:200px;").tooltip('仅在 音频播放器：audio_player等，情况下填写。audio_player的API地址，只需要 http://ip:端口 即可')
 
                 with ui.card().style(card_css):
-                    ui.label('音频随机变速')     
+                    ui.label('音频随机变速')
+                    show_card_desc('音频随机变速')
                     with ui.grid(columns=3):
                         switch_audio_random_speed_normal_enable = ui.switch('普通音频变速', value=config.get("audio_random_speed", "normal", "enable")).style(switch_internal_css).tooltip('是否启用 针对 普通音频的音频变速功能。此功能需要安装配置ffmpeg才能使用')
                         input_audio_random_speed_normal_speed_min = ui.input(label='速度下限', value=config.get("audio_random_speed", "normal", "speed_min")).style("width:200px;").tooltip('音频变速的下限，最终速度会在上下限之间随机一个值进行变速')
@@ -401,6 +406,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "read_comment"):
             with ui.card().style(card_css):
                 ui.label('念弹幕')
+                show_card_desc('念弹幕')
                 with ui.grid(columns=4):
                     switch_read_comment_enable = ui.switch('启用', value=config.get("read_comment", "enable")).style(switch_internal_css)
                     switch_read_comment_read_username_enable = ui.switch('念用户名', value=config.get("read_comment", "read_username_enable")).style(switch_internal_css)
@@ -441,6 +447,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "local_qa"):
             with ui.card().style(card_css):
                 ui.label('本地问答')
+                show_card_desc('本地问答')
                 # 原先是 ui.row()，与下面两块栅格对不齐；这块 5 个字段，正好按 5 列排（走查 audit-12）
                 with ui.grid(columns=5):
                     switch_local_qa_periodic_trigger_enable = ui.switch('周期性触发启用', value=config.get("local_qa", "periodic_trigger", "enable")).style(switch_internal_css)
@@ -484,7 +491,8 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         
         if config.get("webui", "show_card", "common_config", "thanks"):
             with ui.card().style(card_css):
-                ui.label('答谢')  
+                ui.label('答谢')
+                show_card_desc('答谢')
                 with ui.row():
                     input_thanks_username_max_len = ui.input(label='用户名最大长度', value=config.get("thanks", "username_max_len"), placeholder='需要保留的用户名的最大长度，超出部分将被丢弃').style("width:100px;")       
                 with ui.expansion('入场设置', icon="settings", value=True).classes('w-full'):
@@ -544,7 +552,8 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                 
         if config.get("webui", "show_card", "common_config", "choose_song"): 
             with ui.card().style(card_css):
-                ui.label('点歌模式') 
+                ui.label('点歌模式')
+                show_card_desc('点歌模式')
                 with ui.row():
                     switch_choose_song_enable = ui.switch('启用', value=config.get("choose_song", "enable")).style(switch_internal_css)
                     textarea_choose_song_start_cmd = ui.textarea(
@@ -582,6 +591,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "schedule"): 
             with ui.card().style(card_css):
                 ui.label('定时任务')
+                show_card_desc('定时任务')
                 with ui.row():
                     picker_schedule = GroupPicker(lambda: schedule_config_card, '定时任务', schedule_del, lambda: schedule_var).build()
                     button_schedule_add = ui.button('增加任务组', on_click=lambda: (schedule_add(), picker_schedule.refresh()), color=button_internal_color).style(button_internal_css)
@@ -600,6 +610,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "idle_time_task"): 
             with ui.card().style(card_css):
                 ui.label('闲时任务')
+                show_card_desc('闲时任务')
                 with ui.row():
                     switch_idle_time_task_enable = ui.switch('启用', value=config.get("idle_time_task", "enable")).style(switch_internal_css)
                     select_idle_time_task_type = ui.select(
@@ -689,6 +700,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "search_online"):      
             with ui.card().style(card_css):
                 ui.label('联网搜索')
+                show_card_desc('联网搜索')
                 with ui.row():
                     switch_search_online_enable = ui.switch('启用', value=config.get("search_online", "enable")).style(switch_internal_css) 
                     switch_search_online_keyword_enable = ui.switch('关键词触发', value=config.get("search_online", "keyword_enable")).style(switch_internal_css) 
@@ -726,6 +738,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "trends_copywriting"):        
             with ui.card().style(card_css):
                 ui.label('动态文案')
+                show_card_desc('动态文案')
                 with ui.row():
                     switch_trends_copywriting_enable = ui.switch('启用', value=config.get("trends_copywriting", "enable")).style(switch_internal_css)
                     select_trends_copywriting_llm_type = ui.select(
@@ -753,6 +766,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "key_mapping"):  
             with ui.card().style(card_css):
                 ui.label('按键/文案/音频/串口/图片 映射')
+                show_card_desc('按键/文案/音频/串口/图片 映射')
                 with ui.row():
                     switch_key_mapping_enable = ui.switch('启用', value=config.get("key_mapping", "enable")).style(switch_internal_css)
                     input_key_mapping_start_cmd = ui.input(
@@ -828,6 +842,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
 
         with ui.card().style(card_css):
             ui.label("洛曦 直播弹幕助手")
+            show_card_desc("洛曦 直播弹幕助手")
             with ui.row():
                 switch_luoxi_project_Live_Comment_Assistant_enable = ui.switch('启用', value=config.get("luoxi_project", "Live_Comment_Assistant", "enable")).style(switch_internal_css)
                 select_luoxi_project_Live_Comment_Assistant_version = ui.select(
@@ -911,6 +926,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "sd"):      
             with ui.card().style(card_css):
                 ui.label('Stable Diffusion')
+                show_card_desc('Stable Diffusion')
                 with ui.row():
                     switch_sd_enable = ui.switch('启用', value=config.get("sd", "enable")).style(switch_internal_css) 
                     select_sd_translate_type = ui.select(
@@ -949,6 +965,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "web_captions_printer"):
             with ui.card().style(card_css):
                 ui.label('web字幕打印机')
+                show_card_desc('web字幕打印机')
                 with ui.grid(columns=2):
                     switch_web_captions_printer_enable = ui.switch('启用', value=config.get("web_captions_printer", "enable")).style(switch_internal_css).tooltip("如果您使用了audio player来做音频播放，并开启了其web字幕打印机功能,\n那请勿启动此功能，因为这样就重复惹")
                     input_web_captions_printer_api_ip_port = ui.input(
@@ -965,6 +982,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "log"):
             with ui.card().style(card_css):
                 ui.label('日志')
+                show_card_desc('日志')
                 with ui.grid(columns=4):
                     switch_captions_enable = ui.switch('启用', value=config.get("captions", "enable")).style(switch_internal_css)
 
@@ -981,6 +999,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "database"):  
             with ui.card().style(card_css):
                 ui.label('数据库')
+                show_card_desc('数据库')
                 with ui.grid(columns=4):
                     switch_database_comment_enable = ui.switch('弹幕日志', value=config.get("database", "comment_enable")).style(switch_internal_css)
                     switch_database_entrance_enable = ui.switch('入场日志', value=config.get("database", "entrance_enable")).style(switch_internal_css)
@@ -991,6 +1010,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "custom_cmd"):  
             with ui.card().style(card_css):
                 ui.label('自定义命令')
+                show_card_desc('自定义命令')
                 with ui.row():
                     switch_custom_cmd_enable = ui.switch('启用', value=config.get("custom_cmd", "enable")).style(switch_internal_css)
                     select_custom_cmd_type = ui.select(
@@ -1027,6 +1047,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "trends_config"):  
             with ui.card().style(card_css):
                 ui.label('动态配置')
+                show_card_desc('动态配置')
                 with ui.row():
                     switch_trends_config_enable = ui.switch('启用', value=config.get("trends_config", "enable")).style(switch_internal_css)
                 trends_config_path_var = {}
@@ -1038,6 +1059,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
         if config.get("webui", "show_card", "common_config", "abnormal_alarm"): 
             with ui.card().style(card_css):
                 ui.label('异常报警')
+                show_card_desc('异常报警')
                 with ui.row():
                     switch_abnormal_alarm_platform_enable = ui.switch('启用平台报警', value=config.get("abnormal_alarm", "platform", "enable")).style(switch_internal_css)
                     select_abnormal_alarm_platform_type = ui.select(

@@ -7,7 +7,9 @@ from utils.my_log import logger
 from webui_app.confirm import delete_button
 from webui_app.errors import notify_error
 from webui_app.groups import GroupPicker
+from webui_app.descriptions import show_card_desc
 from webui_app.pages import PageConfig
+from webui_app.theme import INK
 
 
 def build_serial_tab(config, card_css, switch_internal_css, button_internal_color, button_internal_css):
@@ -116,6 +118,8 @@ def build_serial_tab(config, card_css, switch_internal_css, button_internal_colo
 
     # 串口配置组的增删原来直接铺在渐变面板上（同页其余区块都在卡片里），包进一张卡
     with ui.card().style(card_css + 'width:100%;'):
+        ui.label('串口').style(f'font-size:14px;font-weight:600;color:{INK};')
+        show_card_desc('串口')
         with ui.row():
             picker_serial = GroupPicker(lambda: serial_config_card, '串口', serial_config_del, lambda: serial_config_var).build()
             button_serial_config_add = ui.button('增加串口配置组', on_click=lambda: (serial_config_add(), picker_serial.refresh()), color=button_internal_color).style(button_internal_css)

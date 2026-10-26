@@ -6,6 +6,7 @@
 from nicegui import ui
 
 from webui_app.helpers import textarea_data_change
+from webui_app.descriptions import show_card_desc
 from webui_app.pages import PageConfig
 
 
@@ -18,6 +19,7 @@ def build_interact_filter_tab(config, card_css, switch_internal_css):
 
     with ui.card().style(card_css):
         ui.label('过滤')    
+        show_card_desc('过滤')
         with ui.grid(columns=6):
             textarea_filter_before_must_str = ui.textarea(label='弹幕触发前缀', placeholder='前缀必须携带其中任一字符串才能触发\n例如：配置#，那么这个会触发：#你好', value=textarea_data_change(config.get("filter", "before_must_str"))).style("width:200px;").tooltip("前缀必须携带其中任一字符串才能触发\n例如：配置#，那么这个会触发：#你好")
             textarea_filter_after_must_str = ui.textarea(label='弹幕触发后缀', placeholder='后缀必须携带其中任一字符串才能触发\n例如：配置。那么这个会触发：你好。', value=textarea_data_change(config.get("filter", "before_must_str"))).style("width:200px;").tooltip("后缀必须携带其中任一字符串才能触发\n例如：配置。那么这个会触发：你好。")

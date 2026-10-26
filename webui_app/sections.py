@@ -23,9 +23,9 @@ INK = '#111827'
 PAGE_SUBGROUPS = {
     '人设与大脑': [
         ('模型引擎 (LLM)', [
-            'openai', 'ollama', 'chatglm', 'chat_with_file', 'langchain',
+            'openai', 'ollama', 'chatglm', 'langchain',
             '智谱', '千帆', 'gemini', 'anythingllm', '通义千问', 'dify',
-            '百川', '自定义llm', 'llm_tpu', '火山引擎', 'volcengine'
+            '百川', '自定义llm', '火山引擎', 'volcengine'
         ]),
         ('人设与知识', ['对话与回复模板', '本地问答']),
         ('多模态与翻译', ['图像识别', '百度翻译', '谷歌翻译', '翻译设置', '翻译']),
@@ -40,7 +40,7 @@ PAGE_SUBGROUPS = {
         ]),
         ('语音合成 (TTS)', [
             'tts 语音合成调试', '合成测试', 'edge-tts', 'vits-simple-api', 'bert_vits2',
-            'vits-fast', 'elevenlabs', 'openai tts', 'gradio', 'gpt-sovits',
+            'elevenlabs', 'openai tts', 'gradio', 'gpt-sovits',
             'azure_tts', 'cosyvoice', 'f5-tts', 'multitts', 'melotts', 'index-tts'
         ]),
         ('语音识别 (STT)', [

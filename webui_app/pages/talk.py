@@ -2,6 +2,7 @@
 from nicegui import ui
 
 from utils.my_log import logger
+from webui_app.descriptions import show_card_desc
 from webui_app.helpers import textarea_data_change
 from webui_app.pages import PageConfig
 from webui_app.theme import INK
@@ -27,6 +28,7 @@ def build_talk_tab(config, common, state, card_css, switch_internal_css,
     # 语音拾音与 STT 配置卡片
     with ui.card().style(card_css + 'width:100%;'):
         ui.label('语音对话与拾音').style(f'font-size:14px;font-weight:600;color:{INK};')
+        show_card_desc('语音对话与拾音')
         with ui.row():
             switch_talk_key_listener_enable = ui.switch('启用按键监听', value=config.get("talk", "key_listener_enable")).style(switch_internal_css).tooltip("启用后，可以通过键盘单击下放配置的录音按键，启动语音识别对话功能")
             switch_talk_direct_run_talk = ui.switch('直接语音对话', value=config.get("talk", "direct_run_talk")).style(switch_internal_css).tooltip("如果启用了，将在首次运行时直接进行语音识别，而不需手动点击开始按键。针对有些系统按键无法触发的情况下，配合连续对话和唤醒词使用")
@@ -99,6 +101,7 @@ def build_talk_tab(config, common, state, card_css, switch_internal_css,
 
             with ui.card().style(card_css):
                 ui.label("清除类型")
+                show_card_desc("清除类型")
                 with ui.row():
                     talk_interrupt_clean_type_var = {}
                     for index, clean_type in enumerate(TALK_INTERRUPT_CLEAN_TYPE_LIST):

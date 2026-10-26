@@ -29,7 +29,6 @@ AUDIO_SYNTHESIS_TYPE_OPTIONS = {
     'edge-tts': 'Edge-TTS',
     'vits': 'VITS',
     'bert_vits2': 'bert_vits2',
-    'vits_fast': 'VITS-Fast',
     'elevenlabs': 'elevenlabs',
     'openai_tts': 'OpenAI TTS',
     'gradio_tts': 'Gradio',

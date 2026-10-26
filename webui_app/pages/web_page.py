@@ -8,6 +8,7 @@ from utils.my_log import logger
 from webui_app.config_store import update_config
 from webui_app.confirm import confirm, delete_button
 from webui_app.groups import GroupPicker
+from webui_app.descriptions import show_card_desc
 from webui_app.pages import PageConfig
 from webui_app.theme import INK, background_of, preview_css, readable_on
 
@@ -167,6 +168,7 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
 
     with ui.card().style(card_css):
         ui.label("webui配置")
+        show_card_desc("webui配置")
         with ui.row():
             input_webui_title = ui.input(label='标题', placeholder='webui的标题', value=config.get("webui", "title")).style("width:250px;")
             input_webui_ip = ui.input(label='IP地址', placeholder='webui监听的IP地址', value=config.get("webui", "ip")).style("width:150px;")
@@ -175,6 +177,7 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
     
     with ui.card().style(card_css):
         ui.label("本地路径指定URL路径访问")
+        show_card_desc("本地路径指定URL路径访问")
         with ui.row():
             picker_local_dir = GroupPicker(lambda: webui_local_dir_to_endpoint_config_card, '本地路径映射', webui_local_dir_to_endpoint_del, lambda: webui_local_dir_to_endpoint_config_var).build()
             button_webui_local_dir_to_endpoint_add = ui.button('增加配置组', on_click=lambda: (webui_local_dir_to_endpoint_add(), picker_local_dir.refresh()), color=button_internal_color).style(button_internal_css)
@@ -194,6 +197,7 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
 
     with ui.card().style(card_css):
         ui.label("CSS")
+        show_card_desc("CSS")
         theme_list = config.get("webui", "theme", "list")
         data_json = {}
         for line in theme_list.keys():
@@ -208,6 +212,7 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
 
     with ui.card().style(card_css):
         ui.label("配置模板")
+        show_card_desc("配置模板")
         with ui.row():
             # 获取指定路径下指定拓展名的文件名列表
             config_template_paths = common.get_specify_extension_names_in_folder("./", "*.json")
@@ -237,6 +242,7 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
 
     with ui.card().style(card_css):
         ui.label("板块显示/隐藏")
+        show_card_desc("板块显示/隐藏")
         
         with ui.card().style(card_css):
             ui.label("功能板块（已从 通用配置 拆到各页，关掉即从页面上移除）")
@@ -267,7 +273,6 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
             with ui.row():
                 switch_webui_show_card_llm_chatgpt = ui.switch('ChatGPT', value=config.get("webui", "show_card", "llm", "chatgpt")).style(switch_internal_css)
                 switch_webui_show_card_llm_zhipu = ui.switch('智谱AI', value=config.get("webui", "show_card", "llm", "zhipu")).style(switch_internal_css)
-                switch_webui_show_card_llm_chat_with_file = ui.switch('chat_with_file', value=config.get("webui", "show_card", "llm", "chat_with_file")).style(switch_internal_css)
                 switch_webui_show_card_llm_langchain_chatchat = ui.switch('langchain_chatchat', value=config.get("webui", "show_card", "llm", "langchain_chatchat")).style(switch_internal_css)
                 switch_webui_show_card_llm_tongyi = ui.switch('通义千问', value=config.get("webui", "show_card", "llm", "tongyi")).style(switch_internal_css)
                 switch_webui_show_card_llm_my_wenxinworkshop = ui.switch('千帆大模型', value=config.get("webui", "show_card", "llm", "my_wenxinworkshop")).style(switch_internal_css)
@@ -277,7 +282,6 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
                 switch_webui_show_card_llm_volcengine = ui.switch('火山引擎', value=config.get("webui", "show_card", "llm", "volcengine")).style(switch_internal_css)
                 
                 switch_webui_show_card_llm_custom_llm = ui.switch('自定义LLM', value=config.get("webui", "show_card", "llm", "custom_llm")).style(switch_internal_css)
-                switch_webui_show_card_llm_llm_tpu = ui.switch('LLM_TPU', value=config.get("webui", "show_card", "llm", "llm_tpu")).style(switch_internal_css)
                 
         with ui.card().style(card_css):
             ui.label("文本转语音")
@@ -285,7 +289,6 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
                 switch_webui_show_card_tts_edge_tts = ui.switch('Edge TTS', value=config.get("webui", "show_card", "tts", "edge-tts")).style(switch_internal_css)
                 switch_webui_show_card_tts_vits = ui.switch('VITS', value=config.get("webui", "show_card", "tts", "vits")).style(switch_internal_css)
                 switch_webui_show_card_tts_bert_vits2 = ui.switch('Bert VITS2', value=config.get("webui", "show_card", "tts", "bert_vits2")).style(switch_internal_css)
-                switch_webui_show_card_tts_vits_fast = ui.switch('VITS Fast', value=config.get("webui", "show_card", "tts", "vits_fast")).style(switch_internal_css)
                 switch_webui_show_card_tts_elevenlabs = ui.switch('elevenlabs', value=config.get("webui", "show_card", "tts", "elevenlabs")).style(switch_internal_css)
                 switch_webui_show_card_tts_openai_tts = ui.switch('openai_tts', value=config.get("webui", "show_card", "tts", "openai_tts")).style(switch_internal_css)
                 switch_webui_show_card_tts_gradio_tts = ui.switch('gradio', value=config.get("webui", "show_card", "tts", "gradio_tts")).style(switch_internal_css)
@@ -317,6 +320,7 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
     
     with ui.card().style(card_css):
         ui.label("账号管理")
+        show_card_desc("账号管理")
         with ui.row():
             switch_login_enable = ui.switch('登录功能', value=config.get("login", "enable")).style(switch_internal_css)
             input_login_username = ui.input(label='用户名', placeholder='您的账号喵，配置在config.json中', value=config.get("login", "username")).style("width:250px;")
@@ -356,14 +360,12 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
                     "llm": {
                         "chatgpt": (switch_webui_show_card_llm_chatgpt, 'bool'),
                         "zhipu": (switch_webui_show_card_llm_zhipu, 'bool'),
-                        "chat_with_file": (switch_webui_show_card_llm_chat_with_file, 'bool'),
                         "langchain_chatchat": (switch_webui_show_card_llm_langchain_chatchat, 'bool'),
                         "tongyi": (switch_webui_show_card_llm_tongyi, 'bool'),
                         "my_wenxinworkshop": (switch_webui_show_card_llm_my_wenxinworkshop, 'bool'),
                         "gemini": (switch_webui_show_card_llm_gemini, 'bool'),
                         "anythingllm": (switch_webui_show_card_llm_anythingllm, 'bool'),
                         "custom_llm": (switch_webui_show_card_llm_custom_llm, 'bool'),
-                        "llm_tpu": (switch_webui_show_card_llm_llm_tpu, 'bool'),
                         "dify": (switch_webui_show_card_llm_dify, 'bool'),
                         "volcengine": (switch_webui_show_card_llm_volcengine, 'bool'),
                     },
@@ -371,7 +373,6 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
                         "edge-tts": (switch_webui_show_card_tts_edge_tts, 'bool'),
                         "vits": (switch_webui_show_card_tts_vits, 'bool'),
                         "bert_vits2": (switch_webui_show_card_tts_bert_vits2, 'bool'),
-                        "vits_fast": (switch_webui_show_card_tts_vits_fast, 'bool'),
                         "elevenlabs": (switch_webui_show_card_tts_elevenlabs, 'bool'),
                         "openai_tts": (switch_webui_show_card_tts_openai_tts, 'bool'),
                         "gradio_tts": (switch_webui_show_card_tts_gradio_tts, 'bool'),

@@ -21,7 +21,6 @@ PROVIDERS = {
     "gemini": ("utils.gpt_model.gemini", "Gemini"),
     "anythingllm": ("utils.gpt_model.anythingllm", "AnythingLLM"),
     "custom_llm": ("utils.gpt_model.custom_llm", "Custom_LLM"),
-    "llm_tpu": ("utils.gpt_model.llm_tpu", "LLM_TPU"),
     "dify": ("utils.gpt_model.dify", "Dify"),
     "volcengine": ("utils.gpt_model.volcengine", "VolcEngine"),
 }

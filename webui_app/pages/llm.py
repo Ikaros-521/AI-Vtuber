@@ -4,6 +4,7 @@ import asyncio
 from nicegui import ui
 
 from utils.my_log import logger
+from webui_app.descriptions import show_card_desc
 from webui_app.helpers import common_textarea_handle, textarea_data_change
 from webui_app.pages import PageConfig
 
@@ -87,6 +88,7 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
     if config.get("webui", "show_card", "llm", "chatgpt"):
         with ui.card().style(card_css):
             ui.label("OpenAI / Ollama / 通用模型")
+            show_card_desc("OpenAI / 兼容接口")
             with ui.row():
                 input_openai_api = ui.input(
                     label='API地址', 
@@ -149,40 +151,10 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
 
     
     
-    if config.get("webui", "show_card", "llm", "chat_with_file"):
-        with ui.card().style(card_css):
-            ui.label("chat_with_file")
-            with ui.row():
-                lines = [ "openai_gpt", "openai_vector_search"]
-                data_json = {}
-                for line in lines:
-                    data_json[line] = line
-                select_chat_with_file_chat_mode = ui.select(
-                    label='聊天模式', 
-                    options=data_json, 
-                    value=config.get("chat_with_file", "chat_mode")
-                )
-                input_chat_with_file_data_path = ui.input(label='数据文件路径', placeholder='加载的本地zip数据文件路径（到x.zip）, 如：./data/伊卡洛斯百度百科.zip', value=config.get("chat_with_file", "data_path"))
-                input_chat_with_file_data_path.style("width:400px")
-            with ui.row():
-                input_chat_with_file_separator = ui.input(label='分隔符', placeholder='拆分文本的分隔符，这里使用 换行符 作为分隔符。', value=config.get("chat_with_file", "separator"))
-                input_chat_with_file_separator.style("width:300px")
-                input_chat_with_file_chunk_size = ui.input(label='块大小', placeholder='每个文本块的最大字符数(文本块字符越多，消耗token越多，回复越详细)', value=config.get("chat_with_file", "chunk_size"))
-                input_chat_with_file_chunk_size.style("width:300px")
-                input_chat_with_file_chunk_overlap = ui.input(label='块重叠', placeholder='两个相邻文本块之间的重叠字符数。这种重叠可以帮助保持文本的连贯性，特别是当文本被用于训练语言模型或其他需要上下文信息的机器学习模型时', value=config.get("chat_with_file", "chunk_overlap"))
-                input_chat_with_file_chunk_overlap.style("width:300px")
-            with ui.row():
-                input_chat_with_file_chain_type = ui.input(label='链类型', placeholder='指定要生成的语言链的类型，例如：stuff', value=config.get("chat_with_file", "chain_type"))
-                input_chat_with_file_chain_type.style("width:300px")
-                input_chat_with_file_question_prompt = ui.input(label='问题总结提示词', placeholder='通过LLM总结本地向量数据库输出内容，此处填写总结用提示词', value=config.get("chat_with_file", "question_prompt"))
-                input_chat_with_file_question_prompt.style("width:300px")
-                input_chat_with_file_local_max_query = ui.input(label='最大查询数据库次数', placeholder='最大查询数据库次数。限制次数有助于节省token', value=config.get("chat_with_file", "local_max_query"))
-                input_chat_with_file_local_max_query.style("width:300px")
-                switch_chat_with_file_show_token_cost = ui.switch('显示成本', value=config.get("chat_with_file", "show_token_cost")).style(switch_internal_css)
-    
     if config.get("webui", "show_card", "llm", "langchain_chatchat"):  
         with ui.card().style(card_css):
             ui.label("Langchain_ChatChat")
+            show_card_desc("Langchain_ChatChat")
             with ui.row():
                 input_langchain_chatchat_api_ip_port = ui.input(
                     label='API地址', 
@@ -246,6 +218,7 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
     if config.get("webui", "show_card", "llm", "zhipu"):  
         with ui.card().style(card_css):
             ui.label("智谱AI")
+            show_card_desc("智谱AI")
             with ui.row():
                 input_zhipu_api_key = ui.input(label='api key', placeholder='具体参考官方文档，申请地址：https://open.bigmodel.cn/usercenter/apikeys', value=config.get("zhipu", "api_key"))
                 input_zhipu_api_key.style("width:200px")
@@ -318,6 +291,7 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
     if config.get("webui", "show_card", "llm", "my_wenxinworkshop"): 
         with ui.card().style(card_css):
             ui.label("千帆大模型")
+            show_card_desc("千帆大模型")
             with ui.row():
                 select_my_wenxinworkshop_type = ui.select(
                     label='类型', 
@@ -377,6 +351,7 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
     if config.get("webui", "show_card", "llm", "gemini"):
         with ui.card().style(card_css):
             ui.label("Gemini")
+            show_card_desc("Gemini")
             with ui.row():
                 input_gemini_api_key = ui.input(label='api_key', value=config.get("gemini", "api_key"), placeholder='谷歌AI Studio创建api key')
                 lines = [
@@ -404,6 +379,7 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
     if config.get("webui", "show_card", "llm", "anythingllm"):
         with ui.card().style(card_css):
             ui.label("AnythingLLM")
+            show_card_desc("AnythingLLM")
             with ui.row():
                 input_anythingllm_api_ip_port = ui.input(
                     label='API地址', 
@@ -456,6 +432,7 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
     if config.get("webui", "show_card", "llm", "tongyi"):           
         with ui.card().style(card_css):
             ui.label("通义千问/阿里云百炼")
+            show_card_desc("通义千问/阿里云百炼")
             with ui.row():
                 lines = ['web', 'api']
                 data_json = {}
@@ -510,6 +487,7 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
     if config.get("webui", "show_card", "llm", "dify"):
         with ui.card().style(card_css):
             ui.label("Dify")
+            show_card_desc("Dify")
             with ui.row():
                 input_dify_api_ip_port = ui.input(
                     label="API地址", 
@@ -536,6 +514,7 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
     if config.get("webui", "show_card", "llm", "volcengine"):
         with ui.card().style(card_css):
             ui.label("火山引擎")
+            show_card_desc("火山引擎")
             with ui.row():
                 input_volcengine_model = ui.input(label='模型ID', value=config.get("volcengine", "model"), placeholder='推理接入点名称').tooltip('推理接入点名称')
                 
@@ -549,6 +528,7 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
     if config.get("webui", "show_card", "llm", "custom_llm"):
         with ui.card().style(card_css):
             ui.label("自定义LLM")
+            show_card_desc("自定义LLM")
             with ui.row():
                 textarea_custom_llm_url = ui.textarea(
                     label=f"API URL", 
@@ -567,27 +547,6 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
                 select_custom_llm_resp_data_type = ui.select(label=f"请求返回数据类型", value=config.get("custom_llm", "resp_data_type"), options={"json": "json", "content": "content"}).style("width:150px;").tooltip('请求返回数据类型')
                 textarea_custom_llm_data_analysis = ui.textarea(label=f"数据解析（eval执行）", value=config.get("custom_llm", "data_analysis"), placeholder='数据解析，请不要随意修改resp变量，会被用于最后返回数据内容的解析').style("width:300px;").tooltip('数据解析，请不要随意修改resp变量，会被用于最后返回数据内容的解析')
                 textarea_custom_llm_resp_template = ui.textarea(label=f"返回内容模板", value=config.get("custom_llm", "resp_template"), placeholder='请不要随意删除data变量，支持动态变量，最终会合并成完成内容进行音频合成').style("width:300px;").tooltip('请不要随意删除data变量，支持动态变量，最终会合并成完成内容进行音频合成')
-
-    if config.get("webui", "show_card", "llm", "llm_tpu"): 
-        with ui.card().style(card_css):
-            ui.label("LLM_TPU")
-            with ui.row():
-                input_llm_tpu_api_ip_port = ui.input(
-                    label='API地址', 
-                    value=config.get("llm_tpu", "api_ip_port"), 
-                    placeholder='llm_tpu启动gradio web demo后监听的ip端口地址',
-                    validation={
-                        '请输入正确格式的URL': lambda value: common.is_url_check(value),
-                    }
-                )
-                switch_llm_tpu_history_enable = ui.switch('上下文记忆', value=config.get("llm_tpu", "history_enable")).style(switch_internal_css)
-                input_llm_tpu_history_max_len = ui.input(label='最大记忆长度', value=config.get("llm_tpu", "history_max_len"), placeholder='最长能记忆的问答字符串长度，超长会丢弃最早记忆的内容，请慎用！配置过大可能会有丢大米')
-            
-            with ui.row():
-                input_llm_tpu_max_length = ui.input(label='max_length', value=config.get("llm_tpu", "max_length"), placeholder='max_length').style("width:200px;")
-                input_llm_tpu_temperature = ui.input(label='温度', value=config.get("llm_tpu", "temperature"), placeholder='(0, 1.0] 控制生成文本的随机性。较高的温度值会使生成的文本更随机和多样化，而较低的温度值会使生成的文本更加确定和一致。').style("width:200px;")
-                input_llm_tpu_top_p = ui.input(label='前p个选择', value=config.get("llm_tpu", "top_p"), placeholder='[0, 1.0] Nucleus采样。这个参数控制模型从累积概率大于一定阈值的令牌中进行采样。较高的值会产生更多的多样性，较低的值会产生更少但更确定的回答。').style("width:200px;")
-                
 
     def save_openai(config_data):
         if config.get("webui", "show_card", "llm", "chatgpt"):
@@ -612,18 +571,6 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
 
 
 
-    if config.get("webui", "show_card", "llm", "chat_with_file"):
-        mapping["chat_with_file"] = {
-            "chat_mode": (select_chat_with_file_chat_mode, 'str'),
-            "data_path": (input_chat_with_file_data_path, 'str'),
-            "separator": (input_chat_with_file_separator, 'str'),
-            "chunk_size": (input_chat_with_file_chunk_size, 'int'),
-            "chunk_overlap": (input_chat_with_file_chunk_overlap, 'int'),
-            "chain_type": (input_chat_with_file_chain_type, 'str'),
-            "question_prompt": (input_chat_with_file_question_prompt, 'str'),
-            "local_max_query": (input_chat_with_file_local_max_query, 'int'),
-            "show_token_cost": (switch_chat_with_file_show_token_cost, 'bool'),
-        }
     if config.get("webui", "show_card", "llm", "langchain_chatchat"):
         mapping["langchain_chatchat"] = {
             "api_ip_port": (input_langchain_chatchat_api_ip_port, 'str'),
@@ -756,16 +703,4 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
             "data_analysis": (textarea_custom_llm_data_analysis, 'str'),
             "resp_template": (textarea_custom_llm_resp_template, 'str'),
         }
-    if config.get("webui", "show_card", "llm", "llm_tpu"):
-        mapping["llm_tpu"] = {
-            "api_ip_port": (input_llm_tpu_api_ip_port, 'str'),
-            "history_enable": (switch_llm_tpu_history_enable, 'bool'),
-            "history_max_len": (input_llm_tpu_history_max_len, 'int'),
-            "max_length": (input_llm_tpu_max_length, 'float'),
-            "temperature": (input_llm_tpu_temperature, 'float'),
-            "top_p": (input_llm_tpu_top_p, 'float'),
-        }
-
-
-
     return PageConfig(mapping=mapping, on_save=save_openai)

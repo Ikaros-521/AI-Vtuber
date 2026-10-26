@@ -1,6 +1,7 @@
 """变声页：DDSP-SVC 与 SO-VITS-SVC 参数。"""
 from nicegui import ui
 
+from webui_app.descriptions import show_card_desc
 from webui_app.pages import PageConfig
 
 
@@ -10,6 +11,7 @@ def build_svc_tab(config, common, card_css, switch_internal_css):
     if config.get("webui", "show_card", "svc", "ddsp_svc"):
         with ui.card().style(card_css):
             ui.label("DDSP-SVC")
+            show_card_desc("DDSP-SVC")
             with ui.row():
                 switch_ddsp_svc_enable = ui.switch('启用', value=config.get("ddsp_svc", "enable")).style(switch_internal_css)
                 input_ddsp_svc_config_path = ui.input(label='配置文件路径', placeholder='模型配置文件config.yaml的路径(此处可以不配置，暂时没有用到)', value=config.get("ddsp_svc", "config_path"))
@@ -48,6 +50,7 @@ def build_svc_tab(config, common, card_css, switch_internal_css):
     if config.get("webui", "show_card", "svc", "so_vits_svc"):
         with ui.card().style(card_css):
             ui.label("SO-VITS-SVC")
+            show_card_desc("SO-VITS-SVC")
             with ui.row():
                 switch_so_vits_svc_enable = ui.switch('启用', value=config.get("so_vits_svc", "enable")).style(switch_internal_css)
                 input_so_vits_svc_config_path = ui.input(label='配置文件路径', placeholder='模型配置文件config.json的路径', value=config.get("so_vits_svc", "config_path"))

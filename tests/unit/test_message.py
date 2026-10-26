@@ -43,9 +43,9 @@ def test_overriding_the_tts_also_moves_the_data_section():
 
 
 def test_missing_tts_section_yields_none_instead_of_raising():
-    message = build(FakeConfig({"audio_synthesis_type": "vits_fast"}), "reread", "甲", "复读")
+    message = build(FakeConfig({"audio_synthesis_type": "edge-tts"}), "reread", "甲", "复读")
 
-    assert message["tts_type"] == "vits_fast"
+    assert message["tts_type"] == "edge-tts"
     assert message["data"] is None
     assert message["config"] is None
 

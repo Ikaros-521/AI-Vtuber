@@ -8,6 +8,7 @@ from utils.my_log import logger
 from webui_app.confirm import confirm_delete_file, delete_button
 from webui_app.groups import GroupPicker
 from webui_app.helpers import AUDIO_SYNTHESIS_TYPE_OPTIONS, common_textarea_handle, textarea_data_change
+from webui_app.descriptions import show_card_desc
 from webui_app.pages import PageConfig
 from webui_app.theme import INK
 
@@ -121,6 +122,7 @@ def build_copywriting_tab(config, common, audio, card_css, switch_internal_css,
     # 自动播放与文案组的增删原来直接铺在渐变面板上（同页其他区块都在卡片里），包进一张卡
     with ui.card().style(card_css + 'width:100%;'):
         ui.label('播放控制').style(f'font-size:14px;font-weight:600;color:{INK};')
+        show_card_desc('播放控制')
         with ui.row():
             switch_copywriting_auto_play = ui.switch('自动播放', value=config.get("copywriting", "auto_play")).style(switch_internal_css)
             switch_copywriting_random_play = ui.switch('音频随机播放', value=config.get("copywriting", "random_play")).style(switch_internal_css)
@@ -143,6 +145,7 @@ def build_copywriting_tab(config, common, audio, card_css, switch_internal_css,
 
     with ui.card().style(card_css):
         ui.label("文案音频合成")
+        show_card_desc("文案音频合成")
         with ui.row():
             input_copywriting_text_path = ui.input(label='文案文本路径', value=config.get("copywriting", "text_path"), placeholder='待合成的文案文本文件的路径').style("width:250px;").tooltip('待合成的文案文本文件的路径')
             button_copywriting_text_load = ui.button('加载文本', on_click=copywriting_text_load, color=button_internal_color).style(button_internal_css)

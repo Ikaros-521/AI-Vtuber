@@ -2,6 +2,7 @@
 from nicegui import ui
 
 from utils.my_log import logger
+from webui_app.descriptions import show_card_desc
 from webui_app.pages import PageConfig
 
 
@@ -11,6 +12,7 @@ def build_visual_body_tab(config, common, card_css, switch_internal_css):
     if config.get("webui", "show_card", "visual_body", "live2d"):
         with ui.card().style(card_css):
             ui.label("Live2D")
+            show_card_desc("Live2D")
             with ui.row():
                 switch_live2d_enable = ui.switch('启用', value=config.get("live2d", "enable")).style(switch_internal_css)
                 input_live2d_port = ui.input(label='端口', value=config.get("live2d", "port"), placeholder='web服务运行的端口号，默认：12345，范围:0-65535，没事不要乱改就好')
@@ -36,6 +38,7 @@ def build_visual_body_tab(config, common, card_css, switch_internal_css):
     if config.get("webui", "show_card", "visual_body", "EasyAIVtuber"):
         with ui.card().style(card_css):
             ui.label("EasyAIVtuber")
+            show_card_desc("EasyAIVtuber")
             with ui.row():
                 input_EasyAIVtuber_api_ip_port = ui.input(
                     label='API地址',
@@ -53,6 +56,7 @@ def build_visual_body_tab(config, common, card_css, switch_internal_css):
     if config.get("webui", "show_card", "visual_body", "digital_human_video_player"):
         with ui.card().style(card_css):
             ui.label("数字人视频播放器")
+            show_card_desc("数字人视频播放器")
             with ui.row():
                 select_digital_human_video_player_type = ui.select(
                     label='类型',
@@ -82,6 +86,7 @@ def build_visual_body_tab(config, common, card_css, switch_internal_css):
     if config.get("webui", "show_card", "visual_body", "metahuman_stream"):
         with ui.card().style(card_css):
             ui.label("metahuman_stream")
+            show_card_desc("metahuman_stream")
             with ui.row():
                 select_metahuman_stream_type = ui.select(
                     label='类型',
@@ -105,6 +110,7 @@ def build_visual_body_tab(config, common, card_css, switch_internal_css):
     if config.get("webui", "show_card", "visual_body", "live2d_TTS_LLM_GPT_SoVITS_Vtuber"):
         with ui.card().style(card_css):
             ui.label("live2d_TTS_LLM_GPT_SoVITS_Vtuber")
+            show_card_desc("live2d_TTS_LLM_GPT_SoVITS_Vtuber")
             with ui.row():
                 input_live2d_TTS_LLM_GPT_SoVITS_Vtuber_api_ip_port = ui.input(
                     label='API地址',
@@ -122,6 +128,7 @@ def build_visual_body_tab(config, common, card_css, switch_internal_css):
     if config.get("webui", "show_card", "visual_body", "xuniren"):
         with ui.card().style(card_css):
             ui.label("xuniren")
+            show_card_desc("xuniren")
             with ui.row():
                 input_xuniren_api_ip_port = ui.input(
                     label='API地址',
@@ -139,6 +146,7 @@ def build_visual_body_tab(config, common, card_css, switch_internal_css):
     if config.get("webui", "show_card", "visual_body", "unity"):
         with ui.card().style(card_css):
             ui.label("Unity")
+            show_card_desc("Unity")
             with ui.row():
                 input_unity_api_ip_port = ui.input(
                     label='API地址',
