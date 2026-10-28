@@ -1,3 +1,10 @@
+"""[已停用] NiceGUI 版老前端（v2）。
+
+v3 起 WebUI 由 webui_server（FastAPI）+ webui_react（React）提供，启动方式：
+    python -m webui_server
+这个文件仅作为回退保留：v3 缺少你需要的功能时可以临时用它（两边读写同一份 config.json），
+后续版本会移除。日常使用请不要再从 webui.py 启动。
+"""
 from nicegui import ui, app
 import sys, os, json
 import traceback

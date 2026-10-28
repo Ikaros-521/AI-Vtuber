@@ -22,9 +22,11 @@ cd webui_react && npm run dev
 ## 构建与部署
 
 ```bash
-npm run build    # tsc 类型检查 + vite 构建，产物在 dist/
+npm run build    # tsc 类型检查 + vite 构建，产物在 dist/（带 hash 文件名，已提交仓库）
 python -m webui_server   # 后端自动托管 dist/，单端口即可用
 ```
+
+`dist/` 随仓库分发，普通使用者不需要 Node；改了前端代码才需要重新构建并把产物一起提交。
 
 ## 架构
 

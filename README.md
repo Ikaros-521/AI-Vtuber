@@ -61,13 +61,38 @@ https://lug.ustc.edu.cn/wiki/doc/smart-questions
 
 [![][github-codespace-shield]][github-codespace-link]  
 
+### 启动 WebUI（v3）
+
+v3 起 WebUI 是 `webui_server`（FastAPI 后端）+ `webui_react`（React 前端），单端口运行：
+
+```bash
+python -m webui_server          # 默认读 config.json 的 webui.ip / webui.port
+WEBUI_V3_PORT=8082 python -m webui_server   # 端口被占时用环境变量错开
+```
+
+浏览器打开 `http://127.0.0.1:<webui.port>` 即可，`Scripts/1.双击我启动程序.bat` 已指向它。
+前端构建产物（`webui_react/dist/`）随仓库分发，普通使用**不需要装 Node**。
+
+改前端代码才需要 Node（仅开发）：
+
+```bash
+cd webui_react
+npm install && npm run build    # 重新构建，产物在 dist/（带 hash 文件名，提交仓库）
+npm run dev                     # 开发模式：5173 端口，/api 自动代理到本地的 webui_server
+```
+
+> 旧版 `webui.py`（NiceGUI 服务端渲染）已停用，仅作回退保留：v3 缺你需要的交互时可临时
+> `python webui.py` 起老界面（两边读写同一份 config.json），后续版本会移除。
+> 对 main.py 的 `/set_config` `/sys_cmd` `/send` `/callback` `/tts` `/llm` 接口由
+> `webui_server` 原样提供，外部脚本无需改动。
+
 ### 依赖分层
 
 `requirements/` 按功能分组，跑起来只需要核心组，其余按用到的功能加装：
 
 | 分组 | 内容 | 何时需要 |
 | --- | --- | --- |
-| `core.txt` | WebUI（nicegui 3）、本地对话、edge-tts、拾音、文本处理 | 必装（82 个包） |
+| `core.txt` | WebUI（FastAPI 后端 + React 前端，另含已停用的 nicegui 老前端）、本地对话、edge-tts、拾音、文本处理 | 必装（82 个包） |
 | `llm.txt` | 智谱/通义/千帆/Gemini/火山引擎/Dify 等模型 SDK | 选用对应 `chat_type` |
 | `tts.txt` | elevenlabs、Azure TTS、gradio_client | 选用对应 TTS |
 | `asr.txt` | FunASR、Faster-Whisper（会带 torch） | 本地语音识别 |

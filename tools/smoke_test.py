@@ -144,12 +144,13 @@ def check_webui(timeout):
 
         env = os.environ.copy()
         env["LUNA_CONFIG_PATH"] = str(test_config)
+        env["WEBUI_V3_PORT"] = str(port)
         env["PYTHONIOENCODING"] = "utf-8"
         env["PYTHONUTF8"] = "1"
 
         with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
             proc = subprocess.Popen(
-                [sys.executable, "webui.py"],
+                [sys.executable, "-m", "webui_server"],
                 cwd=ROOT,
                 stdout=stdout,
                 stderr=stderr,
