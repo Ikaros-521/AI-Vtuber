@@ -58,10 +58,29 @@ export const api = {
 
   // ---------- 动作按钮与文件 ----------
   action: (id: string, payload?: Record<string, unknown>) =>
-    post<ApiResult & { items?: string[]; models?: string[] }>(`/api/actions/${id}`, payload ?? {}),
+    post<ApiResult & { items?: string[]; models?: string[]; audio_path?: string; tts_type?: string }>(`/api/actions/${id}`, payload ?? {}),
   fileGet: (path: string) => get<ApiResult & { content: string }>(`/api/file?path=${encodeURIComponent(path)}`),
   filePut: (path: string, content: string) =>
     request<ApiResult>('/api/file', { method: 'PUT', body: JSON.stringify({ path, content }) }),
+
+  // ---------- 登录 ----------
+  authStatus: () => get<ApiResult & { enabled: boolean; authed: boolean; username?: string }>('/api/auth/status'),
+  authLogin: (username: string, password: string) => post<ApiResult>('/api/auth/login', { username, password }),
+  authLogout: () => post<ApiResult>('/api/auth/logout'),
+
+  // ---------- 数据分析 ----------
+  dataAnalysis: (top: number) =>
+    get<ApiResult & Record<string, unknown>>(`/api/data-analysis?top=${top}`),
+}
+
+/** 试听音频的播放地址（后端流式读文件）。 */
+export function audioUrl(path: string): string {
+  return `/api/audio?path=${encodeURIComponent(path)}`
+}
+
+export interface BarDataset {
+  users: string[]
+  series: { name?: string; data: unknown[] }[]
 }
 
 export interface ChatMessage {

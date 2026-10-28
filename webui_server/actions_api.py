@@ -244,6 +244,166 @@ async def serial_send(req: SerialSendRequest):
         return {"code": -1, "message": f"发送串口数据失败：{e}"}
 
 
+# ---------- 声卡输入设备 / vits 说话人（结果以 toast 呈现，值仍手填） ----------
+
+@router.get("/actions/audio-devices")
+def audio_devices():
+    try:
+        devices = runtime.common.get_all_audio_device_info("in")
+        items = [str(d["device_index"]) for d in devices]
+        listing = "；".join(f"{d['device_index']}={d['device_info']}" for d in devices) or "没枚举到输入设备"
+        return {"code": 200, "items": items, "message": f"声卡输入设备：{listing}"}
+    except Exception as e:
+        return {"code": -1, "message": f"枚举声卡失败：{e}"}
+
+
+class VitsSpeakersRequest(BaseModel):
+    api_ip_port: str = ""
+
+
+@router.post("/actions/vits-speakers")
+async def vits_speakers(req: VitsSpeakersRequest):
+    try:
+        from urllib.parse import urljoin
+
+        resp_data = await runtime.common.send_async_request(
+            urljoin(req.api_ip_port, "/voice/speakers"), "GET", resp_data_type="json")
+        speakers = []
+        if isinstance(resp_data, list):
+            for s in resp_data:
+                sid = s.get("id")
+                name = s.get("name", "")
+                speakers.append(f"{sid} · {name}" if name else str(sid))
+        if not speakers:
+            return {"code": -1, "message": f"接口没返回说话人列表：{str(resp_data)[:120]}"}
+        return {"code": 200, "items": speakers, "message": "说话人（ID · 名称）：" + "；".join(speakers[:20])}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "message": f"检索说话人失败：{e}"}
+
+
+# ---------- TTS 试听：用已保存的配置合成一段音频 ----------
+
+class TtsTestRequest(BaseModel):
+    content: str
+    username: str = "主播"
+
+
+@router.post("/actions/tts-test")
+async def tts_test(req: TtsTestRequest):
+    """按 config.json 当前保存的 TTS 配置合成音频，返回文件路径供 /api/audio 播放。
+
+    界面上未保存的改动不参与合成——先点「保存配置」再试听。
+    """
+    content = req.content.strip()
+    if not content:
+        return {"code": -1, "message": "先输入要合成的文本"}
+    try:
+        config = runtime.read_config()
+        tts_type = config.get("audio_synthesis_type")
+        if not tts_type or tts_type == "none":
+            return {"code": -1, "message": "当前「语音合成」选的是 不启用，先去 直播接入 选一个引擎并保存"}
+
+        message = {
+            "type": "reread",
+            "tts_type": tts_type,
+            "data": config.get(tts_type) or {},
+            "config": config.get("filter") or {},
+            "username": req.username,
+            "content": content,
+        }
+        resp = await runtime.audio.tts_handle(message)
+        # tts_handle 把合成结果塞在 message["result"] 里（code/msg/audio_path）
+        result = (resp or {}).get("result") or {}
+        audio_path = result.get("audio_path")
+        if not audio_path:
+            return {"code": -1, "message": f"合成失败：{result.get('msg') or '没拿到音频路径'}"}
+        return {"code": 200, "message": "合成成功", "audio_path": str(audio_path), "tts_type": tts_type}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "message": f"合成失败：{e}"}
+
+
+AUDIO_MEDIA_TYPES = {
+    ".wav": "audio/wav", ".mp3": "audio/mpeg", ".ogg": "audio/ogg",
+    ".flac": "audio/flac", ".silk": "audio/silk", ".m4a": "audio/mp4",
+}
+
+
+@router.get("/audio")
+def audio_file(path: str):
+    from fastapi.responses import FileResponse
+
+    p = Path(path)
+    if not p.is_file():
+        return {"code": -1, "message": f"音频文件不存在：{path}"}
+    return FileResponse(str(p), media_type=AUDIO_MEDIA_TYPES.get(p.suffix.lower(), "application/octet-stream"))
+
+
+# ---------- 数据分析：词云 / 榜单原始数据（前端画条形图） ----------
+
+@router.get("/data-analysis")
+def data_analysis(top: int = 10):
+    try:
+        from utils.data_analysis import Data_Analysis
+
+        da = Data_Analysis(runtime.config_path)
+        out = {}
+
+        word_option = da.get_comment_word_cloud_option(top)
+        if word_option:
+            out["words"] = word_option["series"][0]["data"]  # [{name, value}]
+
+        def extract_bar(option, column=None):
+            """从 echart option 抽 (users, values)。
+
+            积分类榜单的数据在 dataset.source（行式原始数据，dimensions 是列名），
+            礼物榜是老式 xAxis.data + series[0].data，两种都兼容。
+            """
+            if not option:
+                return None
+            dataset = option.get("dataset")
+            if isinstance(dataset, list) and dataset:
+                dims = dataset[0].get("dimensions", [])
+                source = dataset[0].get("source", [])
+                pick = column if column in dims else (column or None)
+                if pick is None or pick not in dims:
+                    # 没指定列名时取第一个数值列兜底
+                    numeric = [d for d in dims if source and isinstance(source[0][dims.index(d)], (int, float))]
+                    pick = numeric[0] if numeric else dims[-1]
+                idx = dims.index(pick)
+                user_idx = dims.index("username") if "username" in dims else 0
+                users = [str(row[user_idx]) for row in source]
+                values = [row[idx] for row in source]
+                return {"users": users, "series": [{"name": pick, "data": values}]}
+
+            xAxis = option.get("xAxis", {})
+            if isinstance(xAxis, list):
+                xAxis = xAxis[0] if xAxis else {}
+            users = xAxis.get("data", []) if isinstance(xAxis, dict) else []
+            if not users:
+                # 横向条形图（礼物榜）用户名挂在 yAxis 上
+                yAxis = option.get("yAxis", {})
+                if isinstance(yAxis, list):
+                    yAxis = yAxis[0] if yAxis else {}
+                users = yAxis.get("data", []) if isinstance(yAxis, dict) else []
+            series = [
+                {"name": s.get("name"), "data": s.get("data", [])}
+                for s in option.get("series", [])
+            ]
+            return {"users": users, "series": series}
+
+        out["integral"] = extract_bar(da.get_integral_option("integral", top), "integral")
+        out["view_num"] = extract_bar(da.get_integral_option("view_num", top), "view_num")
+        out["sign_num"] = extract_bar(da.get_integral_option("sign_num", top), "sign_num")
+        out["total_price"] = extract_bar(da.get_integral_option("total_price", top), "total_price")
+        out["gift"] = extract_bar(da.get_gift_option(top))
+        return {"code": 200, **out}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "message": f"数据分析失败：{e}"}
+
+
 # ---------- 图像识别：截图并发送（一次性） ----------
 
 class ImgScreenshotRequest(BaseModel):

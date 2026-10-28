@@ -4,6 +4,8 @@ import { sectionVisible } from '../schema'
 import { fieldIdOf, type Section } from '../schema/types'
 import { FieldControl } from './FieldControl'
 import { DocsCard, SectionToggleWall } from './SystemExtras'
+import { DataAnalysisCard } from './DataAnalysisCard'
+import { TtsTester } from './VoiceExtras'
 
 export function SectionCard({
   section,
@@ -32,6 +34,17 @@ export function SectionCard({
     return (
       <section data-section-id={`${workspaceId}__${section.id}`}>
         <DocsCard />
+      </section>
+    )
+  }
+  if (section.custom === 'tts-tester' || section.custom === 'data-analysis') {
+    return (
+      <section data-section-id={`${workspaceId}__${section.id}`} className="card-surface p-5">
+        <h3 className="text-[15px] font-semibold">{section.title}</h3>
+        {section.desc && <p className="mt-1 text-xs leading-relaxed text-[var(--ink-mut)]">{section.desc}</p>}
+        <div className="mt-3">
+          {section.custom === 'tts-tester' ? <TtsTester /> : <DataAnalysisCard />}
+        </div>
       </section>
     )
   }

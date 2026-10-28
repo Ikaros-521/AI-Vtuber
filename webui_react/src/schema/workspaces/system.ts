@@ -68,7 +68,12 @@ export const systemWorkspace: Workspace = {
         {
           id: 'data-analysis',
           title: '数据分析',
-          desc: '词云与榜单的取数参数。图表本体还在 v2 WebUI（echart），这里先把参数迁过来。',
+          custom: 'data-analysis',
+          desc: '弹幕关键词与积分/观看/签到/金额/礼物榜单，数据来自数据库（data/data.db），直播运行中自动积累。',
+        },
+        {
+          id: 'data-analysis-params',
+          title: '数据分析参数',
           rows: [
             [
               { kind: 'number', key: ['data_analysis', 'comment_word_cloud', 'top_num'], label: '词云前N个关键词', w: 'sm', int: true, placeholder: '筛选前N个弹幕关键词做为词云数据' },

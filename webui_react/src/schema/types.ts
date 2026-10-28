@@ -21,6 +21,9 @@ export type ActionId =
   | 'serial-send'
   | 'img-screenshot'
   | 'live2d-models'
+  | 'audio-devices'
+  | 'vits-speakers'
+  | 'tts-test'
 
 export interface FieldBase {
   /** config.json 里的路径；在 group-list 内为相对条目路径（渲染时拼上基座路径） */
@@ -85,8 +88,8 @@ export interface Section {
   showCard?: [page: string, key: string]
   rows?: Field[][]
   cards?: Section[]
-  /** 专用组件标记（板块开关墙 / 文档与关于），由 WorkspacePage 分发渲染 */
-  custom?: 'section-toggles' | 'docs'
+  /** 专用组件标记（板块开关墙 / 文档与关于 / TTS试听 / 数据分析），由 WorkspacePage 分发渲染 */
+  custom?: 'section-toggles' | 'docs' | 'tts-tester' | 'data-analysis'
 }
 
 export interface SectionGroup {

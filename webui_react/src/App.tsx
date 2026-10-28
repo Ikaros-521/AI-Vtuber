@@ -1,15 +1,48 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from './api/client'
 import { useConfigStore } from './state/configStore'
 import { AppShell } from './components/AppShell'
+import { LoginPage } from './components/LoginGate'
+
+type AuthState = 'checking' | 'open' | 'gated'
 
 export default function App() {
   const status = useConfigStore((s) => s.status)
   const loadError = useConfigStore((s) => s.loadError)
   const fetchConfig = useConfigStore((s) => s.fetchConfig)
 
+  const [auth, setAuth] = useState<AuthState>('checking')
+
   useEffect(() => {
     void fetchConfig()
   }, [fetchConfig])
+
+  // 登录门禁：login.enable 打开且未登录时先出登录卡（对齐 v2 行为，只挡 UI 不挡机机接口）
+  useEffect(() => {
+    let alive = true
+    api.authStatus().then(
+      (resp) => {
+        if (!alive) return
+        setAuth(resp.enabled && !resp.authed ? 'gated' : 'open')
+      },
+      () => alive && setAuth('open'),
+    )
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  if (auth === 'checking') {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-[14px] text-[var(--ink-mut)]">正在检查登录状态…</p>
+      </div>
+    )
+  }
+
+  if (auth === 'gated') {
+    return <LoginPage onLogin={() => setAuth('open')} />
+  }
 
   if (status === 'loading') {
     return (

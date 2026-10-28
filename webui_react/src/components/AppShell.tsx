@@ -3,6 +3,7 @@
  * ?tab= 深链与 v2 行为一致：切页写地址栏，刷新/分享能回到原来那一页。
  */
 import { useEffect, useState } from 'react'
+import { api } from '../api/client'
 import { WORKSPACES } from '../schema'
 import { useChanges } from '../state/configStore'
 import { useOpsStore } from '../state/opsStore'
@@ -27,6 +28,20 @@ export function AppShell() {
 
   const [workspaceId, setWorkspaceId] = useState(initialWorkspaceId)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [loginUser, setLoginUser] = useState<string | null>(null)
+
+  // 登录功能启用时，导航右侧给一个退出入口
+  useEffect(() => {
+    api.authStatus().then(
+      (resp) => setLoginUser(resp.enabled && resp.authed ? (resp.username ?? '') : null),
+      () => undefined,
+    )
+  }, [])
+
+  const logout = async () => {
+    await api.authLogout().catch(() => undefined)
+    window.location.reload()
+  }
 
   const workspace = WORKSPACES.find((w) => w.id === workspaceId) ?? WORKSPACES[0]
 
@@ -101,6 +116,15 @@ export function AppShell() {
           >
             🔍 搜索配置项
           </button>
+          {loginUser !== null && (
+            <button
+              className="flex flex-none items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1 text-[13px] text-[var(--ink-mut)] hover:border-red-400 hover:text-red-500"
+              onClick={() => void logout()}
+              title={`当前登录：${loginUser || '（未知）'}`}
+            >
+              退出登录
+            </button>
+          )}
         </div>
       </header>
 

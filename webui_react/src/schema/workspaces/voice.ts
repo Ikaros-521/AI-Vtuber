@@ -3,7 +3,6 @@
  * 字段与 config 键逐项对齐 v2 tts.py / talk.py / svc.py / visual_body.py。
  * TTS 调试卡与「检索说话人/加载模型」等按钮暂留 v2（涉及音频播放与本地模型加载）。
  */
-import { AUDIO_SYNTHESIS_TYPE_OPTIONS } from '../options'
 import type { Workspace } from '../types'
 
 const LANG_OPTIONS = { 自动: '自动', 中文: '中文', 英文: '英文', 日文: '日文' }
@@ -135,12 +134,8 @@ export const voiceWorkspace: Workspace = {
         {
           id: 'tts-debug',
           title: 'TTS 语音合成调试',
-          desc: '在线试听与快速测试当前配置的语音合成效果。试听播放器还在 v2 文案页，这里先保留引擎切换。',
-          rows: [
-            [
-              { kind: 'select', key: ['audio_synthesis_type'], label: '当前TTS引擎', w: 'md', options: AUDIO_SYNTHESIS_TYPE_OPTIONS },
-            ],
-          ],
+          custom: 'tts-tester',
+          desc: '在线试听与快速测试当前配置的语音合成效果与音色表现。',
         },
         {
           id: 'edge-tts',
@@ -166,7 +161,8 @@ export const voiceWorkspace: Workspace = {
               { kind: 'select', key: ['vits', 'type'], label: '类型', w: 'sm', options: { vits: 'vits', bert_vits2: 'bert_vits2', gpt_sovits: 'gpt_sovits' } },
               { kind: 'input', key: ['vits', 'config_path'], label: '配置文件路径', w: 'md', placeholder: '模型配置文件存储路径' },
               { kind: 'input', key: ['vits', 'api_ip_port'], label: 'API地址', w: 'md', placeholder: 'vits-simple-api启动后监听的ip端口地址' },
-              { kind: 'number', key: ['vits', 'id'], label: '说话人ID', w: 'xs', int: true, hint: 'ID列表可去 API 的 /voice/speakers 查（v2 的「检索说话人」按钮）' },
+              { kind: 'number', key: ['vits', 'id'], label: '说话人ID', w: 'xs', int: true, hint: '不知道ID就点「检索说话人」，从返回列表里挑一个填进来' },
+              { kind: 'action', key: ['_a', 'speakers'], label: '检索说话人', w: 'sm', action: 'vits-speakers', params: { api_ip_port: ['vits', 'api_ip_port'] } },
               { kind: 'select', key: ['vits', 'lang'], label: '语言', w: 'sm', options: LANG_OPTIONS },
             ],
             [
@@ -544,7 +540,8 @@ export const voiceWorkspace: Workspace = {
             [
               { kind: 'switch', key: ['talk', 'key_listener_enable'], label: '启用按键监听', hint: '启用后可按录音按键启动语音识别对话' },
               { kind: 'switch', key: ['talk', 'direct_run_talk'], label: '直接语音对话', hint: '首次运行直接进入语音识别，不需手动按键；配合连续对话和唤醒词使用' },
-              { kind: 'input', key: ['talk', 'device_index'], label: '声卡输入设备索引', w: 'sm', placeholder: '设备索引号，列表在 v2 语音页查看' },
+              { kind: 'input', key: ['talk', 'device_index'], label: '声卡输入设备索引', w: 'sm', placeholder: '设备索引号' },
+              { kind: 'action', key: ['_a', 'devices'], label: '枚举声卡', w: 'sm', action: 'audio-devices', hint: '列出本机声卡输入设备（索引=名称），把想要的索引填进左边' },
               { kind: 'switch', key: ['talk', 'no_recording_during_playback'], label: '播放中不进行录音', hint: '防止麦克风和扬声器太近导致循环录音' },
               { kind: 'number', key: ['talk', 'no_recording_during_playback_sleep_interval'], label: '播放中不录音的检测间隔(秒)', w: 'sm' },
               { kind: 'switch', key: ['talk', 'continuous_talk'], label: '连续对话', hint: '仅需按一次录音按键，按沉默阈值自动切分连续录音' },
