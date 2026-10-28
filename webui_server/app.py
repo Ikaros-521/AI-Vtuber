@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from utils.my_log import logger
-from webui_server import compat_api, config_api, logs_api, ops_api
+from webui_server import actions_api, compat_api, config_api, logs_api, ops_api
 from webui_server.runtime import runtime, ROOT_DIR
 
 DIST_DIR = ROOT_DIR / "webui_react" / "dist"
@@ -26,6 +26,7 @@ def create_app() -> FastAPI:
     app.include_router(config_api.router)
     app.include_router(ops_api.router)
     app.include_router(logs_api.router)
+    app.include_router(actions_api.router)
     app.include_router(compat_api.router)
 
     @app.on_event("startup")

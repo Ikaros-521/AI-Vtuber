@@ -1,8 +1,9 @@
-/** 区块卡片：标题 + 说明 + 字段行 + 嵌套子卡。 */
+/** 区块卡片：标题 + 说明 + 字段行 + 嵌套子卡；custom 区块分发到专用组件。 */
 import { useConfigStore } from '../state/configStore'
 import { sectionVisible } from '../schema'
 import { fieldIdOf, type Section } from '../schema/types'
 import { FieldControl } from './FieldControl'
+import { DocsCard, SectionToggleWall } from './SystemExtras'
 
 export function SectionCard({
   section,
@@ -15,6 +16,25 @@ export function SectionCard({
 }) {
   const draft = useConfigStore((s) => s.draft)
   if (!sectionVisible(section, draft)) return null
+
+  if (section.custom === 'section-toggles') {
+    return (
+      <section data-section-id={`${workspaceId}__${section.id}`} className="card-surface p-5">
+        <h3 className="text-[15px] font-semibold">{section.title}</h3>
+        {section.desc && <p className="mt-1 text-xs leading-relaxed text-[var(--ink-mut)]">{section.desc}</p>}
+        <div className="mt-3">
+          <SectionToggleWall />
+        </div>
+      </section>
+    )
+  }
+  if (section.custom === 'docs') {
+    return (
+      <section data-section-id={`${workspaceId}__${section.id}`}>
+        <DocsCard />
+      </section>
+    )
+  }
 
   return (
     <section

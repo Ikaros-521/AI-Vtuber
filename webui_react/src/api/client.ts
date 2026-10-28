@@ -55,6 +55,13 @@ export const api = {
   chatLog: (after: number) => get<ApiResult & { messages: ChatMessage[] }>(`/api/chat-log?after=${after}`),
   chatSend: (mode: string, username: string, content: string) =>
     post<ApiResult>('/api/chat-log/send', { mode, username, content }),
+
+  // ---------- 动作按钮与文件 ----------
+  action: (id: string, payload?: Record<string, unknown>) =>
+    post<ApiResult & { items?: string[]; models?: string[] }>(`/api/actions/${id}`, payload ?? {}),
+  fileGet: (path: string) => get<ApiResult & { content: string }>(`/api/file?path=${encodeURIComponent(path)}`),
+  filePut: (path: string, content: string) =>
+    request<ApiResult>('/api/file', { method: 'PUT', body: JSON.stringify({ path, content }) }),
 }
 
 export interface ChatMessage {

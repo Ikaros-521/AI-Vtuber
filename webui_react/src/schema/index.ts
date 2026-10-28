@@ -4,19 +4,23 @@
  * 工作区标记 stub，页面会明确提示「继续用 v2 配置」，不放假数据。
  */
 import type { JsonObject, Path } from '../lib/path'
+import { brainWorkspace } from './workspaces/brain'
+import { danmuWorkspace } from './workspaces/danmu'
+import { hardwareWorkspace } from './workspaces/hardware'
 import { liveWorkspace } from './workspaces/live'
+import { systemWorkspace } from './workspaces/system'
 import type { Field, Section, Workspace } from './types'
 
 export const WORKSPACES: Workspace[] = [
   { id: 'overview', title: '总览', groups: [], custom: 'overview' },
   { id: 'chat', title: '聊天', groups: [], custom: 'chat' },
   liveWorkspace,
-  { id: 'brain', title: '人设与大脑', groups: [], stub: 'LLM 各家 provider、人设提示词、本地问答、翻译与图像识别' },
+  brainWorkspace,
   { id: 'voice', title: '声音与表现', groups: [], stub: 'TTS / SVC / STT / 虚拟身体驱动' },
-  { id: 'danmu', title: '弹幕与礼仪', groups: [], stub: '念弹幕、答谢与弹幕过滤' },
-  { id: 'interaction', title: '互动与玩法', groups: [], stub: '点歌、积分、定时任务、闲时任务、动态文案、Stable Diffusion' },
-  { id: 'hardware', title: '外设与联动', groups: [], stub: '按键映射、自定义命令、串口助播、联动程序' },
-  { id: 'system', title: '运维与系统', groups: [], stub: '数据分析、日志、数据库、异常报警、板块开关、账号管理' },
+  danmuWorkspace,
+  { id: 'interaction', title: '互动与玩法', groups: [], stub: '点歌、积分、定时任务、闲时任务、动态配置、联网搜索、动态文案、Stable Diffusion' },
+  hardwareWorkspace,
+  systemWorkspace,
 ]
 
 /** 聊天页里的三个配置字段（talk.username 等），未保存清单里要显示中文标签。 */
@@ -58,17 +62,33 @@ export interface FieldIndexEntry {
 }
 
 function indexSection(ws: Workspace, groupTitle: string, section: Section, out: FieldIndexEntry[]) {
+  const baseFieldId = (field: Field) => `${ws.id}__${section.id}__${field.key.join('.')}`
   for (const row of section.rows ?? []) {
     for (const field of row) {
-      out.push({
+      const entry: FieldIndexEntry = {
         workspaceId: ws.id,
         workspaceTitle: ws.title,
         groupTitle,
         sectionId: section.id,
         sectionTitle: section.title,
         field,
-        fieldId: `${ws.id}__${section.id}__${field.key.join('.')}`,
-      })
+        fieldId: baseFieldId(field),
+      }
+      out.push(entry)
+      // 动态配置组：把组内字段也列进索引（label 供搜索与未保存清单用），
+      // 跳转落点是组容器本身
+      if (field.kind === 'group-list') {
+        for (const innerRow of field.rows) {
+          for (const inner of innerRow) {
+            if (inner.kind.startsWith('_')) continue
+            out.push({
+              ...entry,
+              field: { ...inner, key: [...field.key, ...inner.key] } as Field,
+              fieldId: entry.fieldId,
+            })
+          }
+        }
+      }
     }
   }
   for (const card of section.cards ?? []) {
@@ -101,9 +121,16 @@ const LABEL_BY_PATH = new Map<string, FieldIndexEntry>(
   FIELD_INDEX.map((e) => [e.field.key.join('.'), e]),
 )
 
-/** 未保存清单里的一条改动对应的字段信息（可能不在任何 schema 里）。 */
+/** 未保存清单里的一条改动对应的字段信息（可能不在任何 schema 里）。
+
+ * 动态配置组的条目路径带序号（key_mapping.config.0.keywords），
+ * 精确匹配不到时去掉数字段再匹配一次（key_mapping.config.keywords）。
+ */
 export function entryForPath(path: Path): FieldIndexEntry | undefined {
-  return LABEL_BY_PATH.get(path.join('.'))
+  const exact = LABEL_BY_PATH.get(path.join('.'))
+  if (exact) return exact
+  const stripped = path.filter((k) => typeof k !== 'number').join('.')
+  return stripped ? LABEL_BY_PATH.get(stripped) : undefined
 }
 
 /** 搜索用：忽略分隔符（_- / 空格）后做子串匹配，名字命中排前面。 */

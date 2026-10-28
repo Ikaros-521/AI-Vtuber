@@ -7,7 +7,6 @@ import {
   AUDIO_SYNTHESIS_TYPE_OPTIONS,
   BILIBILI_LOGIN_TYPE_OPTIONS,
   CHAT_TYPE_OPTIONS,
-  NEED_LANG_OPTIONS,
   VISUAL_BODY_OPTIONS,
   platformOptions,
 } from '../options'
@@ -32,20 +31,8 @@ export const liveWorkspace: Workspace = {
               { kind: 'select', key: ['visual_body'], label: '虚拟身体', w: 'md', options: VISUAL_BODY_OPTIONS, hint: '如果使用VTS对接，就选其他，用什么展示身体就选什么，大部分对接的选项需要单独启动对应的服务端程序，请勿随便选择' },
               { kind: 'select', key: ['audio_synthesis_type'], label: '语音合成', w: 'md', options: AUDIO_SYNTHESIS_TYPE_OPTIONS, hint: '选用的TTS类型，所有的文本内容最终都将通过此TTS进行语音合成' },
             ],
-            [
-              { kind: 'select', key: ['need_lang'], label: '回复语言', w: 'sm', options: NEED_LANG_OPTIONS, hint: '限制回复的语言，如：选中中文，则只会回复中文提问，其他语言将被跳过' },
-              { kind: 'input', key: ['before_prompt'], label: '提示词前缀', w: 'md', placeholder: '此配置会追加在弹幕前，再发送给LLM处理' },
-              { kind: 'input', key: ['after_prompt'], label: '提示词后缀', w: 'md', placeholder: '此配置会追加在弹幕后，再发送给LLM处理' },
-            ],
-            [
-              { kind: 'switch', key: ['comment_template', 'enable'], label: '启用弹幕模板', hint: '此配置会追加在弹幕后，再发送给LLM处理' },
-              { kind: 'input', key: ['comment_template', 'copywriting'], label: '弹幕模板', w: 'lg', placeholder: '此配置会对弹幕内容进行修改，{}内为变量，会被替换为指定内容，请勿随意删除变量' },
-              { kind: 'switch', key: ['reply_template', 'enable'], label: '启用回复模板', hint: '此配置会在LLM输出的答案中进行回复内容的重新构建' },
-              { kind: 'input', key: ['reply_template', 'username_max_len'], label: '回复用户名的最大长度', w: 'sm' },
-            ],
-            [
-              { kind: 'string-list', key: ['reply_template', 'copywriting'], label: '回复模板', w: 'xl', placeholder: '此配置会对LLM回复内容进行修改，{}内为变量，会被替换为指定内容，请勿随意删除变量' },
-            ],
+            // 提示词/模板那排字段在 v2 就归「人设与大脑 · 对话与回复模板」（repage ROW_TITLES），
+            // 这里不再重复编辑同一批 config 键
           ],
         },
         {

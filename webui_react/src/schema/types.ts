@@ -1,12 +1,29 @@
 /** 配置表单的 schema 定义：React 版用数据描述取代 v2 的命令式建页。 */
 
+export type Path = (string | number)[]
+
 export type FieldWidth = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 
 export type SelectOptions = Record<string, string> | ((current: unknown) => Record<string, string>)
 
+export type ActionId =
+  | 'llm-test'
+  | 'llm-models'
+  | 'window-titles'
+  | 'cameras'
+  | 'config-templates'
+  | 'config-template-save'
+  | 'config-template-load'
+  | 'anythingllm-workspaces'
+  | 'serial-ports'
+  | 'serial-connect'
+  | 'serial-disconnect'
+  | 'serial-send'
+  | 'img-screenshot'
+
 export interface FieldBase {
-  /** config.json 里的路径，如 ['openai', 'api'] */
-  key: (string | number)[]
+  /** config.json 里的路径；在 group-list 内为相对条目路径（渲染时拼上基座路径） */
+  key: Path
   label: string
   /** 字段下方的常驻说明（v2 把长 placeholder 挪过来的那批） */
   hint?: string
@@ -22,11 +39,38 @@ export type Field =
       options: SelectOptions
       /** 配置里的当前值不在选项里时保留显示（老平台名这类场景） */
       keepUnknown?: boolean
+      /** 可输入的下拉（v2 的 with_input + add-unique），用于模型名这类可手输项 */
+      free?: boolean
+      /** 选项来自动作按钮动态拉取（模型列表/窗口标题/串口/模板…），key 对应 actionStore.options */
+      dynamicOptions?: string
     })
   | (FieldBase & { kind: 'switch' })
   | (FieldBase & { kind: 'textarea' })
   /** string[] 与多行文本互转（v2 的 textarea_data_change 语义） */
   | (FieldBase & { kind: 'string-list' })
+  /** string[] 多选框（洛曦触发类型/触发位置） */
+  | (FieldBase & { kind: 'checkboxes'; options: Record<string, string> })
+  /** 动作按钮：params 的值是「相对本字段基座」的取值路径；$transient:<fieldId> 取临时输入框的值 */
+  | (FieldBase & {
+      kind: 'action'
+      action: ActionId
+      params?: Record<string, Path | string>
+      /** 点按钮前弹确认框（危险操作） */
+      confirm?: string
+    })
+  /** 外部 JSON 文件编辑器（本地问答），不走 config 草稿，显式加载/保存 */
+  | (FieldBase & { kind: 'file-json' })
+  /** 动态配置组：key 指向 config 里的对象数组，条目字段用相对路径 */
+  | (FieldBase & {
+      kind: 'group-list'
+      itemDefaults: Record<string, unknown>
+      rows: Field[][]
+      itemTitle?: string
+      addLabel?: string
+      itemDesc?: string
+    })
+  /** 临时输入框（串口发送数据这类不进 config 的值），值存 actionStore.transient */
+  | (FieldBase & { kind: 'transient-input' })
 
 export function resolveOptions(field: Extract<Field, { kind: 'select' }>, current: unknown): Record<string, string> {
   return typeof field.options === 'function' ? field.options(current) : field.options
@@ -40,6 +84,8 @@ export interface Section {
   showCard?: [page: string, key: string]
   rows?: Field[][]
   cards?: Section[]
+  /** 专用组件标记（板块开关墙 / 文档与关于），由 WorkspacePage 分发渲染 */
+  custom?: 'section-toggles' | 'docs'
 }
 
 export interface SectionGroup {

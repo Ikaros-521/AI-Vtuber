@@ -47,6 +47,13 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         configPath: resp.path,
       })
       applyAccent(resp.config)
+      // 主题下拉的选项来自配置里自带的主题表
+      const themeList = (resp.config.webui as JsonObject | undefined)?.theme as JsonObject | undefined
+      const names = Object.keys((themeList?.list as Record<string, unknown>) ?? {})
+      if (names.length > 0) {
+        const { useActionStore } = await import('./actionStore')
+        useActionStore.getState().setOptions('theme-list', names)
+      }
     } catch (e) {
       set({ status: 'error', loadError: `连不上后端服务：${e}` })
     }
@@ -71,6 +78,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     if (resp.code === 200) {
       // 以服务端落盘结果为准，重新对齐基线
       set({ config: structuredClone(draft), sha256: (resp.sha256 as string) ?? sha256 })
+      applyAccent(draft) // 主题可能在这次保存里换了
       return { ok: true, message: `配置数据已成功写入文件！（${changes.length} 项改动）` }
     }
     return { ok: false, message: resp.message ?? '保存失败', path: resp.path }
