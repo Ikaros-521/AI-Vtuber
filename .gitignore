@@ -14,7 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
 lib64/
 parts/
 sdist/
@@ -248,9 +248,12 @@ dy3.py
 
 
 # 程序自动生成的文件夹
-src/
+/src/
 static/
 
 add_dependencies.py
 
 spark-output/
+
+# WebUI v3 (React)
+node_modules/
