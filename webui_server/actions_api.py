@@ -89,7 +89,7 @@ async def llm_models(req: LlmModelsRequest):
         return {"code": -1, "message": f"获取模型列表失败：{e}"}
 
 
-# ---------- 枚举：窗口标题 / 摄像头 / 配置模板 ----------
+# ---------- 枚举：窗口标题 / 摄像头 / 配置模板 / Live2D 模型 ----------
 
 @router.get("/actions/window-titles")
 def window_titles():
@@ -105,6 +105,15 @@ def cameras():
         return {"code": 200, "items": runtime.common.list_cameras()}
     except Exception as e:
         return {"code": -1, "message": f"枚举摄像头失败：{e}"}
+
+
+@router.get("/actions/live2d-models")
+def live2d_models():
+    try:
+        names = runtime.common.get_folder_names(str(ROOT_DIR / "Live2D" / "live2d-model"))
+        return {"code": 200, "items": names}
+    except Exception as e:
+        return {"code": -1, "message": f"枚举Live2D模型失败：{e}"}
 
 
 @router.get("/actions/config-templates")

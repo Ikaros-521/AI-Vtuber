@@ -93,7 +93,21 @@ def save_config(req: SaveRequest):
     try:
         runtime.write_config(config_data)
         logger.info(f"配置数据已成功写入文件（{len(req.changes)} 项改动）")
+        _side_effects(config_data, req.changes)
         return {"code": 200, "message": "配置数据已成功写入文件！", "sha256": runtime.file_sha256()}
     except Exception as e:
         logger.error(f"无法写入配置文件！\n{e}")
         return {"code": -1, "message": f"配置文件写不进去：{e}"}
+
+
+def _side_effects(config_data, changes):
+    """v2 各页面 on_save 里的落盘副作用，按改动触发。"""
+    # Live2D 模型名写进 Live2D/js/model_name.js（v2 visual_body.write_live2d_model_name）
+    if any(list(c.path) == ["live2d", "name"] for c in changes):
+        from webui_server.runtime import ROOT_DIR
+
+        name = (config_data.get("live2d") or {}).get("name") or ""
+        path = ROOT_DIR / "Live2D" / "js" / "model_name.js"
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(f'var model_name = "{name}";')
+        logger.info(f"Live2D 模型名已写入 {path}：{name}")

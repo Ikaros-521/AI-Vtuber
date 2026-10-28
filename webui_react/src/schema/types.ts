@@ -20,6 +20,7 @@ export type ActionId =
   | 'serial-disconnect'
   | 'serial-send'
   | 'img-screenshot'
+  | 'live2d-models'
 
 export interface FieldBase {
   /** config.json 里的路径；在 group-list 内为相对条目路径（渲染时拼上基座路径） */

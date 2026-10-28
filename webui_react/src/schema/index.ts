@@ -7,8 +7,10 @@ import type { JsonObject, Path } from '../lib/path'
 import { brainWorkspace } from './workspaces/brain'
 import { danmuWorkspace } from './workspaces/danmu'
 import { hardwareWorkspace } from './workspaces/hardware'
+import { interactionWorkspace } from './workspaces/interaction'
 import { liveWorkspace } from './workspaces/live'
 import { systemWorkspace } from './workspaces/system'
+import { voiceWorkspace } from './workspaces/voice'
 import type { Field, Section, Workspace } from './types'
 
 export const WORKSPACES: Workspace[] = [
@@ -16,9 +18,9 @@ export const WORKSPACES: Workspace[] = [
   { id: 'chat', title: '聊天', groups: [], custom: 'chat' },
   liveWorkspace,
   brainWorkspace,
-  { id: 'voice', title: '声音与表现', groups: [], stub: 'TTS / SVC / STT / 虚拟身体驱动' },
+  voiceWorkspace,
   danmuWorkspace,
-  { id: 'interaction', title: '互动与玩法', groups: [], stub: '点歌、积分、定时任务、闲时任务、动态配置、联网搜索、动态文案、Stable Diffusion' },
+  interactionWorkspace,
   hardwareWorkspace,
   systemWorkspace,
 ]
