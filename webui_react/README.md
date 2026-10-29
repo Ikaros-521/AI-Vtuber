@@ -9,10 +9,11 @@ v3 分支的新版 WebUI 前端：React 19 + TypeScript + Vite + Tailwind CSS 4�
 cd webui_react
 npm install
 
-# 终端 1：起后端（开发端口 8082，避免和 v2 的 webui.py 抢 webui.port）
-cd .. && WEBUI_V3_PORT=8082 python -m webui_server
+# 终端 1：起后端（开发必须错开端口并关掉自动开浏览器：同端口起第二个实例会被
+# 端口守卫当成残留实例回收掉，正在跑的正式实例就没了）
+cd .. && WEBUI_V3_PORT=8082 WEBUI_V3_NO_OPEN=1 python -m webui_server
 
-# 终端 2：起前端（5173，/api 自动代理到 8082）
+# 终端 2：起前端（5173，/api 等自动代理到 WEBUI_V3_PORT，默认 8082）
 cd webui_react && npm run dev
 ```
 
@@ -38,9 +39,15 @@ python -m webui_server   # 后端自动托管 dist/，单端口即可用
   带 sha256 冲突检测与保存前校验。
 - **对 v2 兼容**：`webui_server/compat_api.py` 原样保留 `/set_config` `/sys_cmd`
   `/send` `/callback` `/tts` `/llm`，main.py 与外部脚本无需改动。
+- **双运行环境**：日常用仓库捆绑的 Miniconda（pydantic **1.10**），开发 `.venv` 是 pydantic
+  **2.x**——`webui_server` 代码必须两边兼容，模型转 dict 用 `_to_dict()` 这类写法，别用 v2 独有的
+  `model_dump`。
+- **进程守护**：起服前 `port_guard` 会回收强退残留的旧实例（连子进程一起）；服务就绪后自动
+  打开浏览器，`WEBUI_V3_NO_OPEN=1` 可关（详见根 README 的「启动 WebUI」）。
 
-## 迁移进度
+## 迁移进度：已完成
 
-**9 大工作区已全部迁移完成**（总览/聊天/直播接入/人设与大脑/声音与表现/弹幕与礼仪/互动与玩法/外设与联动/运维与系统）。
-
-仍留在 v2 的交互件：登录页（login.enable）、数据分析 echart 图表、TTS 试听播放器、声卡设备枚举、vits「检索说话人」/MeloTTS「加载模型」按钮——对应的配置字段均可在 v3 修改。
+**9 大工作区全部就绪**（总览/聊天/直播接入/人设与大脑/声音与表现/弹幕与礼仪/互动与玩法/外设与联动/运维与系统），
+v2 遗留交互件也已全部收编：登录门禁（login.enable）、数据分析图表、TTS 试听、
+声卡/说话人/模型等枚举类动作。`webui_server` 是 v3 唯一前端入口；老 `webui.py`（NiceGUI）
+已停用仅作回退保留，后续版本移除。

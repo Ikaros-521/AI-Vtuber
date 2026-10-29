@@ -67,11 +67,14 @@ v3 起 WebUI 是 `webui_server`（FastAPI 后端）+ `webui_react`（React 前�
 
 ```bash
 python -m webui_server          # 默认读 config.json 的 webui.ip / webui.port
-WEBUI_V3_PORT=8082 python -m webui_server   # 端口被占时用环境变量错开
+WEBUI_V3_PORT=8082 python -m webui_server   # 端口被其它程序占用时用环境变量错开
 ```
 
-浏览器打开 `http://127.0.0.1:<webui.port>` 即可，`Scripts/1.双击我启动程序.bat` 已指向它。
-前端构建产物（`webui_react/dist/`）随仓库分发，普通使用**不需要装 Node**。
+- 服务就绪后**自动打开浏览器**进入配置页；不想自动开（自动化/测试场景）设 `WEBUI_V3_NO_OPEN=1`。
+- 上次强退残留的旧实例会占住端口：启动时会自动检测，确认是残留的 `webui_server` 就**连同它拉起的
+  main.py 等子进程一起回收**；若是别的程序占用，日志会报出 PID 不做处理——这时再换端口或手动结束它。
+- 手动访问地址是 `http://127.0.0.1:<webui.port>`；`Scripts/1.双击我启动程序.bat` 已指向 webui_server。
+- 前端构建产物（`webui_react/dist/`）随仓库分发，普通使用**不需要装 Node**。
 
 改前端代码才需要 Node（仅开发）：
 
