@@ -48,6 +48,14 @@ def write_file(req: FileWriteRequest):
 
 # ---------- LLM：OpenAI 兼容接口测试与模型搜索 ----------
 
+def _to_dict(model) -> dict:
+    """pydantic v1/v2 通用的模型转 dict（启动环境里两者都可能出现：.venv 是 v2、
+    仓库自带 Miniconda 是 v1，v1 没有 model_dump）。"""
+    if hasattr(model, "model_dump"):
+        return model.model_dump()
+    return model.dict()
+
+
 class LlmTestRequest(BaseModel):
     base_url: str = ""
     api_keys: list[str] = []
@@ -63,8 +71,12 @@ class LlmTestRequest(BaseModel):
 @router.post("/actions/llm-test")
 async def llm_test(req: LlmTestRequest):
     try:
+        payload = _to_dict(req)
+        # config 里的 openai.api_key 是列表；v2 语义：common.test_openai_key 要多行字符串（内部自行 split）
+        if isinstance(payload.get("api_keys"), list):
+            payload["api_keys"] = "\n".join(str(k) for k in payload["api_keys"])
         resp = await asyncio.to_thread(
-            runtime.common.test_openai_key, req.model_dump(), 2)
+            runtime.common.test_openai_key, payload, 2)
         return resp
     except Exception as e:
         logger.error(traceback.format_exc())
