@@ -34,6 +34,14 @@ def create_app() -> FastAPI:
     async def on_startup():
         logger.info(f"webui_server 启动，配置文件：{runtime.config_path}")
 
+    @app.on_event("shutdown")
+    async def on_shutdown():
+        # 正常退出（Ctrl+C / 停止）时把运行中的 main.py 等子进程一并停掉，避免残留
+        try:
+            runtime.stop()
+        except Exception as e:
+            logger.warning(f"退出时清理子进程失败：{e}")
+
     # v2 的「本地目录映射为 URL」能力保留
     try:
         config = runtime.read_config()

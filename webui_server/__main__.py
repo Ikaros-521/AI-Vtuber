@@ -8,6 +8,7 @@ import os
 
 import uvicorn
 
+from webui_server.port_guard import ensure_port_free
 from webui_server.runtime import runtime
 
 
@@ -29,6 +30,10 @@ def main():
 
     if host == "0.0.0.0":
         host = "0.0.0.0"  # uvicorn 监听所有网卡
+
+    # 起服前回收强退残留的旧实例（连它拉起的 main.py 等子进程一起），避免 10048
+    if not ensure_port_free(host, port):
+        raise SystemExit(1)
 
     uvicorn.run("webui_server.app:create_app", factory=True, host=host, port=port)
 
