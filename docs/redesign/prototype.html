@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Vtuber WebUI 重设计原型</title>
+<script src="vendor/react.js"></script>
+<script src="vendor/react-dom.js"></script>
+<script src="vendor/babel.js"></script>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --line: #e4e7ec;
+    --line-strong: #d0d5dd;
+    --ink: #101828;
+    --ink-2: #475467;
+    --ink-mut: #98a2b3;
+    --accent: #4f46e5;
+    --accent-weak: #eef0fe;
+    --ok: #15803d;
+    --ok-weak: #ecfdf3;
+    --warn: #b45309;
+    --warn-weak: #fffbeb;
+    --err: #b42318;
+    --err-weak: #fef3f2;
+    --radius: 10px;
+    --shadow-pop: 0 8px 28px rgba(16, 24, 40, .14);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 13px/1.6 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  input, select, textarea { font: inherit; color: var(--ink); }
+  ::selection { background: var(--accent-weak); }
+
+  .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
+
+  /* ---------- 布局骨架 ---------- */
+  .shell { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 208px; flex: none; background: var(--surface);
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+  }
+  .brand { display: flex; align-items: center; gap: 9px; padding: 18px 18px 14px; }
+  .brand-mark {
+    width: 30px; height: 30px; border-radius: 9px; background: var(--accent);
+    color: #fff; display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .brand-name { font-size: 15px; font-weight: 700; letter-spacing: .01em; }
+  .brand-sub { font-size: 11px; color: var(--ink-mut); margin-top: -3px; }
+  .nav { padding: 6px 10px; display: flex; flex-direction: column; gap: 2px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 8px 10px; border: 0; background: none; border-radius: 8px;
+    color: var(--ink-2); text-align: left; transition: background .12s, color .12s;
+  }
+  .nav-item:hover { background: #f2f4f7; color: var(--ink); }
+  .nav-item.on { background: var(--accent-weak); color: var(--accent); font-weight: 600; }
+  .nav-item .nav-badge {
+    margin-left: auto; font-size: 11px; font-weight: 600; background: var(--accent);
+    color: #fff; border-radius: 99px; padding: 0 7px; line-height: 18px;
+  }
+  .sidebar-foot { margin-top: auto; padding: 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+  .ghost-btn {
+    display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%;
+    padding: 7px 0; border-radius: 8px; border: 1px solid var(--line-strong);
+    background: var(--surface); color: var(--ink-2); font-size: 12.5px;
+  }
+  .ghost-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .proto-note { font-size: 11px; color: var(--ink-mut); text-align: center; line-height: 1.5; }
+
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .topbar {
+    position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 14px;
+    padding: 0 26px; height: 58px; background: rgba(255,255,255,.94); backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar-title { font-size: 15px; font-weight: 700; }
+  .topbar-sub { font-size: 12px; color: var(--ink-mut); margin-top: -2px; }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .searchbox {
+    display: flex; align-items: center; gap: 7px; border: 1px solid var(--line-strong);
+    border-radius: 8px; padding: 5px 10px; color: var(--ink-mut); min-width: 180px; background: var(--surface);
+  }
+  .searchbox kbd {
+    margin-left: auto; font: 10.5px ui-monospace, monospace; border: 1px solid var(--line);
+    border-radius: 4px; padding: 0 4px; color: var(--ink-mut); background: #f8f9fb;
+  }
+  .content { padding: 22px 26px 70px; max-width: 1240px; width: 100%; margin: 0 auto; }
+
+  /* ---------- 通用组件 ---------- */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; border-radius: 8px;
+    border: 1px solid var(--line-strong); background: var(--surface); padding: 6px 14px; font-weight: 500;
+  }
+  .btn:hover { border-color: var(--ink-mut); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { opacity: .9; }
+  .btn.danger { color: var(--err); border-color: #f4b6b1; }
+  .btn.danger:hover { background: var(--err-weak); }
+  .btn.sm { padding: 3px 10px; font-size: 12px; border-radius: 6px; }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .link-btn { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 500; }
+  .link-btn:hover { text-decoration: underline; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px; border-radius: 99px;
+    padding: 3px 11px; font-size: 12px; font-weight: 600; border: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .dot { width: 7px; height: 7px; border-radius: 99px; flex: none; }
+
+  .tag {
+    display: inline-flex; align-items: center; border-radius: 5px; font-size: 11px;
+    padding: 1px 7px; font-weight: 500; border: 1px solid var(--line); color: var(--ink-2); background: #fafbfc;
+  }
+  .tag.free { color: var(--ok); border-color: #bce3c6; background: var(--ok-weak); }
+  .tag.key { color: var(--warn); border-color: #f1dca8; background: var(--warn-weak); }
+  .tag.local { color: var(--accent); border-color: #cdd0fb; background: var(--accent-weak); }
+
+  .banner {
+    display: flex; gap: 10px; align-items: flex-start; border-radius: 8px;
+    padding: 10px 13px; font-size: 12.5px; line-height: 1.65;
+  }
+  .banner.warn { background: var(--warn-weak); color: var(--warn); border: 1px solid #f3e2bb; }
+  .banner.info { background: var(--accent-weak); color: #3d38b8; border: 1px solid #d9dcfb; }
+
+  /* 选卡墙 */
+  .pick-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 10px; }
+  .pick-card {
+    position: relative; text-align: left; background: var(--surface); border: 1.5px solid var(--line);
+    border-radius: var(--radius); padding: 12px 13px; transition: border-color .12s, box-shadow .12s;
+  }
+  .pick-card:hover { border-color: var(--line-strong); }
+  .pick-card.on { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-weak); }
+  .pick-name { font-weight: 650; font-size: 13.5px; display: flex; align-items: center; gap: 7px; }
+  .pick-desc { color: var(--ink-2); font-size: 12px; margin-top: 3px; line-height: 1.55; }
+  .pick-tags { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+  .pick-check {
+    position: absolute; top: 10px; right: 10px; width: 18px; height: 18px; border-radius: 99px;
+    border: 1.5px solid var(--line-strong); background: var(--surface); display: flex; align-items: center; justify-content: center;
+  }
+  .pick-card.on .pick-check { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* 表单 */
+  .form-row { display: grid; grid-template-columns: 210px 1fr; gap: 10px 18px; align-items: start; padding: 8px 0; }
+  .form-row + .form-row { border-top: 1px dashed #eef0f3; }
+  .form-label { font-weight: 550; padding-top: 6px; }
+  .form-label .req { color: var(--err); margin-right: 3px; }
+  .form-label .unit { color: var(--ink-mut); font-weight: 400; }
+  .form-ctrl input[type=text], .form-ctrl input[type=password], .form-ctrl input[type=number], .form-ctrl select, .form-ctrl textarea {
+    width: 100%; max-width: 560px; border: 1px solid var(--line-strong); border-radius: 7px;
+    padding: 6px 10px; background: var(--surface); outline: none;
+  }
+  .form-ctrl textarea { min-height: 64px; resize: vertical; line-height: 1.6; }
+  .form-ctrl input:focus, .form-ctrl select:focus, .form-ctrl textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-weak); }
+  .form-hint { color: var(--ink-mut); font-size: 11.5px; margin-top: 3px; }
+
+  .adv-toggle {
+    display: inline-flex; align-items: center; gap: 6px; border: 0; background: none;
+    color: var(--ink-2); font-weight: 550; font-size: 12.5px; padding: 4px 0;
+  }
+  .adv-toggle:hover { color: var(--accent); }
+  .adv-body { border-top: 1px dashed var(--line-strong); margin-top: 8px; padding-top: 4px; }
+
+  /* 开关 */
+  .switch { position: relative; width: 36px; height: 21px; flex: none; display: inline-block; }
+  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; position: absolute; z-index: 1; }
+  .switch .track { position: absolute; inset: 0; border-radius: 99px; background: #d6dae2; transition: background .15s; }
+  .switch .knob { position: absolute; top: 2.5px; left: 2.5px; width: 16px; height: 16px; border-radius: 99px; background: #fff; transition: left .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  .switch input:checked ~ .track { background: var(--accent); }
+  .switch input:checked ~ .knob { left: 17.5px; }
+
+  /* 信号链 */
+  .chain { display: flex; align-items: stretch; gap: 0; }
+  .chain-node { flex: 1; min-width: 0; }
+  .chain-arrow { flex: none; width: 34px; display: flex; align-items: center; justify-content: center; color: var(--ink-mut); }
+
+  /* 步骤条 */
+  .steps { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .step-item { display: flex; align-items: center; gap: 8px; border: 0; background: none; padding: 4px 8px; border-radius: 8px; color: var(--ink-2); }
+  .step-item:hover { background: #f2f4f7; }
+  .step-item.on { color: var(--accent); font-weight: 650; }
+  .step-item.done { color: var(--ok); }
+  .step-idx {
+    width: 22px; height: 22px; border-radius: 99px; border: 1.5px solid var(--line-strong);
+    display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 650; flex: none;
+  }
+  .step-item.on .step-idx { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .step-item.done .step-idx { border-color: var(--ok); background: var(--ok-weak); color: var(--ok); }
+  .step-line { width: 26px; height: 1px; background: var(--line-strong); flex: none; }
+
+  /* 玩法库 */
+  .play-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
+  .play-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 13px 15px; }
+  .play-card.on { border-color: #b9c4f5; }
+  .play-head { display: flex; align-items: center; gap: 9px; }
+  .play-name { font-weight: 650; font-size: 13.5px; }
+  .play-desc { color: var(--ink-2); font-size: 12px; margin-top: 4px; }
+  .play-body { border-top: 1px dashed var(--line); margin-top: 11px; padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .mini-field { display: flex; align-items: center; gap: 10px; }
+  .mini-field label { width: 92px; flex: none; color: var(--ink-2); font-size: 12px; }
+  .mini-field input, .mini-field select {
+    flex: 1; border: 1px solid var(--line-strong); border-radius: 6px; padding: 4px 9px; min-width: 0;
+  }
+
+  /* 拖拽列表 */
+  .drag-list { display: flex; flex-direction: column; gap: 6px; max-width: 620px; }
+  .drag-item {
+    display: flex; align-items: center; gap: 11px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 13px; cursor: grab;
+  }
+  .drag-item.dragging { opacity: .4; border-style: dashed; }
+  .drag-item.over { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-weak); }
+  .drag-rank { width: 20px; height: 20px; border-radius: 6px; background: #f2f4f7; color: var(--ink-2); font-size: 11.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none; }
+
+  /* 浮层 */
+  .backdrop { position: fixed; inset: 0; background: rgba(16,24,40,.45); z-index: 90; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .modal { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow-pop); max-width: 640px; width: 100%; max-height: 86vh; overflow: auto; }
+  .modal.wide { max-width: 860px; }
+  .modal-head { display: flex; align-items: center; gap: 10px; padding: 16px 22px 0; }
+  .modal-head h3 { margin: 0; font-size: 15.5px; }
+  .modal-body { padding: 12px 22px 20px; }
+  .modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 0 22px 20px; }
+
+  /* toast */
+  .toasts { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 120; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .toast {
+    display: flex; align-items: center; gap: 9px; background: #101828; color: #f4f6f8;
+    border-radius: 9px; padding: 9px 16px; font-size: 13px; box-shadow: var(--shadow-pop);
+    animation: toast-in .18s ease-out;
+  }
+  @keyframes toast-in { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  .sec-title { font-size: 13px; font-weight: 700; letter-spacing: .02em; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
+  .sec-title .count { font-weight: 500; color: var(--ink-mut); }
+  .muted { color: var(--ink-mut); }
+  .flex { display: flex; align-items: center; gap: 10px; }
+  .mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; } .mt16 { margin-top: 16px; } .mt20 { margin-top: 20px; }
+  .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 99px; padding: 4px 13px; font-size: 12.5px; color: var(--ink-2); }
+  .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  .spin { animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* 向导 */
+  .wiz-steps { display: flex; gap: 0; margin-bottom: 18px; }
+  .wiz-seg { flex: 1; display: flex; align-items: center; gap: 8px; color: var(--ink-mut); font-size: 12px; }
+  .wiz-seg .bar { flex: 1; height: 3px; border-radius: 99px; background: var(--line); }
+  .wiz-seg.done .bar, .wiz-seg.cur .bar { background: var(--accent); }
+  .wiz-seg.cur { color: var(--accent); font-weight: 600; }
+  .wiz-seg.done { color: var(--ok); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- ============ 块 1：图标 / 基础组件 / 数据 ============ -->
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useRef } = React;
+
+/* ---------- 图标（16px 线性） ---------- */
+function I({ d, size = 16, sw = 1.7, style }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', ...style }}>
+      <path d={d} />
+    </svg>
+  );
+}
+const P = {
+  dash: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+  sliders: 'M4 7h9M17 7h3M4 17h3M11 17h9M15 4v6M7 14v6',
+  grid: 'M4 5h16v6H4zM4 13h6v6H4zM14 13h6v6h-6z',
+  shield: 'M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z',
+  gear: 'M12 9a3 3 0 100 6 3 3 0 000-6zM12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1',
+  play: 'M7 5l12 7-12 7z',
+  stop: 'M6 6h12v12H6z',
+  save: 'M12 3v11M8 10l4 4 4-4M4 17v3h16v-3',
+  search: 'M10.5 4a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM20 20l-4.8-4.8',
+  check: 'M4.5 12.5l5 5L19.5 7',
+  alert: 'M12 3L2.5 20h19zM12 10v4M12 17.5v.5',
+  grip: 'M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01',
+  chevD: 'M6 9l6 6 6-6',
+  chevR: 'M9 6l6 6-6 6',
+  arrowR: 'M4 12h15M13 6l6 6-6 6',
+  radio: 'M12 8a4 4 0 100 8 4 4 0 000-8zM4.9 4.9l2 2M17.1 4.9l-2 2M12 2v2M12 20v2M4.9 19.1l2-2M17.1 19.1l-2-2',
+  brain: 'M9 4a3 3 0 00-3 3 3 3 0 00-1 5.8V16a3 3 0 003 3h1V4zM15 4a3 3 0 013 3 3 3 0 011 5.8V16a3 3 0 01-3 3h-1V4z',
+  mic: 'M12 3a3 3 0 013 3v5a3 3 0 01-6 0V6a3 3 0 013-3zM6 11a6 6 0 0012 0M12 17v4',
+  speaker: 'M4 10v4h3l5 4V6l-5 4zM16.5 9a4 4 0 010 6M19 6.5a8 8 0 010 11',
+  person: 'M12 4a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM5 20c1-4 3.5-6 7-6s6 2 7 6',
+  doc: 'M6 3h9l4 4v14H6zM14 3v5h5M9 12h6M9 16h6',
+  db: 'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
+  key: 'M14 4a6 6 0 11-4.6 9.8L4 19v3h3l1-1v-2h2v-2h2l1.4-1.4A6 6 0 0114 4z',
+  card: 'M3 6h18v12H3zM3 10h18M7 14h4',
+  chip: 'M8 8h8v8H8zM4 10V8h4M4 14v2h4M20 10V8h-4M20 14v2h-4M10 4V6M14 4V6M10 20v-2M14 20v-2',
+  music: 'M9 18a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM20 16a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM9 18V6l11-2v12',
+  clockw: 'M12 4a8 8 0 108 8M12 8v4l3 2M12 2v2M2 12h2M12 20v2',
+  wand: 'M5 19L17 7M15 5l1-3 1 3 3 1-3 1-1 3-1-3-3-1zM4 8l.6-1.8L6.4 5.6 4.6 5 4 3.2 3.4 5 1.6 5.6l1.8.6z',
+  puzzle: 'M10 4h4v2a2 2 0 104 0h2v4h-2a2 2 0 100 4h2v4h-4v-2a2 2 0 10-4 0v2H6v-4h2a2 2 0 100-4H6V6h4z',
+  globe: 'M12 3a9 9 0 100 18 9 9 0 000-18zM3.6 9h16.8M3.6 15h16.8M12 3a14 14 0 000 18M12 3a14 14 0 010 18',
+  cam: 'M3 8h4l2-3h6l2 3h4v12H3zM12 17a3.5 3.5 0 100-7 3.5 3.5 0 000 7z',
+  refresh: 'M20 12a8 8 0 11-2.3-5.7M20 3v4h-4',
+  question: 'M12 3a9 9 0 100 18 9 9 0 000-18zM9.5 9a2.5 2.5 0 015 .5c0 1.5-2.5 2-2.5 3.5M12 17v.5',
+  plug: 'M9 3v5M15 3v5M7 8h10v3a5 5 0 01-10 0zM12 16v5',
+  book: 'M5 4h6a3 3 0 013 3v13a2.5 2.5 0 00-2.5-2H5zM19 4h-5v13h5z',
+};
+
+/* ---------- 全局事件总线：toast / confirm ---------- */
+const bus = { listeners: {} };
+function on(evt, fn) { (bus.listeners[evt] = bus.listeners[evt] || []).push(fn); }
+function emit(evt, val) { (bus.listeners[evt] || []).forEach((f) => f(val)); }
+function toast(msg, kind = 'ok') { emit('toast', { msg, kind }); }
+function ask(opt) { return new Promise((res) => emit('ask', { ...opt, res })); }
+
+function ToastHost() {
+  const [items, setItems] = useState([]);
+  useEffect(() => on('toast', (t) => {
+    const id = Math.random();
+    setItems((cur) => [...cur, { ...t, id }]);
+    setTimeout(() => setItems((cur) => cur.filter((x) => x.id !== id)), 3200);
+  }), []);
+  const color = (k) => (k === 'err' ? '#f3726b' : k === 'warn' ? '#f4b642' : '#4ade80');
+  return (
+    <div className="toasts">
+      {items.map((t) => (
+        <div className="toast" key={t.id}>
+          <span className="dot" style={{ background: color(t.kind) }} />
+          {t.msg}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ConfirmHost() {
+  const [opt, setOpt] = useState(null);
+  useEffect(() => on('ask', (o) => setOpt(o)), []);
+  if (!opt) return null;
+  return (
+    <div className="backdrop" onMouseDown={() => { opt.res(false); setOpt(null); }}>
+      <div className="modal" style={{ maxWidth: 480 }} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="modal-body">
+          <div className="flex" style={{ gap: 12, alignItems: 'flex-start' }}>
+            <span style={{ color: 'var(--warn)', marginTop: 2 }}><I d={P.alert} size={20} /></span>
+            <div>
+              <div style={{ fontWeight: 650, fontSize: 14.5 }}>{opt.title}</div>
+              {opt.body && <div className="muted" style={{ marginTop: 4, whiteSpace: 'pre-line' }}>{opt.body}</div>}
+            </div>
+          </div>
+        </div>
+        <div className="modal-foot">
+          <button className="btn" onClick={() => { opt.res(false); setOpt(null); }}>{opt.cancel || '取消'}</button>
+          <button className={opt.danger ? 'btn danger' : 'btn primary'} onClick={() => { opt.res(true); setOpt(null); }}>{opt.confirm || '确认'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- 通用小组件 ---------- */
+function Switch({ checked, onChange, disabled }) {
+  return (
+    <label className="switch">
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      <span className="track" /><span className="knob" />
+    </label>
+  );
+}
+
+function FieldRow({ label, req, unit, hint, help, children }) {
+  return (
+    <div className="form-row">
+      <div className="form-label">
+        {req && <span className="req">●</span>}{label}
+        {unit && <span className="unit">（{unit}）</span>}
+        {help && <button className="link-btn" style={{ fontSize: 11.5, marginLeft: 7 }} onClick={help.how}>怎么看？</button>}
+      </div>
+      <div className="form-ctrl">
+        {children}
+        {hint && <div className="form-hint">{hint}</div>}
+      </div>
+    </div>
+  );
+}
+
+function Advanced({ children, note }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt12">
+      <button className="adv-toggle" onClick={() => setOpen(!open)}>
+        <span style={{ transform: open ? 'rotate(180deg)' : 'none', display: 'inline-flex', transition: 'transform .15s' }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
+        </span>
+        高级参数
+        <span className="muted" style={{ fontWeight: 400 }}>· {note || '新手保持默认即可'}</span>
+      </button>
+      {open && <div className="adv-body">{children}</div>}
+    </div>
+  );
+}
+
+function TestButton({ label, busyText, onDone }) {
+  const [state, setState] = useState('idle');
+  const run = () => {
+    if (state !== 'idle') return;
+    setState('busy');
+    setTimeout(() => { setState('idle'); onDone(); }, 1300);
+  };
+  return (
+    <button className="btn sm" onClick={run} disabled={state === 'busy'}>
+      {state === 'busy' ? (
+        <span className="flex" style={{ gap: 6 }}>
+          <svg className="spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M12 3a9 9 0 109 9" /></svg>
+          {busyText || '检测中…'}
+        </span>
+      ) : label}
+    </button>
+  );
+}
+
+function PickCard({ name, desc, tags, on, onClick }) {
+  return (
+    <button className={'pick-card' + (on ? ' on' : '')} onClick={onClick}>
+      <div className="pick-name">{name}</div>
+      <div className="pick-desc">{desc}</div>
+      {tags && tags.length > 0 && (
+        <div className="pick-tags">{tags.map((t) => <span key={t.text} className={'tag ' + (t.k || '')}>{t.text}</span>)}</div>
+      )}
+      <span className="pick-check">{on && <I d={P.check} size={11} sw={3} />}</span>
+    </button>
+  );
+}
+
+function PlaceholderForm({ what }) {
+  return (
+    <div className="card" style={{ padding: '26px 22px', textAlign: 'center' }}>
+      <div className="muted" style={{ fontSize: 12.5 }}>
+        「{what}」的完整表单在原型中从略 —— 字段与现版 v3 一致，此屏只演示「选中即所见」的结构。
+      </div>
+    </div>
+  );
+}
+
+function HelpHow({ title, steps }) {
+  return ask({ title: title + ' 怎么获取？', body: steps, confirm: '知道了', cancel: '关闭' });
+}
+
+/* ---------- 业务数据（服务名/描述与现版 config 对齐） ---------- */
+const tag = (text, k) => ({ text, k });
+
+const TTS = [
+  { id: 'edge-tts', name: 'Edge-TTS', tags: [tag('免费', 'free'), tag('无需 Key', 'free')], desc: '微软云端语音，多音色开箱即用，新手首选',
+    required: [
+      { label: '说话人', ph: 'zh-CN-XiaoxiaoNeural', hint: '完整音色列表见微软文档，直接手输' },
+      { label: '语速增益', ph: '+0%' },
+    ],
+    advanced: [
+      { label: '音量增益', ph: '+0%' },
+      { label: 'HTTP 代理', ph: '例：http://127.0.0.1:10809' },
+    ] },
+  { id: 'gpt_sovits', name: 'GPT-SoVITS', tags: [tag('需本地部署', 'local')], desc: '几秒参考音频即可克隆声线，社区人气最高',
+    required: [
+      { label: 'API 地址', ph: 'http://127.0.0.1:9880', help: { title: 'API 地址', steps: '启动 GPT-SoVITS 的 api.py 后会打印监听地址，复制过来即可。' } },
+      { label: '参考音频路径', ph: 'E:\\voice\\sample.wav', hint: '建议绝对路径，5~10 秒干净人声效果最好' },
+      { label: '参考音频的文本', ph: '音频里说的那句话' },
+      { label: '参考音频语言' }, { label: '文本语言' },
+    ],
+    advanced: [
+      { label: 'top_k' }, { label: 'top_p' }, { label: 'temperature', hint: '越高语调越跳跃' },
+      { label: '切分方式', hint: '长句怎么切成短句合成' },
+    ] },
+  { id: 'elevenlabs', name: 'elevenlabs', tags: [tag('需 API Key', 'key'), tag('有免费额度', 'free')], desc: '商业级高拟真多语言语音',
+    required: [
+      { label: 'API 密钥', ph: 'sk-…', help: { title: 'API 密钥', steps: '官网注册后在 Profile → API Keys 页面创建，免费档每月有一定字符额度。' } },
+      { label: '说话人', ph: 'Rachel' },
+    ],
+    advanced: [{ label: '模型', ph: 'eleven_multilingual_v2' }] },
+  { id: 'vits', name: 'VITS-Simple-API', tags: [tag('需本地部署', 'local')], desc: '开源 VITS 推理服务，二次元音色多' },
+  { id: 'bert_vits2', name: 'bert_vits2', tags: [tag('需本地部署', 'local')], desc: 'BERT 增强情感合成，语气更自然' },
+  { id: 'azure_tts', name: 'Azure 语音', tags: [tag('需 API Key', 'key')], desc: '微软云语音，工业级稳定' },
+  { id: 'cosyvoice', name: 'CosyVoice', tags: [tag('需本地部署', 'local')], desc: '阿里开源，多语言+零样本克隆' },
+  { id: 'f5_tts', name: 'F5-TTS', tags: [tag('需本地部署', 'local')], desc: 'Flow Matching 框架，生成极快' },
+  { id: 'openai_tts', name: 'OpenAI TTS', tags: [tag('需 API Key', 'key')], desc: 'tts-1 / tts-1-hd，发音清晰' },
+  { id: 'melotts', name: 'MeloTTS', tags: [tag('需本地部署', 'local')], desc: '轻量极速，CPU 即可跑' },
+  { id: 'index_tts', name: 'Index-TTS', tags: [tag('需本地部署', 'local')], desc: '特定训练音色接口' },
+  { id: 'multitts', name: 'MultiTTS', tags: [tag('需外部服务', '')], desc: '安卓端 MultiTTS 引擎聚合' },
+  { id: 'gradio_tts', name: 'Gradio 通用', tags: [tag('需外部服务', '')], desc: '对接各类 Gradio WebUI TTS' },
+];
+
+const LLM = [
+  { id: 'chatgpt', name: 'OpenAI 兼容接口', tags: [tag('需 API Key', 'key')], desc: 'ChatGPT / DeepSeek / Moonshot / 各类中转站通用' },
+  { id: 'tongyi', name: '通义千问', tags: [tag('需 API Key', 'key')], desc: '阿里云百炼 Qwen，长上下文+免费额度' },
+  { id: 'zhipu', name: '智谱 AI', tags: [tag('需 API Key', 'key')], desc: 'GLM 系列，支持联网搜索与代码执行' },
+  { id: 'gemini', name: 'Gemini', tags: [tag('需 API Key', 'key'), tag('需代理', '')], desc: '谷歌多模态大模型' },
+  { id: 'volcengine', name: '火山引擎', tags: [tag('需 API Key', 'key')], desc: '字节豆包 Doubao 系列' },
+  { id: 'dify', name: 'Dify', tags: [tag('需自建服务', 'local')], desc: '工作流/Agent 编排平台' },
+  { id: 'my_wenxinworkshop', name: '千帆大模型', tags: [tag('需 API Key', 'key')], desc: '百度文心 ERNIE 系列' },
+  { id: 'langchain_chatchat', name: 'Langchain-ChatChat', tags: [tag('需本地部署', 'local')], desc: '本地知识库+搜索引擎问答' },
+  { id: 'anythingllm', name: 'AnythingLLM', tags: [tag('需本地部署', 'local')], desc: '本地工作区文档库接入' },
+  { id: 'custom_llm', name: '自定义 LLM', tags: [tag('HTTP 接口', '')], desc: '任意自建/中转 JSON 接口' },
+];
+
+const PLATFORMS = [
+  { id: 'bilibili2', name: '哔哩哔哩 2', tags: [tag('推荐', 'free')], desc: '扫码即接，比 B 站 1 稳定' },
+  { id: 'bilibili', name: '哔哩哔哩', tags: [], desc: 'cookie 方式接入，稳定性一般' },
+  { id: 'dy', name: '抖音', tags: [tag('需监听程序', '')], desc: '配合抖音弹幕监听程序使用' },
+  { id: 'live_monitor_assistant', name: '弹幕监听助手', tags: [], desc: '覆盖快手2 / 拼多多 / 斗鱼 / 淘宝 / 1688' },
+  { id: 'wxlive', name: '微信视频号', tags: [], desc: '视频号直播弹幕' },
+  { id: 'youtube', name: 'YouTube', tags: [tag('需代理', '')], desc: '海外平台直播弹幕' },
+  { id: 'twitch', name: 'Twitch', tags: [tag('需代理', '')], desc: 'token 方式接入' },
+  { id: 'tiktok', name: 'TikTok', tags: [tag('需代理', '')], desc: '海外版抖音' },
+  { id: 'talk', name: '聊天模式', tags: [tag('免配置', 'free')], desc: '不接平台，先在本页聊天测试' },
+];
+
+const BODIES = [
+  { id: 'live2d', name: 'Live2D', tags: [tag('推荐', 'free'), tag('本机运行', 'free')], desc: 'Web 端口型同步+表情动作，模型放本地即用' },
+  { id: 'digital_human_video_player', name: '数字人视频播放器', tags: [tag('需外部服务', '')], desc: '预录视频切片轮播，无需独显' },
+  { id: 'metahuman_stream', name: 'metahuman_stream', tags: [tag('需外部服务', '')], desc: 'UE 超写实 3D 数字人视频流' },
+  { id: 'EasyAIVtuber', name: 'EasyAIVtuber', tags: [tag('需客户端', '')], desc: '轻量二次元客户端联动' },
+  { id: 'live2d_TTS_LLM_GPT_SoVITS_Vtuber', name: 'Live2D 一体化方案', tags: [tag('第三方', '')], desc: 'Live2D+LLM+GPT-SoVITS 一体客户端' },
+  { id: 'xuniren', name: 'xuniren', tags: [tag('需外部服务', '')], desc: '智影/虚拟人推流驱动' },
+  { id: '其他', name: '其他（外置）', tags: [], desc: '画面由外部窗口负责，本程序只出声' },
+];
+
+const GAMEPLAY = [
+  { g: '直播互动', icon: P.music, name: '点歌', desc: '观众弹幕「点歌 歌名」自动检索播放', on: false,
+    fields: [['点歌命令', '点歌\n来首'], ['歌曲路径', 'D:\\song']] },
+  { g: '直播互动', icon: P.card, name: '积分系统', desc: '签到 / 礼物 / 入场攒积分，按区间播报', on: false,
+    fields: [['签到命令', '签到'], ['签到积分', '5']] },
+  { g: '直播互动', icon: P.wand, name: 'AI 绘图', desc: '弹幕触发 Stable Diffusion 实时画画', on: false,
+    fields: [['触发前缀', '画'], ['SD 地址', '127.0.0.1:7860']] },
+  { g: '直播互动', icon: P.doc, name: '答谢播报', desc: '入场 / 礼物 / 关注的自动感谢语', on: true,
+    fields: [['礼物最低价格（元）', '1'], ['→ 文案编辑', '在「弹幕管家 · 答谢」里']] },
+  { g: '自动运营', icon: P.clockw, name: '闲时暖场', desc: '冷场超时后自动发起话题防尬播', on: true,
+    fields: [['闲时判定', '直播间无消息'], ['触发间隔（秒）', '180 ~ 420']] },
+  { g: '自动运营', icon: P.clockw, name: '定时任务', desc: '按随机周期循环播报公告', on: false,
+    fields: [['循环周期（秒）', '3600 ~ 7200']] },
+  { g: '自动运营', icon: P.book, name: '文案轮播', desc: '多组播放列表按数量/时长自动切换', on: false,
+    fields: [['音频间隔（秒）', '30']] },
+  { g: '自动运营', icon: P.book, name: '动态文案', desc: '文件夹文案库轮播，可 LLM 润色', on: false,
+    fields: [['播放间隔（秒）', '60']] },
+  { g: '进阶联动', icon: P.plug, name: '按键联动', desc: '弹幕关键词触发按键 / 音效 / 图片 / 串口', on: false,
+    fields: [['命令前缀', '#']] },
+  { g: '进阶联动', icon: P.chip, name: '串口硬件', desc: 'Arduino / 灯带 / 舵机实体联动', on: false,
+    fields: [['串口', 'COM3 · 115200']] },
+  { g: '进阶联动', icon: P.globe, name: '联网搜索', desc: '关键词先搜网页，拼进问题再答', on: false,
+    fields: [['触发前缀', '联网：'], ['搜索引擎', '百度'] ] },
+  { g: '进阶联动', icon: P.globe, name: '双语翻译', desc: '外语弹幕实时互译，跨语种开播', on: false,
+    fields: [['翻译方向', '弹幕+回复']] },
+  { g: '进阶联动', icon: P.cam, name: '画面识别', desc: '截屏 / 摄像头交给多模态模型解说', on: false,
+    fields: [['识别模型', 'gemini']] },
+  { g: '进阶联动', icon: P.person, name: '人数自适应', desc: '按在线人数自动切换整份配置', on: false,
+    fields: [] },
+];
+
+const PRIORITY_INIT = [
+  '聊天（语音输入）', '弹幕回复', '礼物答谢', '入场欢迎', '关注答谢',
+  '点歌', '念弹幕', '复读', '文案', '定时任务', '闲时任务', '按键映射', '积分', '异常报警',
+];
+
+Object.assign(window, { I, P, Switch, FieldRow, Advanced, TestButton, PickCard, PlaceholderForm, HelpHow, toast, ask, on, emit, TTS, LLM, PLATFORMS, BODIES, GAMEPLAY, PRIORITY_INIT });
+</script>
+
+<!-- ============ 块 2：开播台 + 基础设置 ============ -->
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect } = React;
+
+/* ---------- 开播台 ---------- */
+function ChainNode({ icon, title, value, state, onGo }) {
+  const st = state === 'ok' ? { c: 'var(--ok)', t: '已测试' } : state === 'set' ? { c: 'var(--warn)', t: '未测试' } : { c: 'var(--ink-mut)', t: '未配置' };
+  return (
+    <button className="card chain-node" style={{ padding: '13px 15px', textAlign: 'left' }} onClick={onGo}>
+      <div className="flex" style={{ gap: 9 }}>
+        <span style={{ color: 'var(--accent)' }}><I d={icon} size={18} /></span>
+        <span style={{ fontWeight: 650 }}>{title}</span>
+        <span className="dot" style={{ background: st.c, marginLeft: 'auto' }} />
+      </div>
+      <div style={{ marginTop: 7, fontSize: 13, color: value ? 'var(--ink)' : 'var(--ink-mut)' }}>{value || '尚未选择'}</div>
+      <div className="flex" style={{ marginTop: 3, gap: 5 }}>
+        <span className="muted" style={{ fontSize: 11.5 }}>{st.t}</span>
+        <span style={{ marginLeft: 'auto', color: 'var(--accent)', fontSize: 12, fontWeight: 550, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+          去配置 <I d={P.arrowR} size={12} />
+        </span>
+      </div>
+    </button>
+  );
+}
+
+function Dashboard({ cfg, running, onGo, onRun, onWizard }) {
+  const chain = [
+    { icon: P.radio, title: '直播间', key: 'platform' },
+    { icon: P.brain, title: 'AI 大脑', key: 'brain' },
+    { icon: P.speaker, title: '声音', key: 'voice' },
+    { icon: P.person, title: '形象', key: 'body' },
+  ];
+  const val = (k) => (cfg[k] ? (cfg[k].label || cfg[k].id) : null);
+  const st = (k) => (cfg[k] ? (cfg[k].tested ? 'ok' : 'set') : 'none');
+  const missing = chain.find((n) => !cfg[n.key]);
+
+  return (
+    <div>
+      {/* 下一步建议 */}
+      <div className="banner info" style={{ padding: '13px 16px' }}>
+        <span style={{ marginTop: 1 }}><I d={P.question} size={17} /></span>
+        <div style={{ flex: 1 }}>
+          {missing ? (
+            <React.Fragment>
+              <b>还差 1 步就能开播</b> —— 「{missing.title}」还没有配置。
+              <button className="link-btn" style={{ marginLeft: 10 }} onClick={() => onGo('settings', missing.key)}>去配置 →</button>
+            </React.Fragment>
+          ) : (
+            <React.Fragment><b>一切就绪</b>，随时可以开播。改过配置记得先保存再重新运行。</React.Fragment>
+          )}
+          <div className="muted" style={{ fontSize: 12, color: '#6a6ec4', marginTop: 2 }}>
+            首次使用建议走一遍 <button className="link-btn" style={{ fontSize: 12 }} onClick={onWizard}>设置向导（5 步 · 约两分钟）</button>
+          </div>
+        </div>
+      </div>
+
+      {/* 信号链 */}
+      <div className="sec-title mt20">信号链 <span className="count">弹幕从哪来 → 谁想 → 谁说 → 长什么样</span></div>
+      <div className="chain mt12">
+        {chain.map((n, i) => (
+          <React.Fragment key={n.key}>
+            {i > 0 && <div className="chain-arrow"><I d={P.chevR} size={17} /></div>}
+            <ChainNode icon={n.icon} title={n.title} value={val(n.key)} state={st(n.key)} onGo={() => onGo('settings', n.key)} />
+          </React.Fragment>
+        ))}
+      </div>
+
+      {/* 运行控制 + 聊天测试 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 12, marginTop: 20 }}>
+        <div className="card" style={{ padding: 18 }}>
+          <div className="flex" style={{ gap: 10 }}>
+            <span className="dot" style={{ width: 10, height: 10, background: running ? 'var(--ok)' : '#c4c9d2' }} />
+            <div>
+              <div style={{ fontWeight: 650 }}>{running ? '直播程序运行中' : '直播程序未运行'}</div>
+              <div className="muted" style={{ fontSize: 12 }}>{running ? '已连接哔哩哔哩 · 弹幕监听中' : '点右侧按钮用当前配置启动 main.py'}</div>
+            </div>
+            <div style={{ marginLeft: 'auto' }}>
+              {running ? (
+                <button className="btn danger" onClick={() => onRun(false)}>■ 停止</button>
+              ) : (
+                <button className="btn primary" onClick={() => onRun(true)}>▶ 开始直播</button>
+              )}
+            </div>
+          </div>
+          <div className="flex mt12" style={{ gap: 8 }}>
+            <button className="btn sm" onClick={() => toast('打开运行日志（原型演示）')}>运行日志</button>
+            <button className="btn sm" onClick={() => onWizard()}>重新运行向导</button>
+            <span className="muted" style={{ fontSize: 11.5, marginLeft: 'auto', alignSelf: 'center' }}>配置变更后需重启生效</span>
+          </div>
+        </div>
+        <ChatPanel />
+      </div>
+    </div>
+  );
+}
+
+function ChatPanel() {
+  const [msgs, setMsgs] = useState([
+    { who: 'ai', text: '配置好大脑和声音后，在这里发一句话就能听到她回答～' },
+  ]);
+  const [input, setInput] = useState('');
+  const replies = ['今天天气真不错，适合出门散步呢～', '这个问题难不倒我，答案是 42！', '呼呼…刚在打瞌睡，被你叫醒啦。'];
+  const ri = React.useRef(0);
+  const send = () => {
+    if (!input.trim()) return;
+    const text = input.trim();
+    setMsgs((m) => [...m, { who: 'me', text }]);
+    setInput('');
+    setTimeout(() => {
+      ri.current = (ri.current + 1) % replies.length;
+      setMsgs((m) => [...m, { who: 'ai', text: replies[ri.current] }]);
+      toast('已合成语音并播放（演示）');
+    }, 700);
+  };
+  return (
+    <div className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column' }}>
+      <div className="flex" style={{ gap: 8, marginBottom: 8 }}>
+        <span style={{ color: 'var(--accent)' }}><I d={P.chat || P.doc} size={15} /></span>
+        <b style={{ fontSize: 13 }}>聊天测试</b>
+        <span className="muted" style={{ fontSize: 11.5 }}>验证「大脑 → 声音」整条通路</span>
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7, minHeight: 110, maxHeight: 160, overflow: 'auto', paddingRight: 4 }}>
+        {msgs.map((m, i) => (
+          <div key={i} style={{ alignSelf: m.who === 'me' ? 'flex-end' : 'flex-start', maxWidth: '82%', background: m.who === 'me' ? 'var(--accent)' : '#f2f4f7', color: m.who === 'me' ? '#fff' : 'var(--ink)', borderRadius: 10, padding: '6px 11px', fontSize: 12.5, lineHeight: 1.55 }}>
+            {m.text}
+          </div>
+        ))}
+      </div>
+      <div className="flex mt8" style={{ gap: 8 }}>
+        <input type="text" value={input} placeholder="说句话试试…" style={{ flex: 1, border: '1px solid var(--line-strong)', borderRadius: 7, padding: '5px 10px', minWidth: 0 }}
+          onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} />
+        <button className="btn primary sm" onClick={send}>发送</button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- 基础设置 ---------- */
+const STEP_META = {
+  platform: { title: '直播间', sub: '弹幕从哪个平台来', icon: P.radio },
+  brain: { title: 'AI 大脑', sub: '谁来理解弹幕、生成回复', icon: P.brain },
+  voice: { title: '声音', sub: '用什么嗓门说话、怎么听见你', icon: P.speaker },
+  body: { title: '形象', sub: '画面上是谁', icon: P.person },
+};
+const STEP_ORDER = ['platform', 'brain', 'voice', 'body'];
+
+function Settings({ cfg, step, onStep, onSelect }) {
+  const meta = STEP_META[step];
+  return (
+    <div>
+      {/* 步骤条 */}
+      <div className="steps" style={{ marginBottom: 18 }}>
+        {STEP_ORDER.map((k, i) => (
+          <React.Fragment key={k}>
+            {i > 0 && <span className="step-line" />}
+            <button className={'step-item' + (k === step ? ' on' : cfg[k] ? ' done' : '')} onClick={() => onStep(k)}>
+              <span className="step-idx">{cfg[k] && k !== step ? <I d={P.check} size={12} sw={3} /> : i + 1}</span>
+              {STEP_META[k].title}
+            </button>
+          </React.Fragment>
+        ))}
+      </div>
+
+      {step === 'platform' && <PlatformStep cfg={cfg} onSelect={onSelect} />}
+      {step === 'brain' && <BrainStep cfg={cfg} onSelect={onSelect} />}
+      {step === 'voice' && <VoiceStep cfg={cfg} onSelect={onSelect} />}
+      {step === 'body' && <BodyStep cfg={cfg} onSelect={onSelect} />}
+    </div>
+  );
+}
+
+function ProviderWall({ list, cur, onPick, showAllLabel }) {
+  return (
+    <div>
+      <div className="pick-wall">
+        {list.map((p) => (
+          <PickCard key={p.id} name={p.name} desc={p.desc} tags={p.tags} on={cur === p.id} onClick={() => onPick(p.id)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FormFromSpec({ spec }) {
+  return (
+    <div>
+      {spec.required.map((f, i) => (
+        <FieldRow key={i} label={f.label} req hint={f.hint}
+          help={f.help ? { how: () => HelpHow(f.help) } : undefined}>
+          <input type="text" placeholder={f.ph || ''} style={{ maxWidth: f.wide ? 560 : 380 }} />
+        </FieldRow>
+      ))}
+      <Advanced>
+        {spec.advanced.map((f, i) => (
+          <FieldRow key={i} label={f.label} hint={f.hint}>
+            <input type="text" placeholder={f.ph || ''} style={{ maxWidth: 300 }} />
+          </FieldRow>
+        ))}
+      </Advanced>
+    </div>
+  );
+}
+
+function PlatformStep({ cfg, onSelect }) {
+  const cur = cfg.platform;
+  return (
+    <div>
+      <ProviderWall list={PLATFORMS} cur={cur ? cur.id : null} onPick={(id) => onSelect('platform', id)} />
+      <div className="mt16">
+        {cur && (cur.id === 'bilibili' || cur.id === 'bilibili2') && (
+          <div className="card" style={{ padding: '14px 18px' }}>
+            <div className="flex" style={{ marginBottom: 6 }}>
+              <b style={{ fontSize: 14 }}>{cur.id === 'bilibili2' ? '哔哩哔哩 2 · 对接' : '哔哩哔哩 · 对接'}</b>
+              <span style={{ marginLeft: 'auto' }}>
+                <TestButton label="测试连接" busyText="连接中…" onDone={() => { toast('连接成功 · 房间 22474988 · 弹幕通道已建立'); cur.tested = true; }} />
+              </span>
+            </div>
+            <div className="banner warn" style={{ marginBottom: 10 }}>
+              <span style={{ marginTop: 1 }}><I d={P.alert} size={15} /></span>
+              <div>cookie 方式有极低的封号风险，<b>强烈建议使用小号</b>。扫码登录则无此顾虑。</div>
+            </div>
+            <FieldRow label="登录方式" req>
+              <select style={{ maxWidth: 240 }}><option>手机扫码</option><option>cookie</option><option>开放平台（身份码）</option><option>不登录（仅读公开弹幕）</option></select>
+            </FieldRow>
+            <FieldRow label="直播间号" req hint="直播间网址最后一段的字母或数字">
+              <input type="text" placeholder="22474988" style={{ maxWidth: 240 }} />
+            </FieldRow>
+            <Advanced note="扫码方式无需以下内容">
+              <FieldRow label="cookie" help={{ how: () => HelpHow({ title: 'B 站 cookie', steps: '登录 B 站后按 F12 打开开发者工具 → 网络 → 任选一个请求 → 请求头里复制整段 cookie 粘贴到这里。\n\n再次提醒：建议小号。' }) }}>
+                <input type="text" placeholder="SESSDATA=…; buvid3=…; …" className="mono" />
+              </FieldRow>
+              <FieldRow label="ac_time_value" hint="F12 控制台执行 window.localStorage.ac_time_value">
+                <input type="text" className="mono" />
+              </FieldRow>
+            </Advanced>
+          </div>
+        )}
+        {cur && cur.id === 'live_monitor_assistant' && (
+          <div className="card" style={{ padding: '14px 18px' }}>
+            <b style={{ fontSize: 14 }}>弹幕监听助手 · 对接</b>
+            <div className="form-hint" style={{ margin: '4px 0 8px' }}>快手2 / 拼多多 / 斗鱼 / 淘宝 / 1688 的弹幕由助手推给本机，监听哪个直播间在助手那边设置。</div>
+            <FieldRow label="监听 IP" req><input type="text" defaultValue="127.0.0.1" style={{ maxWidth: 220 }} /></FieldRow>
+            <FieldRow label="监听端口" req><input type="number" defaultValue={5001} style={{ maxWidth: 220 }} /></FieldRow>
+          </div>
+        )}
+        {cur && cur.id === 'talk' && (
+          <div className="card" style={{ padding: '16px 20px' }}>
+            <b style={{ fontSize: 14 }}>聊天模式</b>
+            <div className="form-hint" style={{ marginTop: 4 }}>不接直播平台，直接在开播台的「聊天测试」里对话，先把大脑和声音调好再上播。</div>
+          </div>
+        )}
+        {cur && !['bilibili', 'bilibili2', 'live_monitor_assistant', 'talk'].includes(cur.id) && (
+          <PlaceholderForm what={cur.label} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BrainStep({ cfg, onSelect }) {
+  const cur = cfg.brain;
+  const [tab, setTab] = useState('model');
+  return (
+    <div>
+      <ProviderWall list={LLM} cur={cur ? cur.id : null} onPick={(id) => onSelect('brain', id)} />
+      <div className="mt16">
+        <div className="chip-row" style={{ marginBottom: 12 }}>
+          {[['model', '模型接入'], ['memory', '记忆与模板'], ['qa', '快捷问答']].map(([k, t]) => (
+            <button key={k} className={'chip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{t}</button>
+          ))}
+        </div>
+
+        {tab === 'model' && (
+          cur ? (
+            <div className="card" style={{ padding: '14px 18px' }}>
+              <div className="flex" style={{ marginBottom: 6 }}>
+                <b style={{ fontSize: 14 }}>{cur.label} · 接入</b>
+                <span style={{ marginLeft: 'auto' }}>
+                  <TestButton label="测试对话" busyText="提问中…" onDone={() => { toast('测试通过 · qwen-plus · 回复延迟 890ms'); cur.tested = true; }} />
+                </span>
+              </div>
+              {cur.id === 'tongyi' && (
+                <div>
+                  <FieldRow label="API 密钥" req help={{ how: () => HelpHow({ title: '阿里云百炼 API Key', steps: '打开百炼控制台 → API-KEY 管理 → 创建新 Key，复制 sk- 开头的字符串。\n新用户有免费额度，够测试很久。' }) }}>
+                    <input type="password" placeholder="sk-…" className="mono" style={{ maxWidth: 380 }} />
+                  </FieldRow>
+                  <FieldRow label="模型" req hint="下拉列出常用型号，也可以直接手输">
+                    <select style={{ maxWidth: 300 }}><option>qwen-plus</option><option>qwen-turbo</option><option>qwen-max</option><option>qwen-long</option></select>
+                  </FieldRow>
+                  <Advanced>
+                    <FieldRow label="temperature" hint="越高越放飞，默认 0.7"><input type="number" defaultValue={0.7} step={0.1} style={{ maxWidth: 160 }} /></FieldRow>
+                    <FieldRow label="top_p"><input type="number" style={{ maxWidth: 160 }} /></FieldRow>
+                    <FieldRow label="联网搜索"><Switch checked={false} onChange={() => {}} /></FieldRow>
+                  </Advanced>
+                </div>
+              )}
+              {cur.id === 'chatgpt' && (
+                <div>
+                  <FieldRow label="API 地址" req hint="支持代理与各类中转站"><input type="text" placeholder="https://api.openai.com/v1" className="mono" style={{ maxWidth: 380 }} /></FieldRow>
+                  <FieldRow label="API 密钥" req hint="支持多个，换行分隔"><textarea className="mono" placeholder="sk-…" /></FieldRow>
+                  <FieldRow label="模型" req hint="点「搜索模型」自动拉取 /v1/models 列表">
+                    <div className="flex" style={{ gap: 8 }}>
+                      <select style={{ maxWidth: 280 }}><option>deepseek-chat</option><option>gpt-4o-mini</option><option>moonshot-v1-8k</option></select>
+                      <button className="btn sm" onClick={() => toast('已拉取 24 个模型，已并入下拉列表（演示）')}>搜索模型</button>
+                    </div>
+                  </FieldRow>
+                  <Advanced>
+                    <FieldRow label="temperature"><input type="number" style={{ maxWidth: 160 }} /></FieldRow>
+                    <FieldRow label="最大 token 数"><input type="number" style={{ maxWidth: 160 }} /></FieldRow>
+                    <FieldRow label="流式输出" hint="逐句出声，首响更快"><Switch checked onChange={() => {}} /></FieldRow>
+                  </Advanced>
+                </div>
+              )}
+              {!['tongyi', 'chatgpt'].includes(cur.id) && <PlaceholderForm what={cur.label} />}
+            </div>
+          ) : (
+            <div className="card" style={{ padding: '26px 22px', textAlign: 'center' }}>
+              <div className="muted">先在上面选一家 —— <b>同一时刻只有一家生效</b>，选谁就只配谁。</div>
+            </div>
+          )
+        )}
+
+        {tab === 'memory' && (
+          <div className="card" style={{ padding: '14px 18px' }}>
+            <FieldRow label="上下文记忆" hint="记住最近 N 轮对话"><Switch checked onChange={() => {}} /></FieldRow>
+            <FieldRow label="最大记忆长度" unit="字符" hint="过长会丢弃最早的对话，不建议调大"><input type="number" defaultValue={2000} style={{ maxWidth: 200 }} /></FieldRow>
+            <FieldRow label="回复语言"><select style={{ maxWidth: 200 }}><option>所有</option><option>中文</option><option>英文</option><option>日文</option></select></FieldRow>
+            <FieldRow label="提示词前缀" hint="追加在每条弹幕前发给模型，写人设全靠它"><textarea placeholder="你是一位温柔的猫娘主播，说话带喵…" /></FieldRow>
+            <FieldRow label="提示词后缀"><textarea placeholder="回答控制在两句话以内。" /></FieldRow>
+          </div>
+        )}
+
+        {tab === 'qa' && (
+          <div className="card" style={{ padding: '14px 18px' }}>
+            <div className="banner info">
+              <span style={{ marginTop: 1 }}><I d={P.question} size={15} /></span>
+              <div>命中关键词时<b>跳过大模型秒回</b>预设文案 —— 不耗 token、回答 100% 精准。适合自我介绍、直播时间表这类固定问题。</div>
+            </div>
+            <div className="mt12">
+              <FieldRow label="启用文本匹配"><Switch checked={false} onChange={() => {}} /></FieldRow>
+              <FieldRow label="问答数据" hint="一问一答文本或自定义 JSON"><input type="text" placeholder="data/qa.txt" style={{ maxWidth: 320 }} /></FieldRow>
+              <FieldRow label="最低相似度" hint="低于阈值就当普通弹幕走大模型"><input type="number" defaultValue={0.75} step={0.05} style={{ maxWidth: 160 }} /></FieldRow>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function VoiceStep({ cfg, onSelect }) {
+  const cur = cfg.voice;
+  const [tab, setTab] = useState('tts');
+  return (
+    <div>
+      <div className="chip-row" style={{ marginBottom: 14 }}>
+        {[['tts', '说话 · 语音合成'], ['stt', '听话 · 语音对话'], ['svc', '变声 · 声音转换']].map(([k, t]) => (
+          <button key={k} className={'chip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{t}</button>
+        ))}
+      </div>
+
+      {tab === 'tts' && (
+        <div>
+          <ProviderWall list={TTS} cur={cur ? cur.id : null} onPick={(id) => onSelect('voice', id)} />
+          <div className="mt16">
+            {cur && ['edge-tts', 'gpt_sovits', 'elevenlabs'].includes(cur.id) ? (
+              <div className="card" style={{ padding: '14px 18px' }}>
+                <div className="flex" style={{ marginBottom: 6 }}>
+                  <b style={{ fontSize: 14 }}>{cur.label} · 合成设置</b>
+                  <span style={{ marginLeft: 'auto' }}>
+                    <TestButton label="试听一句话" busyText="合成中…" onDone={() => { toast('试听成功 · 84 字 · 合成 1.4s（演示）'); cur.tested = true; }} />
+                  </span>
+                </div>
+                <FormFromSpec spec={TTS.find((t) => t.id === cur.id)} />
+                <Advanced note="播放节奏与队列策略">
+                  <FieldRow label="音频播放间隔" unit="秒" hint="两条语音之间的停顿，随机取区间值"><div className="flex" style={{ gap: 8 }}><input type="number" defaultValue={1} style={{ width: 90 }} /><span className="muted">~</span><input type="number" defaultValue={3} style={{ width: 90 }} /></div></FieldRow>
+                  <FieldRow label="启用文本切分" hint="长回复切成短句，让首响更快"><Switch checked onChange={() => {}} /></FieldRow>
+                </Advanced>
+              </div>
+            ) : cur ? (
+              <PlaceholderForm what={cur.label} />
+            ) : (
+              <div className="card" style={{ padding: '26px 22px', textAlign: 'center' }}>
+                <div className="muted"><b>同一时刻只有一家 TTS 生效</b>，选谁就只配谁。不确定选哪个：Edge-TTS 免费且无需任何 Key。</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === 'stt' && (
+        <div className="card" style={{ padding: '14px 18px' }}>
+          <div className="banner info">
+            <span style={{ marginTop: 1 }}><I d={P.mic} size={15} /></span>
+            <div>开启后<b>不用按任何键</b>，对着麦克风说话就能和主播连续对话；也可以只用唤醒词唤醒。</div>
+          </div>
+          <div className="mt12">
+            <FieldRow label="直接语音对话" req><Switch checked={false} onChange={() => {}} /></FieldRow>
+            <FieldRow label="识别引擎" req hint="google 免配置；faster_whisper / SenseVoice 需本地模型">
+              <select style={{ maxWidth: 280 }}><option>google（免费在线）</option><option>baidu</option><option>faster_whisper（本地）</option><option>sensevoice（本地）</option></select>
+            </FieldRow>
+            <FieldRow label="麦克风设备" help={{ how: () => HelpHow({ title: '设备索引', steps: '点「枚举声卡」列出所有输入设备，找到你麦克风对应的索引号填进来。' }) }}>
+              <div className="flex" style={{ gap: 8 }}>
+                <input type="text" defaultValue="0" style={{ width: 90 }} />
+                <button className="btn sm" onClick={() => toast('已列出 3 个输入设备（演示）')}>枚举声卡</button>
+              </div>
+            </FieldRow>
+            <Advanced note="识别灵敏度与打断">
+              <FieldRow label="音量阈值" hint="触发录音的起始音量"><input type="number" style={{ width: 120 }} /></FieldRow>
+              <FieldRow label="对方插话时打断播放" hint="检测到说话立即停播让位"><Switch checked onChange={() => {}} /></FieldRow>
+              <FieldRow label="唤醒词"><input type="text" placeholder="管家 / 小喵" style={{ maxWidth: 260 }} /></FieldRow>
+              <FieldRow label="睡眠词"><input type="text" placeholder="休息吧" style={{ maxWidth: 260 }} /></FieldRow>
+            </Advanced>
+          </div>
+        </div>
+      )}
+
+      {tab === 'svc' && (
+        <div className="card" style={{ padding: '14px 18px' }}>
+          <div className="banner info">
+            <span style={{ marginTop: 1 }}><I d={P.chip} size={15} /></span>
+            <div>实时<b>变声后期</b>：把 TTS 输出再过一遍歌声转换模型，适合唱歌主播。不开则直接用 TTS 原声。</div>
+          </div>
+          <div className="mt12">
+            <div className="pick-wall" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
+              <PickCard name="不启用" desc="直接用 TTS 原声播放" tags={[]} on={true} onClick={() => {}} />
+              <PickCard name="DDSP-SVC" desc="超低延迟实时变声" tags={[{ text: '需本地部署', k: 'local' }]} on={false} onClick={() => toast('该服务表单原型从略')} />
+              <PickCard name="SO-VITS-SVC" desc="高保真音色转换" tags={[{ text: '需本地部署', k: 'local' }]} on={false} onClick={() => toast('该服务表单原型从略')} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BodyStep({ cfg, onSelect }) {
+  const cur = cfg.body;
+  return (
+    <div>
+      <ProviderWall list={BODIES} cur={cur ? cur.id : null} onPick={(id) => onSelect('body', id)} />
+      <div className="mt16">
+        {cur && cur.id === 'live2d' && (
+          <div className="card" style={{ padding: '14px 18px' }}>
+            <div className="flex" style={{ marginBottom: 6 }}>
+              <b style={{ fontSize: 14 }}>Live2D · 形象设置</b>
+              <span style={{ marginLeft: 'auto' }}>
+                <TestButton label="打开预览页" busyText="启动中…" onDone={() => { toast('预览页已打开：http://127.0.0.1:12345'); cur.tested = true; }} />
+              </span>
+            </div>
+            <FieldRow label="启用" req><Switch checked onChange={() => {}} /></FieldRow>
+            <FieldRow label="端口" req hint="Live2D 网页服务的端口"><input type="number" defaultValue={12345} style={{ maxWidth: 160 }} /></FieldRow>
+            <FieldRow label="模型" req hint="从 Live2D/live2d-model 目录读取">
+              <div className="flex" style={{ gap: 8 }}>
+                <select style={{ maxWidth: 280 }}><option>hiyori</option><option>haru</option><option>shizuku</option></select>
+                <button className="btn sm" onClick={() => toast('已重新扫描模型目录，新增 2 个（演示）')}><I d={P.refresh} size={12} /> 刷新列表</button>
+              </div>
+            </FieldRow>
+            <Advanced note="口型与动作灵敏度">
+              <FieldRow label="口型同步强度"><input type="number" step={0.1} style={{ width: 120 }} /></FieldRow>
+              <FieldRow label="闲置时随机眨眼"><Switch checked onChange={() => {}} /></FieldRow>
+            </Advanced>
+          </div>
+        )}
+        {cur && cur.id !== 'live2d' && <PlaceholderForm what={cur.label} />}
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { Dashboard, Settings });
+</script>
+
+<!-- ============ 块 3：玩法库 / 弹幕管家 / 系统 / 向导 / 说明 / App ============ -->
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect } = React;
+
+/* ---------- 玩法库 ---------- */
+function Gameplay({ state, setState }) {
+  const [filter, setFilter] = useState('all');
+  const groups = [['直播互动', '让观众玩起来'], ['自动运营', '没人也不断播'], ['进阶联动', '硬核玩家专属']];
+  const onCount = state.filter(Boolean).length;
+  const list = GAMEPLAY.filter((g, i) => filter === 'all' ? true : filter === 'on' ? state[i] : g.g === filter);
+  return (
+    <div>
+      <div className="chip-row" style={{ marginBottom: 16 }}>
+        {[['all', '全部 ' + GAMEPLAY.length], ['on', '已启用 ' + onCount], ['直播互动', '直播互动'], ['自动运营', '自动运营'], ['进阶联动', '进阶联动']].map(([k, t]) => (
+          <button key={k} className={'chip' + (filter === k ? ' on' : '')} onClick={() => setFilter(k)}>{t}</button>
+        ))}
+      </div>
+      {groups.map(([g, sub]) => {
+        const items = list.filter((x) => x.g === g);
+        if (!items.length) return null;
+        return (
+          <div key={g} className="mt16">
+            <div className="sec-title">{g} <span className="count">{sub}</span></div>
+            <div className="play-grid mt12">
+              {items.map((g0) => {
+                const idx = GAMEPLAY.indexOf(g0);
+                const on = state[idx];
+                return (
+                  <div key={g0.name} className={'play-card' + (on ? ' on' : '')}>
+                    <div className="play-head">
+                      <span style={{ color: on ? 'var(--accent)' : 'var(--ink-mut)' }}><I d={g0.icon} size={17} /></span>
+                      <span className="play-name">{g0.name}</span>
+                      <span style={{ marginLeft: 'auto' }}>
+                        <Switch checked={on} onChange={(v) => { const n = [...state]; n[idx] = v; setState(n); toast(v ? '已开启「' + g0.name + '」· 改动待保存' : '已关闭「' + g0.name + '」'); }} />
+                      </span>
+                    </div>
+                    <div className="play-desc">{g0.desc}</div>
+                    {on && g0.fields.length > 0 && (
+                      <div className="play-body">
+                        {g0.fields.map(([lab, val]) => (
+                          <div className="mini-field" key={lab}>
+                            <label>{lab}</label>
+                            <input type="text" defaultValue={val} />
+                          </div>
+                        ))}
+                        <button className="link-btn" style={{ fontSize: 12, alignSelf: 'flex-start' }} onClick={() => toast('抽屉：完整配置表单（原型演示）')}>详细配置 →</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---------- 弹幕管家 ---------- */
+function Moderation() {
+  const [tab, setTab] = useState('order');
+  const [order, setOrder] = useState(PRIORITY_INIT);
+  const dragIdx = React.useRef(null);
+  const [dragState, setDragState] = useState({ from: -1, over: -1 });
+
+  const onDragStart = (i) => { dragIdx.current = i; setDragState({ from: i, over: -1 }); };
+  const onDragOver = (i, e) => { e.preventDefault(); setDragState((s) => ({ ...s, over: i })); };
+  const onDrop = (i) => {
+    const from = dragIdx.current;
+    if (from === null || from === i) return;
+    const next = [...order];
+    const [it] = next.splice(from, 1);
+    next.splice(i, 0, it);
+    setOrder(next);
+    setDragState({ from: -1, over: -1 });
+    toast('播报顺序已更新 · 改动待保存');
+  };
+
+  return (
+    <div>
+      <div className="chip-row" style={{ marginBottom: 16 }}>
+        {[['trigger', '触发规则'], ['filter', '过滤屏蔽'], ['thanks', '答谢文案'], ['order', '播报顺序']].map(([k, t]) => (
+          <button key={k} className={'chip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{t}</button>
+        ))}
+      </div>
+
+      {tab === 'trigger' && (
+        <div className="card" style={{ padding: '14px 18px', maxWidth: 860 }}>
+          <div className="banner info" style={{ marginBottom: 10 }}>
+            <span style={{ marginTop: 1 }}><I d={P.question} size={15} /></span>
+            <div>不设任何前后缀 = 所有弹幕都进大脑。<b>新手建议全空</b>；弹幕太吵时再设置触发词。</div>
+          </div>
+          <FieldRow label="弹幕触发前缀" hint="弹幕以这些词开头才会被处理，一行一个"><textarea placeholder="（空 = 不过滤）" /></FieldRow>
+          <FieldRow label="弹幕触发后缀"><textarea placeholder="（空 = 不过滤）" /></FieldRow>
+          <FieldRow label="LLM 触发前缀" hint="只有带前缀的弹幕才送给大模型，如配置「#」则 #你好 才会回答"><textarea placeholder="（空 = 全部送入）" /></FieldRow>
+          <Advanced note="长度限制">
+            <FieldRow label="最大字符数"><input type="number" style={{ width: 140 }} /></FieldRow>
+            <FieldRow label="弹幕表情过滤"><Switch checked onChange={() => {}} /></FieldRow>
+          </Advanced>
+        </div>
+      )}
+
+      {tab === 'filter' && (
+        <div className="card" style={{ padding: '14px 18px', maxWidth: 860 }}>
+          <FieldRow label="违禁词过滤" req hint="命中违禁词库的弹幕被丢弃或替换"><Switch checked onChange={() => {}} /></FieldRow>
+          <FieldRow label="违禁语句丢弃" hint="关闭则替换为和谐字符而不是丢弃"><Switch checked={false} onChange={() => {}} /></FieldRow>
+          <FieldRow label="违禁词库路径"><input type="text" defaultValue="data/违禁词.txt" className="mono" style={{ maxWidth: 380 }} /></FieldRow>
+          <FieldRow label="用户名黑名单" hint="一行一个用户名，屏蔽其所有弹幕"><textarea placeholder="（空 = 不屏蔽任何人）" style={{ minHeight: 80 }} /></FieldRow>
+          <Advanced note="低频参数">
+            <FieldRow label="用户名数字转中文"><Switch checked onChange={() => {}} /></FieldRow>
+            <FieldRow label="消息去重周期" unit="秒" hint="同一观众重复弹幕的丢弃窗口"><input type="number" defaultValue={0} style={{ width: 140 }} /></FieldRow>
+          </Advanced>
+        </div>
+      )}
+
+      {tab === 'thanks' && (
+        <div style={{ display: 'grid', gap: 12, maxWidth: 860 }}>
+          {[
+            ['入场欢迎', '欢迎 {username} 来到直播间～\n{username} 老爷来啦，快坐快坐'],
+            ['礼物答谢', '感谢 {username} 送出的 {gift_name}，老板大气！\n{username} 的 {gift_name} 收到啦，谢谢老板～'],
+            ['关注答谢', '感谢 {username} 的关注，么么哒～\n哇，{username} 关注啦，欢迎加入大家庭'],
+          ].map(([t, copy]) => (
+            <div className="card" key={t} style={{ padding: '13px 18px' }}>
+              <div className="flex" style={{ marginBottom: 6 }}>
+                <b>{t}</b>
+                <Switch checked onChange={() => {}} />
+                <span className="muted" style={{ fontSize: 11.5, marginLeft: 10 }}>随机选一条播报</span>
+                <span style={{ marginLeft: 'auto' }} className="flex">
+                  可用变量：
+                  <span className="tag mono">{'{username}'}</span>
+                  {t === '礼物答谢' && <span className="tag mono" style={{ marginLeft: 4 }}>{'{gift_name}'}</span>}
+                </span>
+              </div>
+              <textarea defaultValue={copy} style={{ maxWidth: '100%' }} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'order' && (
+        <div className="card" style={{ padding: '16px 20px', maxWidth: 760 }}>
+          <div className="flex" style={{ marginBottom: 4 }}>
+            <b>播报优先级</b>
+            <span className="muted" style={{ fontSize: 12 }}>列表越靠上越优先；消息排队时高优先级先合成先播放</span>
+          </div>
+          <div className="banner info" style={{ marginTop: 6, marginBottom: 14 }}>
+            <span style={{ marginTop: 1 }}><I d={P.grip} size={15} /></span>
+            <div><b>拖拽调整顺序。</b>现版这里是 20 个数字输入框靠手动编号排序 —— 那是给配置文件看的，不是给人用的。</div>
+          </div>
+          <div className="drag-list">
+            {order.map((name, i) => (
+              <div key={name}
+                className={'drag-item' + (dragState.from === i ? ' dragging' : '') + (dragState.over === i && dragState.from !== i ? ' over' : '')}
+                draggable
+                onDragStart={() => onDragStart(i)}
+                onDragOver={(e) => onDragOver(i, e)}
+                onDrop={() => onDrop(i)}
+                onDragEnd={() => { setDragState({ from: -1, over: -1 }); }}
+              >
+                <span className="muted"><I d={P.grip} size={14} /></span>
+                <span className="drag-rank">{i + 1}</span>
+                <span style={{ fontWeight: i < 3 ? 650 : 500 }}>{name}</span>
+                {i === 0 && <span className="tag free" style={{ marginLeft: 6 }}>最高</span>}
+                {i === order.length - 1 && <span className="tag" style={{ marginLeft: 6 }}>最低</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- 系统 ---------- */
+function SystemPage({ theme, setTheme }) {
+  const themes = [['石板蓝（默认）', '#4f46e5'], ['樱粉', '#db2777'], ['墨绿', '#047857'], ['琥珀', '#b45309']];
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 12 }}>
+      <div className="card" style={{ padding: 16 }}>
+        <div className="flex"><span style={{ color: 'var(--accent)' }}><I d={P.db} size={17} /></span><b>数据分析</b></div>
+        <div className="muted" style={{ fontSize: 12.5, margin: '6px 0 12px' }}>弹幕词云、积分 / 观看 / 签到 / 礼物榜 —— 数据来自直播中自动积累的数据库。</div>
+        <button className="btn sm" onClick={() => toast('打开数据分析页（原型演示）')}>查看报表</button>
+      </div>
+      <div className="card" style={{ padding: 16 }}>
+        <div className="flex"><span style={{ color: 'var(--accent)' }}><I d={P.doc} size={17} /></span><b>运行日志与数据落盘</b></div>
+        <div className="muted" style={{ fontSize: 12.5, margin: '6px 0 12px' }}>弹幕 / 入场 / 礼物写入 SQLite，字幕与问答日志落盘路径。</div>
+        <button className="btn sm" onClick={() => toast('打开日志设置（原型演示）')}>配置</button>
+      </div>
+      <div className="card" style={{ padding: 16 }}>
+        <div className="flex"><span style={{ color: 'var(--accent)' }}><I d={P.save} size={17} /></span><b>配置备份</b></div>
+        <div className="muted" style={{ fontSize: 12.5, margin: '6px 0 12px' }}>把当前配置存成模板，随时一键回滚整套方案（换直播主题的好帮手）。</div>
+        <div className="flex" style={{ gap: 8 }}>
+          <button className="btn sm" onClick={() => toast('已保存当前配置为模板 config-2026-10-29.json')}>存为模板</button>
+          <button className="btn sm danger" onClick={async () => {
+            const ok = await ask({ title: '用模板覆盖当前配置？', body: 'config-2026-10-29.json\n\n这一步直接写入 config.json，未保存的界面改动会全部丢失，且无法撤销。', confirm: '覆盖', danger: true });
+            if (ok) toast('已恢复模板 · 重启后生效');
+          }}>从模板恢复…</button>
+        </div>
+      </div>
+      <div className="card" style={{ padding: 16 }}>
+        <div className="flex"><span style={{ color: 'var(--accent)' }}><I d={P.key} size={17} /></span><b>账号与登录</b></div>
+        <div className="muted" style={{ fontSize: 12.5, margin: '6px 0 12px' }}>开启后访问 WebUI 需要先登录（UMS 账号体系）。</div>
+        <FieldRow label="登录功能"><Switch checked={false} onChange={() => {}} /></FieldRow>
+        <FieldRow label="用户名"><input type="text" style={{ maxWidth: 220 }} /></FieldRow>
+        <FieldRow label="密码"><input type="password" style={{ maxWidth: 220 }} /></FieldRow>
+      </div>
+      <div className="card" style={{ padding: 16 }}>
+        <div className="flex"><span style={{ color: 'var(--accent)' }}><I d={P.wand} size={17} /></span><b>外观主题</b></div>
+        <div className="muted" style={{ fontSize: 12.5, margin: '6px 0 12px' }}>选择后立即换色（试试 —— 这个原型是活的）。</div>
+        <div className="flex" style={{ gap: 8, flexWrap: 'wrap' }}>
+          {themes.map(([name, c]) => (
+            <button key={name} className={'chip' + (theme === c ? ' on' : '')} onClick={() => { setTheme(c); document.documentElement.style.setProperty('--accent', c); document.documentElement.style.setProperty('--accent-weak', c + '18'); toast('主题已切换：' + name); }}>
+              <span className="dot" style={{ background: c, marginRight: 6 }} />{name}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="card" style={{ padding: 16 }}>
+        <div className="flex"><span style={{ color: 'var(--accent)' }}><I d={P.grid} size={17} /></span><b>功能模块</b></div>
+        <div className="muted" style={{ fontSize: 12.5, margin: '6px 0 12px' }}>关掉 = 从界面移出（配置仍保留），不想看的模块在这里藏起来。</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {[['变声（SVC）', true], ['画面识别', true], ['串口硬件', true], ['双语翻译', false]].map(([n, v]) => (
+            <div className="flex" key={n} style={{ justifyContent: 'space-between' }}><span>{n}</span><Switch checked={v} onChange={() => {}} /></div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- 首次向导 ---------- */
+function Wizard({ cfg, onClose, onDone }) {
+  const [step, setStep] = useState(0);
+  const [pick, setPick] = useState({ platform: 'bilibili2', brain: 'tongyi', voice: 'edge-tts', body: 'live2d' });
+  const steps = ['直播平台', 'AI 大脑', '声音', '形象', '完成'];
+  const walls = {
+    0: PLATFORMS.slice(0, 6), 1: LLM.slice(0, 6), 2: TTS.slice(0, 6), 3: BODIES.slice(0, 4),
+  };
+  const pickKey = ['platform', 'brain', 'voice', 'body'][step];
+  const guides = [
+    '弹幕从哪个平台来？拿不准就选「聊天模式」，先不接平台把主播调教好。',
+    '谁来理解弹幕、组织语言？选一家填个 Key 就行，以后随时换。',
+    '她用什么嗓门说话？Edge-TTS 免费无 Key，先用它跑起来。',
+    '画面上是谁？不用形象就选「其他（外置）」。',
+  ];
+  const next = () => (step < 4 ? setStep(step + 1) : null);
+  return (
+    <div className="backdrop">
+      <div className="modal wide" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="modal-body" style={{ paddingBottom: 0 }}>
+          <div className="flex" style={{ marginBottom: 14 }}>
+            <b style={{ fontSize: 16 }}>开播设置向导</b>
+            <span className="muted" style={{ fontSize: 12 }}>只问必填项，高级参数全部用默认值</span>
+            <button className="btn sm" style={{ marginLeft: 'auto' }} onClick={onClose}>跳过向导</button>
+          </div>
+          <div className="wiz-steps">
+            {steps.map((s, i) => (
+              <div key={s} className={'wiz-seg ' + (i === step ? 'cur' : i < step ? 'done' : '')}>
+                <span>{i + 1}. {s}</span>
+                {i < steps.length - 1 && <span className="bar" />}
+              </div>
+            ))}
+          </div>
+
+          {step < 4 && (
+            <div>
+              <div className="muted" style={{ marginBottom: 12 }}>{guides[step]}</div>
+              <div className="pick-wall" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+                {walls[step].map((p) => (
+                  <PickCard key={p.id} name={p.name} desc={p.desc} tags={p.tags} on={pick[pickKey] === p.id}
+                    onClick={() => setPick({ ...pick, [pickKey]: p.id })} />
+                ))}
+              </div>
+              {step === 1 && pick.brain === 'tongyi' && (
+                <div className="mt12" style={{ maxWidth: 480 }}>
+                  <FieldRow label="API 密钥" req help={{ how: () => HelpHow({ title: '阿里云百炼 API Key', steps: '百炼控制台 → API-KEY 管理 → 创建，复制 sk- 开头字符串。' }) }}>
+                    <input type="password" placeholder="sk-…" className="mono" />
+                  </FieldRow>
+                </div>
+              )}
+              {step === 2 && pick.voice === 'edge-tts' && (
+                <div className="mt12" style={{ maxWidth: 480 }}>
+                  <FieldRow label="说话人" req><input type="text" defaultValue="zh-CN-XiaoxiaoNeural" className="mono" /></FieldRow>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 4 && (
+            <div>
+              <div className="banner info" style={{ marginBottom: 14 }}>
+                <span style={{ marginTop: 1 }}><I d={P.check} size={16} /></span>
+                <div><b>配好了！</b>点「开始试运行」用这套配置启动 —— 到开播台的聊天测试里跟她说句话吧。</div>
+              </div>
+              <div className="card" style={{ padding: '12px 16px', maxWidth: 480 }}>
+                {[['直播平台', PLATFORMS.find((p) => p.id === pick.platform).name],
+                  ['AI 大脑', LLM.find((p) => p.id === pick.brain).name],
+                  ['声音', TTS.find((p) => p.id === pick.voice).name],
+                  ['形象', BODIES.find((p) => p.id === pick.body).name]].map(([k, v]) => (
+                  <div key={k} className="flex" style={{ justifyContent: 'space-between', padding: '6px 0' }}>
+                    <span className="muted">{k}</span><b>{v}</b>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="modal-foot">
+          {step > 0 && <button className="btn" onClick={() => setStep(step - 1)}>上一步</button>}
+          <div style={{ flex: 1 }} />
+          {step < 4
+            ? <button className="btn primary" onClick={next}>{step === 3 ? '完成' : '下一步'}</button>
+            : <React.Fragment>
+                <button className="btn" onClick={onClose}>稍后再说</button>
+                <button className="btn primary" onClick={() => { onDone(pick); }}>开始试运行</button>
+              </React.Fragment>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- 设计说明 ---------- */
+function HelpModal({ onClose }) {
+  const items = [
+    ['导航 9 → 5', '旧版九个平级工作区按 config.json 结构切分；新版只留五个「用户任务」级入口，原「直播接入/大脑/声音」合并为「基础设置」的四步。'],
+    ['开播台 · 信号链', '首页把产品本质画出来：弹幕从哪来 → 谁想 → 谁说 → 长什么样。每个节点三态（已测试 / 未测试 / 未配置），点击直达配置。'],
+    ['选中即所见', '13 家 TTS、10 家 LLM、7 种形象运行时各只有一个生效 —— 备选者只是一张卡片，选中谁才渲染谁的表单。旧版是全部表单平铺（651 个字段）。'],
+    ['必填 / 高级两层', 'API 密钥和 temperature 不再平级。必填 ≤ 6 个框，高级参数默认折叠并注明「新手保持默认即可」。'],
+    ['玩法即开关', '20+ 可选功能收进玩法库开关卡，开启才展开、不看不占视野，与主导航解耦。'],
+    ['排序替代编号', '播报优先级从 20 个数字输入框改为拖拽排序 —— 排序是任务，编号是实现细节。'],
+    ['危险显性化', '封号风险、模板覆盖等关键提示钉在卡片顶部警示条，不再埋在输入框 placeholder 里；「怎么看？」做成弹出步骤。'],
+    ['就地验证', '每个连接类配置旁就有测试 / 试听 / 预览按钮，「配好了」的定义从填过变成测过。'],
+  ];
+  return (
+    <div className="backdrop" onMouseDown={onClose}>
+      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="modal-head"><h3>这个原型在改什么</h3></div>
+        <div className="modal-body">
+          <div className="muted" style={{ marginBottom: 12, fontSize: 12.5 }}>
+            现状：9 个工作区 · 651 个配置字段 · 137 张平铺卡片。用户反馈「不知道怎么配置」的结构性原因见方案文档。
+            原型里的服务名 / 字段与现版 config 对齐，未实现的表单以占位说明标注。
+          </div>
+          {items.map(([t, d], i) => (
+            <div key={t} style={{ display: 'flex', gap: 12, padding: '9px 0', borderTop: i ? '1px dashed var(--line)' : 'none' }}>
+              <span style={{ fontWeight: 650, flex: 'none', width: 108 }}>{t}</span>
+              <span style={{ color: 'var(--ink-2)', fontSize: 12.5, lineHeight: 1.65 }}>{d}</span>
+            </div>
+          ))}
+        </div>
+        <div className="modal-foot"><button className="btn primary" onClick={onClose}>明白了</button></div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- App 外壳 ---------- */
+const NAV = [
+  { id: 'dash', title: '开播台', sub: '现在能开播吗？差哪一步？', icon: P.dash },
+  { id: 'settings', title: '基础设置', sub: '四步配齐信号链', icon: P.sliders },
+  { id: 'play', title: '玩法库', sub: '20+ 可选玩法，开关式启用', icon: P.grid },
+  { id: 'mod', title: '弹幕管家', sub: '什么弹幕进、怎么答谢、谁先播', icon: P.shield },
+  { id: 'sys', title: '系统', sub: '数据 / 备份 / 账号 / 外观', icon: P.gear },
+];
+
+function App() {
+  const [screen, setScreen] = useState('dash');
+  const [step, setStep] = useState('voice');  // 基础设置默认落在「声音」——最能展示新交互
+  const [cfg, setCfg] = useState({
+    platform: { id: 'bilibili', label: '哔哩哔哩', tested: true },
+    brain: { id: 'tongyi', label: '通义千问', tested: false },
+    voice: null,
+    body: { id: 'live2d', label: 'Live2D', tested: true },
+  });
+  const [play, setPlay] = useState(GAMEPLAY.map((g) => g.on));
+  const [running, setRunning] = useState(false);
+  const [dirty, setDirty] = useState(0);
+  const [wizard, setWizard] = useState(false);
+  const [help, setHelp] = useState(false);
+  const [theme, setTheme] = useState('#4f46e5');
+
+  const labelOf = { platform: PLATFORMS, brain: LLM, voice: TTS, body: BODIES };
+  const select = (key, id) => {
+    setCfg((c) => ({ ...c, [key]: { id, label: (labelOf[key].find((p) => p.id === id) || {}).name || id, tested: false } }));
+    setDirty((d) => d + 1);
+    toast('已切换 · 改动待保存');
+  };
+
+  const onRun = async (v) => {
+    if (v) { setRunning(true); toast('main.py 已启动 · 正在按信号链连接各服务'); return; }
+    const ok = await ask({ title: '确认停止直播程序？', body: '弹幕监听、语音合成和形象驱动会一起停下；正在直播的话，这一下就是断播。', confirm: '停止', danger: true });
+    if (ok) { setRunning(false); toast('已停止'); }
+  };
+
+  const save = async () => {
+    if (!dirty) { toast('没有未保存的改动'); return; }
+    const ok = await ask({
+      title: '保存这 ' + dirty + ' 项改动？',
+      body: '平台：' + (cfg.platform ? cfg.platform.label : '未选') + ' · 大脑：' + (cfg.brain ? cfg.brain.label : '未选')
+        + '\n声音：' + (cfg.voice ? cfg.voice.label : '未选') + ' · 形象：' + (cfg.body ? cfg.body.label : '未选')
+        + '\n\n保存后正在运行的程序需重启才会用到新配置。',
+      confirm: '保存',
+    });
+    if (ok) { setDirty(0); toast('配置已保存到 config.json'); }
+  };
+
+  const go = (scr, st) => { setScreen(scr); if (st) setStep(st); };
+  const nav = NAV.find((n) => n.id === screen);
+  const titles = { settings: STEP_META[step].title, settingsSub: STEP_META[step].sub };
+  const isSettings = screen === 'settings';
+
+  return (
+    <div className="shell">
+      <aside className="sidebar">
+        <div className="brand">
+          <span className="brand-mark"><I d={P.play} size={15} /></span>
+          <div>
+            <div className="brand-name">AI Vtuber</div>
+            <div className="brand-sub">重设计原型 v1</div>
+          </div>
+        </div>
+        <nav className="nav">
+          {NAV.map((n) => (
+            <button key={n.id} className={'nav-item' + (screen === n.id ? ' on' : '')} onClick={() => setScreen(n.id)}>
+              <I d={n.icon} size={16} />
+              {n.title}
+              {n.id === 'play' && play.filter(Boolean).length > 0 && <span className="nav-badge">{play.filter(Boolean).length}</span>}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-foot">
+          <button className="ghost-btn" onClick={() => setWizard(true)}>
+            <I d={P.wand} size={13} /> 重新运行设置向导
+          </button>
+          <button className="ghost-btn" onClick={() => setHelp(true)}>
+            <I d={P.question} size={13} /> 这个原型改了什么
+          </button>
+          <div className="proto-note">交互演示 · 数据为假<br />配套文档见 docs/redesign</div>
+        </div>
+      </aside>
+
+      <div className="main">
+        <header className="topbar">
+          <div>
+            <div className="topbar-title">{isSettings ? '基础设置 · ' + titles.settings : nav.title}</div>
+            <div className="topbar-sub">{isSettings ? titles.settingsSub : nav.sub}</div>
+          </div>
+          <div className="topbar-right">
+            <div className="searchbox"><I d={P.search} size={14} /> 搜索配置项 <kbd>Ctrl K</kbd></div>
+            <span className="pill" style={{ color: running ? 'var(--ok)' : 'var(--ink-mut)' }}>
+              <span className="dot" style={{ background: running ? 'var(--ok)' : '#c4c9d2' }} />
+              {running ? '运行中' : '未运行'}
+            </span>
+            <button className="btn primary" onClick={save}>
+              <I d={P.save} size={14} /> 保存{dirty > 0 ? '（' + dirty + '）' : ''}
+            </button>
+          </div>
+        </header>
+
+        <main className="content">
+          {screen === 'dash' && <Dashboard cfg={cfg} running={running} onGo={go} onRun={onRun} onWizard={() => setWizard(true)} />}
+          {isSettings && <Settings cfg={cfg} step={step} onStep={setStep} onSelect={select} />}
+          {screen === 'play' && <Gameplay state={play} setState={(n) => { setPlay(n); setDirty((d) => d + 1); }} />}
+          {screen === 'mod' && <Moderation />}
+          {screen === 'sys' && <SystemPage theme={theme} setTheme={setTheme} />}
+        </main>
+      </div>
+
+      {wizard && (
+        <Wizard cfg={cfg} onClose={() => setWizard(false)} onDone={(pick) => {
+          setCfg({
+            platform: { id: pick.platform, label: PLATFORMS.find((p) => p.id === pick.platform).name, tested: false },
+            brain: { id: pick.brain, label: LLM.find((p) => p.id === pick.brain).name, tested: false },
+            voice: { id: pick.voice, label: TTS.find((p) => p.id === pick.voice).name, tested: false },
+            body: { id: pick.body, label: BODIES.find((p) => p.id === pick.body).name, tested: false },
+          });
+          setWizard(false);
+          setRunning(true);
+          setDirty((d) => d + 1);
+          toast('向导完成 · 已按新配置开始试运行');
+        }} />
+      )}
+      {help && <HelpModal onClose={() => setHelp(false)} />}
+      <ToastHost />
+      <ConfirmHost />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
