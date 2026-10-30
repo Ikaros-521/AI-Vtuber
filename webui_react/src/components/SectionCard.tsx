@@ -87,7 +87,7 @@ export function SectionCard({
       )}
 
       {(section.rows ?? []).map((row, i) => (
-        <div key={i} className={`${bare || nested || i === 0 ? '' : 'mt-3'} flex flex-wrap gap-x-5 gap-y-4`}>
+        <div key={i} className={`${bare || nested || i === 0 ? '' : 'mt-3'} flex flex-wrap items-start gap-x-5 gap-y-4`}>
           {row.map((field, j) => (
             <FieldControl
               key={`${i}-${j}`}
@@ -129,7 +129,7 @@ function AdvancedRows({ section, workspaceId }: { section: Section; workspaceId:
       {open && (
         <div className="mt-2">
           {section.rowsAdvanced.map((row, i) => (
-            <div key={i} className={`${i === 0 ? '' : 'mt-3'} flex flex-wrap gap-x-5 gap-y-4`}>
+            <div key={i} className={`${i === 0 ? '' : 'mt-3'} flex flex-wrap items-start gap-x-5 gap-y-4`}>
               {row.map((field, j) => (
                 <FieldControl
                   key={`${i}-${j}`}

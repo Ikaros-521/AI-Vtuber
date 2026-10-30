@@ -116,7 +116,7 @@ export function DataAnalysisCard() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end gap-4">
+      <div className="flex flex-wrap items-start gap-4">
         <div className="w-36">
           <label className="mb-1 block text-[13px] font-medium">Top N</label>
           <input
@@ -126,27 +126,34 @@ export function DataAnalysisCard() {
             onChange={(e) => setTop(Math.max(1, parseInt(e.target.value, 10) || 10))}
           />
         </div>
-        <button
-          className="h-[34px] rounded-lg px-4 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-50"
-          style={{ background: 'var(--accent)' }}
-          disabled={busy}
-          onClick={() => void refresh()}
-        >
-          {busy ? '统计中…' : '更新数据'}
-        </button>
-        <div className="flex flex-wrap gap-1.5">
-          {BOARD_DEFS.map((b) => (
-            <button
-              key={b.key}
-              className={`rounded-full px-3 py-1 text-xs font-medium ring-1 transition ${
-                board === b.key ? 'text-white ring-transparent' : 'bg-white text-[var(--ink-mut)] ring-slate-300 hover:text-[var(--accent)]'
-              }`}
-              style={board === b.key ? { background: 'var(--accent)' } : undefined}
-              onClick={() => setBoard(b.key)}
-            >
-              {b.title}
-            </button>
-          ))}
+        <div>
+          {/* 隐形标签行占位：让按钮与旁边输入框的控件基线对齐 */}
+          <span aria-hidden className="mb-1 block text-[13px] font-medium">&nbsp;</span>
+          <button
+            className="h-[35px] rounded-lg px-4 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+            style={{ background: 'var(--accent)' }}
+            disabled={busy}
+            onClick={() => void refresh()}
+          >
+            {busy ? '统计中…' : '更新数据'}
+          </button>
+        </div>
+        <div>
+          <span aria-hidden className="mb-1 block text-[13px] font-medium">&nbsp;</span>
+          <div className="flex flex-wrap gap-1.5">
+            {BOARD_DEFS.map((b) => (
+              <button
+                key={b.key}
+                className={`rounded-full px-3 py-1 text-xs font-medium ring-1 transition ${
+                  board === b.key ? 'text-white ring-transparent' : 'bg-white text-[var(--ink-mut)] ring-slate-300 hover:text-[var(--accent)]'
+                }`}
+                style={board === b.key ? { background: 'var(--accent)' } : undefined}
+                onClick={() => setBoard(b.key)}
+              >
+                {b.title}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

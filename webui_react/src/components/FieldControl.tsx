@@ -21,10 +21,18 @@ const WIDTH_CLASS: Record<string, string> = {
   xl: 'w-[540px]',
 }
 
+/** 与可见标签同款样式的隐形占位行：开关/按钮这类「无顶标签」字段也保留标签行高度，
+ * 行内所有控件的顶基线（标签行下沿）对齐——混排不再高低错落。 */
+function LabelSpacer() {
+  return <span aria-hidden className="mb-1 block text-[13px] font-medium">&nbsp;</span>
+}
+
 function shell(field: Field, fieldId: string, control: React.ReactNode, extra?: React.ReactNode) {
   return (
-    <div data-field-id={fieldId} className={`${WIDTH_CLASS[field.w ?? 'md']} max-w-full min-w-[11rem]`}>
-      {field.kind !== 'switch' && field.kind !== 'action' && (
+    <div data-field-id={fieldId} className={`${WIDTH_CLASS[field.w ?? 'md']} max-w-full min-w-[9rem]`}>
+      {field.kind === 'switch' || field.kind === 'action' ? (
+        <LabelSpacer />
+      ) : (
         <label className="mb-1 block text-[13px] font-medium text-[var(--ink)]">{field.label}</label>
       )}
       {control}
@@ -62,7 +70,7 @@ export function FieldControl({ field, fieldId, basePath = [] }: { field: Field; 
       return shell(
         field,
         fieldId,
-        <label className="switch mt-0.5">
+        <label className="switch">
           <input
             type="checkbox"
             checked={Boolean(value)}
@@ -375,7 +383,7 @@ function ActionField({ field, fieldId, basePath }: { field: Extract<Field, { kin
     field,
     fieldId,
     <button
-      className="mt-[22px] h-fit rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-[13px] font-medium text-[var(--ink)] shadow-sm transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50"
+      className="h-fit rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-[13px] font-medium text-[var(--ink)] shadow-sm transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50"
       disabled={busy}
       onClick={() => {
         if (field.confirm) {
@@ -504,7 +512,7 @@ function GroupListField({ field, fieldId, basePath }: { field: Extract<Field, { 
               </button>
             </div>
             {(field.rows ?? []).map((row, r) => (
-              <div key={r} className="mb-2 flex flex-wrap gap-x-5 gap-y-3 last:mb-0">
+              <div key={r} className="mb-2 flex flex-wrap items-start gap-x-5 gap-y-3 last:mb-0">
                 {row.map((sub, c) => (
                   <FieldControl
                     key={c}

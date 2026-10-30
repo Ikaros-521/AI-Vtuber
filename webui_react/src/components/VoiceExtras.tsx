@@ -48,7 +48,7 @@ export function TtsTester() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-end gap-4">
+      <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
         <div className="w-64 max-w-full">
           <label className="mb-1 block text-[13px] font-medium">当前TTS引擎</label>
           <select
@@ -62,7 +62,6 @@ export function TtsTester() {
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-[var(--ink-mut)]">在线试听与快速测试当前配置的语音合成效果与音色表现。</p>
         </div>
         <div className="min-w-[16rem] flex-1">
           <label className="mb-1 block text-[13px] font-medium">试听文本</label>
@@ -74,14 +73,18 @@ export function TtsTester() {
             onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && void synth()}
           />
         </div>
-        <button
-          className="h-[34px] rounded-lg px-4 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-50"
-          style={{ background: 'var(--accent)' }}
-          disabled={busy}
-          onClick={() => void synth()}
-        >
-          {busy ? '合成中…' : '合成并播放'}
-        </button>
+        <div>
+          {/* 隐形标签行占位：让按钮与旁边输入框的控件基线对齐 */}
+          <span aria-hidden className="mb-1 block text-[13px] font-medium">&nbsp;</span>
+          <button
+            className="h-[35px] rounded-lg px-4 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+            style={{ background: 'var(--accent)' }}
+            disabled={busy}
+            onClick={() => void synth()}
+          >
+            {busy ? '合成中…' : '合成并播放'}
+          </button>
+        </div>
       </div>
 
       {audioPath && (
@@ -94,7 +97,7 @@ export function TtsTester() {
       )}
 
       <p className="text-xs leading-relaxed text-[var(--ink-mut)]">
-        试听用的是<b>已保存</b>的引擎配置（含各引擎细项）——界面上改了参数要先「保存配置」再听。说话人取自聊天页的「说话人昵称」。
+        在线试听与快速测试当前配置的语音合成效果与音色表现。试听用的是<b>已保存</b>的引擎配置（含各引擎细项）——界面上改了参数要先「保存配置」再听。说话人取自聊天页的「说话人昵称」。
       </p>
     </div>
   )
