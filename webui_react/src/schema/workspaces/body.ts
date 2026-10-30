@@ -90,7 +90,7 @@ export const bodyWorkspace: Workspace = {
           rows: [
             [
               { kind: 'input', key: ['unity', 'api_ip_port'], label: 'API地址', w: 'md' },
-              { kind: 'input', key: ['unity', 'password'], label: '密码', w: 'md', password: true, placeholder: '对接Unity应用使用的HTTP中转站的密码' },
+              { kind: 'input', key: ['unity', 'password'], label: '密码', w: 'md', password: true, skipPrecheck: true, placeholder: '对接Unity应用使用的HTTP中转站的密码' },
             ],
           ],
         },

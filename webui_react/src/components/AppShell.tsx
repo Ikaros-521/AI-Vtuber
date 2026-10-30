@@ -5,11 +5,11 @@
  */
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
-import { PAGES, resolveTab, WORKSPACES, SETTINGS_STEPS, type PageId } from '../schema'
+import { PAGES, resolveTab, WORKSPACES, SETTINGS_STEPS, precheckSettings, type PageId } from '../schema'
 import { entryForPath } from '../schema'
 import { useChanges, useConfigStore } from '../state/configStore'
 import { useOpsStore } from '../state/opsStore'
-import { notify, useJumpStore } from '../state/ui'
+import { notify, useConfirmStore, useJumpStore } from '../state/ui'
 import { getByPath, type JsonObject } from '../lib/path'
 import {
   AUDIO_SYNTHESIS_TYPE_OPTIONS,
@@ -56,7 +56,9 @@ export function AppShell() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [dirtyOpen, setDirtyOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
   const config = useConfigStore((s) => s.config)
+  const ask = useConfirmStore((s) => s.ask)
   const [loginUser, setLoginUser] = useState<string | null>(null)
 
   // 首次使用向导：没配平台或大脑时自动弹一次；关掉后本会话不再打扰
@@ -142,6 +144,25 @@ export function AppShell() {
       notify.info('没有未保存的改动')
       return
     }
+    // 保存前预检：当前选中服务的必填型字段空着就提醒（可仍要保存，是提醒不是拦截）
+    const issues = precheckSettings(useConfigStore.getState().draft ?? {})
+    if (issues.length > 0) {
+      const lines = issues.slice(0, 6).map((i) => `· ${i.stepTitle}：${i.sectionTitle} 的「${i.label}」`).join('\n')
+      const more = issues.length > 6 ? `\n…等共 ${issues.length} 项` : ''
+      const proceed = await new Promise<boolean>((res) => {
+        ask(
+          `保存前提醒：${issues.length} 项看起来还没填`,
+          () => res(true),
+          `${lines}${more}\n\n这些可能是开播要用的参数，空着容易运行报错。`,
+          { onCancel: () => res(false), confirmLabel: '仍要保存', cancelLabel: '先去补' },
+        )
+      })
+      if (!proceed) {
+        const first = issues[0]
+        useJumpStore.getState().jump(first.stepId, { fieldId: first.fieldId })
+        return
+      }
+    }
     notify.info(summarize(useConfigStore.getState().draft ?? {}))
     const outcome = await save()
     if (outcome.ok) notify.ok(outcome.message)
@@ -159,12 +180,23 @@ export function AppShell() {
   const sysWorkspace = WORKSPACES.find((w) => w.id === 'sys')!
   const playWorkspace = WORKSPACES.find((w) => w.id === 'play')!
 
-  const navGo = (p: PageId) => setRoute((cur) => (cur.page === p ? cur : { page: p, step: cur.step }))
+  const navGo = (p: PageId) => {
+    setRoute((cur) => (cur.page === p ? cur : { page: p, step: cur.step }))
+    setNavOpen(false)
+  }
 
   return (
     <div className="flex min-h-screen">
-      {/* 左侧主导航 */}
-      <aside className="sticky top-0 hidden h-screen w-[204px] flex-none flex-col border-r border-slate-200 bg-white md:flex">
+      {/* 窄屏抽屉遮罩 */}
+      {navOpen && (
+        <div className="fixed inset-0 z-[45] bg-slate-900/40 md:hidden" onClick={() => setNavOpen(false)} aria-hidden />
+      )}
+      {/* 左侧主导航：桌面粘性全高贯通，窄屏抽屉化（修复窄于 768px 时完全没有导航的问题） */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-[224px] flex-none flex-col border-r border-slate-200 bg-white transition-transform duration-200 md:sticky md:top-0 md:z-auto md:h-screen md:w-[204px] md:translate-x-0 ${
+          navOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full'
+        }`}
+      >
         <div className="flex items-center gap-2.5 px-[18px] pb-3.5 pt-[18px]">
           <span
             className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[9px] text-sm font-bold text-white"
@@ -210,14 +242,22 @@ export function AppShell() {
       {/* 主区 */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* 顶栏：页面标题 + 保存 + 运行状态 + 搜索 */}
-        <header className="sticky top-0 z-40 flex h-[58px] items-center gap-3.5 border-b border-slate-200 bg-white/95 px-6 backdrop-blur">
+        <header className="sticky top-0 z-40 flex h-[58px] items-center gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:px-6">
+          {/* 窄屏汉堡：打开抽屉导航 */}
+          <button
+            className="flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-slate-300 text-[15px] text-[var(--ink-mut)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] md:hidden"
+            onClick={() => setNavOpen(true)}
+            aria-label="打开导航"
+          >
+            ☰
+          </button>
           <div className="min-w-0">
             <div className="truncate text-[15px] font-bold">
               {route.page === 'settings'
                 ? `基础设置 · ${SETTINGS_STEPS.find((w) => w.id === route.step)?.title ?? ''}`
                 : page.title}
             </div>
-            <div className="truncate text-xs text-[var(--ink-mut)]">{page.sub}</div>
+            <div className="hidden truncate text-xs text-[var(--ink-mut)] sm:block">{page.sub}</div>
           </div>
 
           <div className="ml-auto flex flex-none items-center gap-2.5">

@@ -7,10 +7,14 @@ import { useEffect, useState } from 'react'
 import { getByPath, type JsonObject } from '../lib/path'
 import { pickMatches, sectionVisible, SETTINGS_STEPS } from '../schema'
 import { useConfigStore } from '../state/configStore'
+import { useTestStore, type TestKind, type TestRecord } from '../state/testStore'
 import { notify, useJumpStore } from '../state/ui'
 import type { Section, Workspace } from '../schema/types'
 import { SectionCard } from './SectionCard'
 import { JumpFlash } from './WorkspacePage'
+
+/** 哪个步骤的选卡墙挂哪种测试记录（platform/body 暂无可用的探测）。 */
+const TEST_KIND_BY_STEP: Record<string, TestKind> = { brain: 'llm', voice: 'tts' }
 
 const STEP_HINTS: Record<string, string> = {
   platform: '弹幕从哪个平台来',
@@ -39,6 +43,9 @@ export function SettingsPage({ step, onStep }: { step: string; onStep: (s: strin
 
   // 各步骤的页签状态（大脑：模型接入/记忆与模板/快捷问答；声音：说话/听话/变声）
   const [tabOf, setTabOf] = useState<Record<string, number>>({})
+  // 选卡墙的测试徽标：大脑挂 LLM 测试记录、声音挂试听记录
+  const testKind = TEST_KIND_BY_STEP[ws.id]
+  const tests = useTestStore((s) => (testKind ? s[testKind] : null))
   const tab = Math.min(tabOf[ws.id] ?? 0, Math.max(ws.groups.length - 1, 0))
   const group = ws.groups[tab] ?? ws.groups[0]
 
@@ -118,6 +125,7 @@ export function SettingsPage({ step, onStep }: { step: string; onStep: (s: strin
               pickSections={pickSections}
               currentValue={currentValue}
               draft={draft}
+              tests={tests}
               onPick={pickCard}
             />
             {selected ? (
@@ -132,13 +140,14 @@ export function SettingsPage({ step, onStep }: { step: string; onStep: (s: strin
   )
 }
 
-/** 选卡墙：N 选 1 的服务只显示卡片，不渲染表单。 */
+/** 选卡墙：N 选 1 的服务只显示卡片，不渲染表单。测过的服务亮「已测通」徽标。 */
 function PickWall({
   title,
   pick,
   pickSections,
   currentValue,
   draft,
+  tests,
   onPick,
 }: {
   title: string
@@ -146,6 +155,7 @@ function PickWall({
   pickSections: Section[]
   currentValue: unknown
   draft: JsonObject
+  tests: Record<string, TestRecord> | null
   onPick: (v: string) => void
 }) {
   const entries: { value: string; label: string; section?: Section }[] = []
@@ -177,6 +187,7 @@ function PickWall({
       <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-4">
         {visible.map((e) => {
           const on = String(currentValue ?? '') === e.value
+          const rec = tests?.[e.value]
           return (
             <button
               key={e.value}
@@ -186,7 +197,22 @@ function PickWall({
                 : { borderColor: '#e4e7ec' }}
               onClick={() => onPick(e.value)}
             >
-              <div className="pr-6 text-[13.5px] font-semibold">{nameOf(e)}</div>
+              <div className="flex items-start gap-1.5 pr-6">
+                <span className="text-[13.5px] font-semibold">{nameOf(e)}</span>
+                {rec && (
+                  <span
+                    className="mt-px flex-none rounded px-1.5 py-px text-[11px] font-medium"
+                    style={
+                      rec.ok
+                        ? { background: 'color-mix(in srgb, var(--ok) 12%, white)', color: 'var(--ok)' }
+                        : { background: 'color-mix(in srgb, #dc2626 10%, white)', color: '#dc2626' }
+                    }
+                    title={rec.message ? `最近一次测试：${rec.message}` : undefined}
+                  >
+                    {rec.ok ? '✓ 已测通' : '✕ 测试失败'}
+                  </span>
+                )}
+              </div>
               {e.section?.desc && <div className="mt-1 line-clamp-2 text-xs leading-relaxed text-[var(--ink-mut)]">{e.section.desc}</div>}
               {e.section?.tags && e.section.tags.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">

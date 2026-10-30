@@ -2,12 +2,14 @@
 
  * 取代旧「总览」页：readiness 从四行清单升级为信号链节点，
  * 运行/停止/日志/重启从右下角操作坞收编到这一页。
+ * 大脑/声音节点挂测试记录（LLM 测试 / TTS 试听），「配好了=测过了」。
  */
 import { useState } from 'react'
 import { api } from '../api/client'
 import { getByPath, type JsonObject } from '../lib/path'
 import { useConfigStore } from '../state/configStore'
 import { useOpsStore } from '../state/opsStore'
+import { useTestStore, type TestRecord } from '../state/testStore'
 import { notify, useConfirmStore, useJumpStore } from '../state/ui'
 import {
   AUDIO_SYNTHESIS_TYPE_OPTIONS,
@@ -24,6 +26,25 @@ interface ChainNode {
   ok: boolean
   value: string
   hint: string
+}
+
+/** 节点对应的测试记录：大脑看当前 chat_type 的 LLM 测试，声音看当前 TTS 的试听。 */
+function testRecordOf(
+  step: string,
+  draft: { [k: string]: unknown } | null,
+  llmTests: Record<string, TestRecord>,
+  ttsTests: Record<string, TestRecord>,
+): TestRecord | undefined {
+  if (!draft) return undefined
+  if (step === 'brain') {
+    const v = String((draft as { chat_type?: unknown }).chat_type ?? '')
+    return v ? llmTests[v] : undefined
+  }
+  if (step === 'voice') {
+    const v = String((draft as { audio_synthesis_type?: unknown }).audio_synthesis_type ?? '')
+    return v ? ttsTests[v] : undefined
+  }
+  return undefined
 }
 
 function readiness(config: JsonObject): ChainNode[] {
@@ -70,6 +91,8 @@ function readiness(config: JsonObject): ChainNode[] {
 export function DashboardPage({ onOpenChat, onOpenWizard }: { onOpenChat: () => void; onOpenWizard: () => void }) {
   const draft = useConfigStore((s) => s.draft)
   const running = useOpsStore((s) => s.running)
+  const llmTests = useTestStore((s) => s.llm)
+  const ttsTests = useTestStore((s) => s.tts)
   const refresh = useOpsStore((s) => s.refresh)
   const jump = useJumpStore((s) => s.jump)
   const ask = useConfirmStore((s) => s.ask)
@@ -172,39 +195,60 @@ export function DashboardPage({ onOpenChat, onOpenWizard }: { onOpenChat: () => 
         </div>
       </div>
 
-      {/* 信号链：弹幕从哪来 → 谁想 → 谁说 → 长什么样 */}
-      <div>
-        <div className="mb-2.5 flex items-baseline gap-3">
-          <h2 className="text-[15px] font-bold">信号链</h2>
-          <span className="text-xs text-[var(--ink-mut)]">弹幕从哪来 → 谁想 → 谁说 → 长什么样；点节点直达配置</span>
-        </div>
-        <div className="flex flex-col gap-2.5 lg:flex-row">
-          {nodes.map((n, i) => (
-            <div key={n.step} className="flex flex-1 items-center gap-2.5">
-              <button
-                className="card-surface w-full px-4 py-3 text-left transition hover:border-[var(--accent)]"
-                onClick={() => jump(n.step, {})}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-[13.5px] font-semibold">{n.title}</span>
-                  <span
-                    className="ml-auto inline-block h-2 w-2 flex-none rounded-full"
-                    style={{ background: n.ok ? 'var(--ok)' : '#cbd5e1' }}
-                    title={n.ok ? '已配置' : '未配置'}
-                  />
+        {/* 信号链：弹幕从哪来 → 谁想 → 谁说 → 长什么样 */}
+        <div>
+          <div className="mb-2.5 flex items-baseline gap-3">
+            <h2 className="text-[15px] font-bold">信号链</h2>
+            <span className="text-xs text-[var(--ink-mut)]">弹幕从哪来 → 谁想 → 谁说 → 长什么样；点节点直达配置</span>
+          </div>
+          <div className="flex flex-col gap-2.5 lg:flex-row">
+            {nodes.map((n, i) => {
+              const rec = testRecordOf(n.step, draft, llmTests, ttsTests)
+              return (
+                <div key={n.step} className="flex flex-1 items-center gap-2.5">
+                  <button
+                    className="card-surface w-full px-4 py-3 text-left transition hover:border-[var(--accent)]"
+                    onClick={() => jump(n.step, {})}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13.5px] font-semibold">{n.title}</span>
+                      {rec?.ok && (
+                        <span
+                          className="rounded px-1.5 py-px text-[11px] font-medium"
+                          style={{ background: 'color-mix(in srgb, var(--ok) 12%, white)', color: 'var(--ok)' }}
+                          title={rec.message ? `最近一次测试：${rec.message}` : '测试通过'}
+                        >
+                          ✓ 已测通
+                        </span>
+                      )}
+                      {rec && !rec.ok && (
+                        <span
+                          className="rounded px-1.5 py-px text-[11px] font-medium"
+                          style={{ background: 'color-mix(in srgb, #dc2626 10%, white)', color: '#dc2626' }}
+                          title={rec.message ? `最近一次测试：${rec.message}` : '测试失败'}
+                        >
+                          ✕ 测试失败
+                        </span>
+                      )}
+                      <span
+                        className="ml-auto inline-block h-2 w-2 flex-none rounded-full"
+                        style={{ background: n.ok ? 'var(--ok)' : '#cbd5e1' }}
+                        title={n.ok ? '已配置' : '未配置'}
+                      />
+                    </div>
+                    <div className={`mt-1 truncate text-[13px] ${n.ok ? '' : 'text-[var(--ink-mut)]'}`} title={n.value}>
+                      {n.value}
+                    </div>
+                    {!n.ok && <div className="mt-0.5 text-xs" style={{ color: 'var(--warn)' }}>{n.hint}</div>}
+                  </button>
+                  {i < nodes.length - 1 && (
+                    <span className="hidden flex-none text-slate-300 lg:block" aria-hidden>→</span>
+                  )}
                 </div>
-                <div className={`mt-1 truncate text-[13px] ${n.ok ? '' : 'text-[var(--ink-mut)]'}`} title={n.value}>
-                  {n.value}
-                </div>
-                {!n.ok && <div className="mt-0.5 text-xs" style={{ color: 'var(--warn)' }}>{n.hint}</div>}
-              </button>
-              {i < nodes.length - 1 && (
-                <span className="hidden flex-none text-slate-300 lg:block" aria-hidden>→</span>
-              )}
-            </div>
-          ))}
+              )
+            })}
+          </div>
         </div>
-      </div>
 
       {/* 运行控制 + 聊天测试 */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

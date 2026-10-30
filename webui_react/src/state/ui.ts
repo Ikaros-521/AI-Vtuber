@@ -40,17 +40,22 @@ export interface ConfirmRequest {
   title: string
   body?: string
   onOk: () => void
+  /** 点取消/点遮罩时触发（保存前预检用它跳到缺失字段） */
+  onCancel?: () => void
+  confirmLabel?: string
+  cancelLabel?: string
 }
 
 interface ConfirmState {
   current: ConfirmRequest | null
-  ask: (title: string, onOk: () => void, body?: string) => void
+  ask: (title: string, onOk: () => void, body?: string, opts?: { onCancel?: () => void; confirmLabel?: string; cancelLabel?: string }) => void
   close: () => void
 }
 
 export const useConfirmStore = create<ConfirmState>((set) => ({
   current: null,
-  ask: (title, onOk, body) => set({ current: { title, onOk, body } }),
+  ask: (title, onOk, body, opts) =>
+    set({ current: { title, onOk, body, onCancel: opts?.onCancel, confirmLabel: opts?.confirmLabel, cancelLabel: opts?.cancelLabel } }),
   close: () => set({ current: null }),
 }))
 

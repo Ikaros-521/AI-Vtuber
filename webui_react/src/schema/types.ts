@@ -33,6 +33,8 @@ export interface FieldBase {
   hint?: string
   placeholder?: string
   w?: FieldWidth
+  /** 保存前预检跳过此项：条件性字段（仅在特定模式下才需要填），空着不算问题 */
+  skipPrecheck?: boolean
 }
 
 export type Field =

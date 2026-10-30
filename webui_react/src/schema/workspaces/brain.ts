@@ -120,7 +120,7 @@ export const brainWorkspace: Workspace = {
             [
               { kind: 'input', key: ['zhipu', 'api_key'], label: 'api key', w: 'md', placeholder: '具体参考官方文档，申请地址：https://open.bigmodel.cn/usercenter/apikeys' },
               { kind: 'select', key: ['zhipu', 'model'], label: '模型', w: 'md', free: true, options: Object.fromEntries(['应用', '智能体', 'glm-3-turbo', 'glm-4', 'glm-4-flash', 'charglm-3', 'characterglm', 'chatglm_turbo', 'chatglm_pro', 'chatglm_std', 'chatglm_lite', 'chatglm_lite_32k'].map((m) => [m, m])) },
-              { kind: 'input', key: ['zhipu', 'app_id'], label: '应用ID', w: 'md', placeholder: '在 模型为：应用 时，从日志里复制你需要的应用ID' },
+              { kind: 'input', key: ['zhipu', 'app_id'], label: '应用ID', w: 'md', skipPrecheck: true, placeholder: '在 模型为：应用 时，从日志里复制你需要的应用ID' },
             ],
           ],
           rowsAdvanced: [
@@ -273,7 +273,7 @@ export const brainWorkspace: Workspace = {
               { kind: 'select', key: ['dify', 'type'], label: '应用类型', w: 'sm', options: { 聊天助手: '聊天助手', 工作流: '工作流' } },
               { kind: 'switch', key: ['dify', 'stream'], label: '流式响应' },
               { kind: 'switch', key: ['dify', 'history_enable'], label: '上下文记忆' },
-              { kind: 'textarea', key: ['dify', 'custom_params'], label: '工作流自定义参数（JSON）', w: 'lg', placeholder: 'inputs传递的参数，注意JSON格式' },
+              { kind: 'textarea', key: ['dify', 'custom_params'], label: '工作流自定义参数（JSON）', w: 'lg', skipPrecheck: true, placeholder: 'inputs传递的参数，注意JSON格式' },
             ],
           ],
         },
@@ -310,8 +310,8 @@ export const brainWorkspace: Workspace = {
             [
               { kind: 'textarea', key: ['custom_llm', 'url'], label: 'API URL', w: 'md', placeholder: '发送HTTP请求的API链接' },
               { kind: 'select', key: ['custom_llm', 'method'], label: 'API类型', w: 'xs', options: { GET: 'GET', POST: 'POST' } },
-              { kind: 'textarea', key: ['custom_llm', 'headers'], label: '请求头', w: 'lg', placeholder: '换行分隔，例：Content-Type:application/json\nAuthorization:Bearer sk' },
-              { kind: 'textarea', key: ['custom_llm', 'proxies'], label: '代理', w: 'md', placeholder: 'requests库代理配置方法，json数据用"双引号' },
+              { kind: 'textarea', key: ['custom_llm', 'headers'], label: '请求头', w: 'lg', skipPrecheck: true, placeholder: '换行分隔，例：Content-Type:application/json\nAuthorization:Bearer sk' },
+              { kind: 'textarea', key: ['custom_llm', 'proxies'], label: '代理', w: 'md', skipPrecheck: true, placeholder: 'requests库代理配置方法，json数据用"双引号' },
             ],
             [
               { kind: 'select', key: ['custom_llm', 'body_type'], label: '请求体类型', w: 'sm', options: { json: 'json', raw: 'raw' } },

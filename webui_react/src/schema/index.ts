@@ -5,6 +5,9 @@
  * ?tab= 深链兼容老 v3 的九个标题，也接受新页面 id。
  */
 import type { JsonObject, Path } from '../lib/path'
+import { getByPath } from '../lib/path'
+import { LEGACY_LIVE_MONITOR_PLATFORMS } from './options'
+import { fieldIdOf } from './types'
 import { bodyWorkspace } from './workspaces/body'
 import { brainWorkspace } from './workspaces/brain'
 import { danmuWorkspace } from './workspaces/danmu'
@@ -110,6 +113,66 @@ export function pickMatches(section: Section, value: unknown): boolean {
   if (section.pickValue === undefined) return false
   const v = String(value ?? '')
   return Array.isArray(section.pickValue) ? section.pickValue.includes(v) : section.pickValue === v
+}
+
+// ---------- 保存前预检 ----------
+
+export interface PrecheckIssue {
+  stepId: string
+  stepTitle: string
+  sectionTitle: string
+  label: string
+  fieldId: string
+}
+
+/** 保存前预检：四个选择步骤里，当前选中服务的必填型字段（rows 里的输入类，未标 skipPrecheck）
+ * 空着就报出来——是提醒不是拦截，用户可以「仍要保存」。 */
+export function precheckSettings(draft: JsonObject): PrecheckIssue[] {
+  const issues: PrecheckIssue[] = []
+
+  for (const ws of SETTINGS_STEPS) {
+    if (!ws.pick) continue
+    const current = getByPath(draft, ws.pick.key)
+    const section = ws.groups[0]?.sections.find((s) => pickMatches(s, current))
+    if (section) {
+      for (const row of section.rows ?? []) {
+        for (const field of row) {
+          if (field.kind !== 'input' && field.kind !== 'string-list' && field.kind !== 'textarea') continue
+          if (field.skipPrecheck) continue
+          if (typeof field.key[0] === 'string' && field.key[0].startsWith('_')) continue
+          const v = getByPath(draft, field.key)
+          const empty = v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)
+          if (empty) {
+            issues.push({
+              stepId: ws.id,
+              stepTitle: ws.title,
+              sectionTitle: section.title,
+              label: field.label,
+              fieldId: fieldIdOf(ws.id, section.id, field),
+            })
+          }
+        }
+      }
+    }
+
+    // 直播间号：非「由外部决定监听」的平台需要填
+    if (ws.id === 'platform') {
+      const platform = String(current ?? '')
+      const externallyDecided = ['talk', 'live_monitor_assistant', ...Object.keys(LEGACY_LIVE_MONITOR_PLATFORMS)].includes(platform)
+      const room = getByPath(draft, ['room_display_id'])
+      if (platform && !externallyDecided && (room === undefined || room === null || room === '')) {
+        issues.push({
+          stepId: 'platform',
+          stepTitle: '直播间',
+          sectionTitle: '直播间号',
+          label: '直播间号',
+          fieldId: 'platform__room-info__room_display_id',
+        })
+      }
+    }
+  }
+
+  return issues
 }
 
 // ---------- 字段索引（搜索、未保存清单标签、开播台跳转共用） ----------

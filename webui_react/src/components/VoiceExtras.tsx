@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import { api, audioUrl } from '../api/client'
 import { getByPath } from '../lib/path'
 import { useConfigStore } from '../state/configStore'
+import { useTestStore } from '../state/testStore'
 import { notify } from '../state/ui'
 import { AUDIO_SYNTHESIS_TYPE_OPTIONS } from '../schema/options'
 
@@ -27,6 +28,10 @@ export function TtsTester() {
     try {
       const username = String(getByPath(draft ?? {}, ['talk', 'username']) || '主播')
       const resp = await api.action('tts-test', { content: text, username })
+      // 试听结果记账：选卡墙/信号链据此显示「已测通」（网络异常不算引擎的账）
+      if (engine !== 'none') {
+        useTestStore.getState().record('tts', engine, resp.code === 200 && Boolean(resp.audio_path), resp.message ?? '')
+      }
       if (resp.code === 200 && resp.audio_path) {
         setAudioPath(resp.audio_path)
         notify.ok(`合成成功（${engineLabel}），即将播放`)

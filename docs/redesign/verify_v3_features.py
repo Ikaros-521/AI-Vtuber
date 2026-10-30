@@ -98,10 +98,72 @@ def run():
         page.wait_for_timeout(600)
         check("wiz.applies-nav", "platform" in page.url, page.url)
 
+        # 8) TTS 试听 → 选卡墙/信号链显示「已测通」徽标（edge-tts 免费，不耗任何配额）
+        page.click("aside nav button:has-text('基础设置')")
+        page.click("button:has-text('声音')")
+        page.wait_for_timeout(500)
+        page.click("button:has-text('合成并播放')")
+        page.wait_for_timeout(6000)  # 后端合成需要几秒
+        badge = page.locator("main button:has-text('已测通'), main button:has-text('测试失败')")
+        check("tts.badge-on-wall", badge.count() >= 1, f"n={badge.count()}")
+        page.click("aside nav button:has-text('开播台')")
+        page.wait_for_timeout(500)
+        chain_badge = page.locator(".card-surface:has-text('声音') >> text=/已测通|测试失败/")
+        check("tts.badge-on-chain", chain_badge.count() >= 1, f"n={chain_badge.count()}")
+        page.screenshot(path=str(SH / "20-测试徽标.png"), full_page=True)
+
+        # 9) 保存前预检：选中密钥为空的 azure_tts → 保存弹提醒 → 先去补（不真正保存）
+        page.click("aside nav button:has-text('基础设置')")
+        page.click("button:has-text('声音')")
+        page.wait_for_timeout(500)
+        page.click(".grid button:has-text('azure_tts')")
+        page.wait_for_timeout(400)
+        # 注意精确匹配：has-text('保存') 会同时命中「N 项未保存」徽标
+        page.click("header button:text-is('保存')")
+        page.wait_for_timeout(500)
+        check("precheck.dialog", page.locator("text=保存前提醒").count() == 1)
+        body_txt = page.locator(".dialog-backdrop .card-surface").inner_text() if page.locator(".dialog-backdrop").count() else ""
+        check("precheck.lists-azure-key", "密钥" in body_txt, body_txt[:80].replace("\n", " | "))
+        page.screenshot(path=str(SH / "21-保存预检.png"))
+        page.click(".dialog-backdrop button:has-text('先去补')")
+        page.wait_for_timeout(600)
+        check("precheck.cancel-stays", "voice" in page.url and page.locator("text=保存前提醒").count() == 0, page.url)
+        check("precheck.no-save-toast", "已成功写入" not in page.inner_text("body"))
+        # 还原选择，避免草稿残留
+        page.click(".grid button:has-text('Edge-TTS')")
+        page.wait_for_timeout(400)
+
+        b.close()
+
+
+def run_mobile():
+    """窄屏抽屉导航（独立小视窗；sync API 不允许嵌套，单独开 playwright）"""
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        m = b.new_page(viewport={"width": 390, "height": 844})
+        m.on("pageerror", lambda e: errs.append("mobile:" + str(e)))
+        m.goto(BASE)
+        m.wait_for_timeout(1800)
+        # 初始：侧栏在画布外，汉堡可见
+        aside_box = m.locator("aside").bounding_box()
+        check("mobile.drawer-hidden", aside_box is not None and aside_box["x"] < -200, f"x={aside_box and aside_box['x']}")
+        check("mobile.burger", m.locator("header button[aria-label='打开导航']").count() == 1)
+        m.click("header button[aria-label='打开导航']")
+        m.wait_for_timeout(400)
+        box2 = m.locator("aside").bounding_box()
+        check("mobile.drawer-open", box2 is not None and box2["x"] >= -1, f"x={box2 and box2['x']}")
+        m.screenshot(path=str(SH / "22-窄屏抽屉.png"))
+        m.click("aside nav button:has-text('玩法库')")
+        m.wait_for_timeout(600)
+        box3 = m.locator("aside").bounding_box()
+        check("mobile.nav-works", "play" in m.url, m.url)
+        check("mobile.drawer-closed", box3 is not None and box3["x"] < -200, f"x={box3 and box3['x']}")
+        m.screenshot(path=str(SH / "23-窄屏玩法库.png"))
         b.close()
 
 if __name__ == "__main__":
     run()
+    run_mobile()
     fails = [r for r in results if not r[1]]
     print(f"\nTOTAL {len(results)} checks | FAIL {len(fails)} | JS errors {len(errs)}")
     for e in errs[:10]:

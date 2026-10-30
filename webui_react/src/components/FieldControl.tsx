@@ -9,6 +9,7 @@ import { api } from '../api/client'
 import { getByPath, type Path } from '../lib/path'
 import { useConfigStore } from '../state/configStore'
 import { useActionStore } from '../state/actionStore'
+import { useTestStore } from '../state/testStore'
 import { notify, useConfirmStore } from '../state/ui'
 import { resolveOptions, type Field } from '../schema/types'
 
@@ -340,6 +341,13 @@ function ActionField({ field, fieldId, basePath }: { field: Extract<Field, { kin
     setBusy(true)
     try {
       const resp = await api.action(field.action, params)
+      // LLM 测试结果记账：选卡墙/信号链据此显示「已测通」
+      if (field.action === 'llm-test') {
+        const engine = String(getByPath(useConfigStore.getState().draft ?? {}, ['chat_type']) ?? '')
+        if (engine) {
+          useTestStore.getState().record('llm', engine, resp.code === 200, resp.message ?? '')
+        }
+      }
       const optionsKey = ACTION_OPTIONS_KEY[field.action]
       if (optionsKey && resp.code === 200) {
         const items = (resp.items ?? resp.models ?? []) as string[]

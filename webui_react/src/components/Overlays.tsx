@@ -30,14 +30,18 @@ export function ConfirmHost() {
   const current = useConfirmStore((s) => s.current)
   const close = useConfirmStore((s) => s.close)
   if (!current) return null
+  const cancel = () => {
+    close()
+    current.onCancel?.()
+  }
   return (
-    <div className="dialog-backdrop !items-center !pt-0" onMouseDown={close}>
+    <div className="dialog-backdrop !items-center !pt-0" onMouseDown={cancel}>
       <div className="card-surface w-full max-w-[420px] p-5" onMouseDown={(e) => e.stopPropagation()}>
         <h3 className="text-[15px] font-semibold">{current.title}</h3>
-        {current.body && <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-mut)]">{current.body}</p>}
+        {current.body && <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-mut)] whitespace-pre-line">{current.body}</p>}
         <div className="mt-4 flex justify-end gap-2">
-          <button className="rounded-lg border border-slate-300 px-4 py-1.5 text-[13px] hover:bg-slate-50" onClick={close}>
-            取消
+          <button className="rounded-lg border border-slate-300 px-4 py-1.5 text-[13px] hover:bg-slate-50" onClick={cancel}>
+            {current.cancelLabel ?? '取消'}
           </button>
           <button
             className="rounded-lg px-4 py-1.5 text-[13px] font-medium text-white"
@@ -47,7 +51,7 @@ export function ConfirmHost() {
               current.onOk()
             }}
           >
-            确认
+            {current.confirmLabel ?? '确认'}
           </button>
         </div>
       </div>

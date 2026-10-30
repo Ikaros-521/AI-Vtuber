@@ -35,8 +35,8 @@ export const voiceWorkspace: Workspace = {
           rows: [
             [
               { kind: 'input', key: ['edge-tts', 'voice'], label: '说话人', w: 'md', hint: '如 zh-CN-XiaoxiaoNeural；完整音色列表见微软文档，直接手输即可' },
-              { kind: 'input', key: ['edge-tts', 'rate'], label: '语速增益', w: 'sm', placeholder: '默认 +0%，注意别搞丢 + - % 符号' },
-              { kind: 'input', key: ['edge-tts', 'volume'], label: '音量增益', w: 'sm', placeholder: '默认 +0%' },
+              { kind: 'input', key: ['edge-tts', 'rate'], label: '语速增益', w: 'sm', skipPrecheck: true, placeholder: '默认 +0%，注意别搞丢 + - % 符号' },
+              { kind: 'input', key: ['edge-tts', 'volume'], label: '音量增益', w: 'sm', skipPrecheck: true, placeholder: '默认 +0%' },
             ],
           ],
           rowsAdvanced: [
@@ -58,8 +58,8 @@ export const voiceWorkspace: Workspace = {
               { kind: 'input', key: ['gpt_sovits', 'api_ip_port'], label: 'API地址', w: 'md' },
             ],
             [
-              { kind: 'input', key: ['gpt_sovits', 'gpt_model_path'], label: 'GPT模型路径', w: 'lg', placeholder: '填绝对路径' },
-              { kind: 'input', key: ['gpt_sovits', 'sovits_model_path'], label: 'SOVITS模型路径', w: 'lg', placeholder: '填绝对路径' },
+              { kind: 'input', key: ['gpt_sovits', 'gpt_model_path'], label: 'GPT模型路径', w: 'lg', skipPrecheck: true, placeholder: '填绝对路径' },
+              { kind: 'input', key: ['gpt_sovits', 'sovits_model_path'], label: 'SOVITS模型路径', w: 'lg', skipPrecheck: true, placeholder: '填绝对路径' },
             ],
           ],
           rowsAdvanced: [
@@ -281,7 +281,7 @@ export const voiceWorkspace: Workspace = {
           desc: 'ElevenLabs 商业级极高拟真度多语言语音生成服务。',
           rows: [
             [
-              { kind: 'input', key: ['elevenlabs', 'api_key'], label: 'api密钥', w: 'lg', placeholder: '可以不填，默认有一定免费额度' },
+              { kind: 'input', key: ['elevenlabs', 'api_key'], label: 'api密钥', w: 'lg', skipPrecheck: true, placeholder: '可以不填，默认有一定免费额度' },
               { kind: 'input', key: ['elevenlabs', 'voice'], label: '说话人', w: 'md' },
               { kind: 'input', key: ['elevenlabs', 'model'], label: '模型', w: 'md' },
             ],
@@ -297,10 +297,10 @@ export const voiceWorkspace: Workspace = {
           rows: [
             [
               { kind: 'select', key: ['openai_tts', 'type'], label: '类型', w: 'sm', options: { api: 'api', huggingface: 'huggingface' } },
-              { kind: 'input', key: ['openai_tts', 'api_ip_port'], label: 'API地址', w: 'md' },
+              { kind: 'input', key: ['openai_tts', 'api_ip_port'], label: 'API地址', w: 'md', skipPrecheck: true },
               { kind: 'select', key: ['openai_tts', 'model'], label: '模型', w: 'sm', options: { 'tts-1': 'tts-1', 'tts-1-hd': 'tts-1-hd' } },
               { kind: 'select', key: ['openai_tts', 'voice'], label: '说话人', w: 'sm', options: { alloy: 'alloy', echo: 'echo', fable: 'fable', onyx: 'onyx', nova: 'nova', shimmer: 'shimmer' } },
-              { kind: 'input', key: ['openai_tts', 'api_key'], label: 'api key', w: 'md' },
+              { kind: 'input', key: ['openai_tts', 'api_key'], label: 'api key', w: 'md', skipPrecheck: true },
             ],
           ],
         },
