@@ -1,4 +1,4 @@
-/** 运维与系统工作区：日志/数据库/异常报警/数据分析、webui 自身配置、板块开关、账号、文档。
+/** 系统工作区：日志/数据库/异常报警/数据分析、webui 自身配置、板块开关、账号、文档。
 
  * 字段与 config 键逐项对齐 v2 common_config.py（日志/数据库/异常报警）与
  * web_page.py（webui配置/本地路径映射/配置模板/账号管理）。
@@ -17,8 +17,8 @@ function alarmRow(prefix: string, label: string): Field[] {
 }
 
 export const systemWorkspace: Workspace = {
-  id: 'system',
-  title: '运维与系统',
+  id: 'sys',
+  title: '系统',
   groups: [
     {
       title: '监控与数据',

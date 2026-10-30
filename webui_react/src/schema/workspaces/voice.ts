@@ -1,9 +1,10 @@
-/** 声音与表现工作区：形象驱动(Avatar)、变声后期(SVC)、语音合成(TTS×14)、语音识别(STT)。
+/** 基础设置 · 第 3 步「声音」：说话（TTS 选卡墙）/ 听话（语音对话）/ 变声（SVC）三个页签。
 
- * 字段与 config 键逐项对齐 v2 tts.py / talk.py / svc.py / visual_body.py。
- * TTS 调试卡与「检索说话人/加载模型」等按钮暂留 v2（涉及音频播放与本地模型加载）。
+ * 与 v2 tts.py / talk.py / svc.py 的 config 键逐项对齐；形象驱动移去了「形象」步（body.ts）。
  */
+import { AUDIO_SYNTHESIS_TYPE_OPTIONS } from '../options'
 import type { Workspace } from '../types'
+import { audioOutputSections } from './platform'
 
 const LANG_OPTIONS = { 自动: '自动', 中文: '中文', 英文: '英文', 日文: '日文' }
 const GPT_SOVITS_PROMPT_LANG = { 中文: '中文', 英文: '英文', 日文: '日文', 中英混合: '中英混合', 日英混合: '日英混合', 多语种混合: '多语种混合' }
@@ -12,124 +13,11 @@ const GPT_SOVITS_CUT = { 凑四句一切: '凑四句一切', 凑五句一切: '�
 
 export const voiceWorkspace: Workspace = {
   id: 'voice',
-  title: '声音与表现',
+  title: '声音',
+  pick: { key: ['audio_synthesis_type'], options: AUDIO_SYNTHESIS_TYPE_OPTIONS },
   groups: [
     {
-      title: '形象驱动 (Avatar)',
-      sections: [
-        {
-          id: 'live2d',
-          title: 'Live2D',
-          showCard: ['visual_body', 'live2d'],
-          desc: '基于 Web 端的 Live2D 虚拟形象驱动服务，支持口型同步、表情动作触发。',
-          rows: [
-            [
-              { kind: 'switch', key: ['live2d', 'enable'], label: '启用' },
-              { kind: 'number', key: ['live2d', 'port'], label: '端口', w: 'sm', int: true, placeholder: 'web服务运行的端口号，默认：12345' },
-              { kind: 'select', key: ['live2d', 'name'], label: '模型名', w: 'md', free: true, options: {}, dynamicOptions: 'live2d-models', hint: '点「刷新模型列表」从 Live2D/live2d-model 目录读取；也可以直接手输' },
-              { kind: 'action', key: ['_a', 'models'], label: '刷新模型列表', w: 'sm', action: 'live2d-models' },
-            ],
-          ],
-        },
-        {
-          id: 'easyai',
-          title: 'EasyAIVtuber',
-          showCard: ['visual_body', 'EasyAIVtuber'],
-          desc: '对接 EasyAIVtuber 客户端，实现轻量级二次元虚拟主播形象动作与说话联动。',
-          rows: [[{ kind: 'input', key: ['EasyAIVtuber', 'api_ip_port'], label: 'API地址', w: 'md' }]],
-        },
-        {
-          id: 'digital-human',
-          title: '数字人视频播放器',
-          showCard: ['visual_body', 'digital_human_video_player'],
-          desc: '基于预录制动作视频片段无缝切片轮播的数字人驱动（无需高性能独立显卡）。',
-          rows: [
-            [
-              { kind: 'select', key: ['digital_human_video_player', 'type'], label: '类型', w: 'md', options: { metahuman_stream_ernerf: 'metahuman_stream_ernerf', metahuman_stream_musetalk: 'metahuman_stream_musetalk', metahuman_stream_wav2lip: 'metahuman_stream_wav2lip' } },
-              { kind: 'input', key: ['digital_human_video_player', 'api_ip_port'], label: 'API地址', w: 'md' },
-            ],
-          ],
-        },
-        {
-          id: 'metahuman',
-          title: 'metahuman_stream',
-          showCard: ['visual_body', 'metahuman_stream'],
-          desc: '对接虚幻引擎 MetaHuman 实时视频流驱动，呈现电影级超写实 3D 数字人。语音合成由 metahuman_stream 托管，不受本程序控制。',
-          rows: [
-            [
-              { kind: 'select', key: ['metahuman_stream', 'type'], label: '类型', w: 'sm', options: { ernerf: 'ernerf', musetalk: 'musetalk', wav2lip: 'wav2lip' } },
-              { kind: 'input', key: ['metahuman_stream', 'api_ip_port'], label: 'API地址', w: 'md' },
-            ],
-          ],
-        },
-        {
-          id: 'live2d-combo',
-          title: 'live2d_TTS_LLM_GPT_SoVITS_Vtuber',
-          showCard: ['visual_body', 'live2d_TTS_LLM_GPT_SoVITS_Vtuber'],
-          desc: '第三方开源 Live2D+LLM+GPT-SoVITS 一体化 Vtuber 推流客户端联动方案。',
-          rows: [[{ kind: 'input', key: ['live2d_TTS_LLM_GPT_SoVITS_Vtuber', 'api_ip_port'], label: 'API地址', w: 'md' }]],
-        },
-        {
-          id: 'xuniren',
-          title: 'xuniren',
-          showCard: ['visual_body', 'xuniren'],
-          desc: '对接腾讯智影/虚拟人驱动服务，呈现高拟真口型同步与虚拟主播画面推流。',
-          rows: [[{ kind: 'input', key: ['xuniren', 'api_ip_port'], label: 'API地址', w: 'md' }]],
-        },
-        {
-          id: 'unity',
-          title: 'Unity',
-          showCard: ['visual_body', 'unity'],
-          desc: '通过 WebSocket / TCP 与 Unity 3D 虚拟主播项目联动，传递语音口型、骨骼动画与交互特效。',
-          rows: [
-            [
-              { kind: 'input', key: ['unity', 'api_ip_port'], label: 'API地址', w: 'md' },
-              { kind: 'input', key: ['unity', 'password'], label: '密码', w: 'md', password: true, placeholder: '对接Unity应用使用的HTTP中转站的密码' },
-            ],
-          ],
-        },
-      ],
-    },
-    {
-      title: '变声后期 (SVC)',
-      sections: [
-        {
-          id: 'ddsp-svc',
-          title: 'DDSP-SVC',
-          showCard: ['svc', 'ddsp_svc'],
-          desc: '基于可微数字信号处理（DDSP）的超低延迟实时歌声与语音变声，适合直播实时换声。',
-          rows: [
-            [
-              { kind: 'switch', key: ['ddsp_svc', 'enable'], label: '启用' },
-              { kind: 'input', key: ['ddsp_svc', 'config_path'], label: '配置文件路径', w: 'md', placeholder: '模型配置文件config.yaml的路径（可不留，暂时没用到）' },
-              { kind: 'input', key: ['ddsp_svc', 'api_ip_port'], label: 'API地址', w: 'md' },
-              { kind: 'number', key: ['ddsp_svc', 'fSafePrefixPadLength'], label: '安全前缀填充长度', w: 'sm', placeholder: '默认为0' },
-              { kind: 'number', key: ['ddsp_svc', 'fPitchChange'], label: '变调', w: 'xs', placeholder: '默认为0' },
-              { kind: 'number', key: ['ddsp_svc', 'sSpeakId'], label: '说话人ID', w: 'xs', placeholder: '需和模型数据对应，默认为0' },
-              { kind: 'number', key: ['ddsp_svc', 'sampleRate'], label: '采样率', w: 'sm', placeholder: 'DAW所需的采样率，默认44100' },
-            ],
-          ],
-        },
-        {
-          id: 'so-vits-svc',
-          title: 'SO-VITS-SVC',
-          showCard: ['svc', 'so_vits_svc'],
-          desc: '基于 SoftVC VITS 深度学习架构的高保真音色转换变声系统。',
-          rows: [
-            [
-              { kind: 'switch', key: ['so_vits_svc', 'enable'], label: '启用' },
-              { kind: 'input', key: ['so_vits_svc', 'config_path'], label: '配置文件路径', w: 'md', placeholder: '模型配置文件config.json的路径' },
-              { kind: 'input', key: ['so_vits_svc', 'api_ip_port'], label: 'API地址', w: 'md' },
-              { kind: 'input', key: ['so_vits_svc', 'spk'], label: '说话人', w: 'sm', placeholder: '需和配置文件内容对应' },
-              { kind: 'number', key: ['so_vits_svc', 'tran'], label: '音调', w: 'xs', placeholder: '默认为1' },
-              { kind: 'input', key: ['so_vits_svc', 'wav_format'], label: '输出音频格式', w: 'sm' },
-            ],
-          ],
-        },
-      ],
-    },
-    {
-      title: '语音合成 (TTS)',
+      title: '说话',
       sections: [
         {
           id: 'tts-debug',
@@ -140,173 +28,43 @@ export const voiceWorkspace: Workspace = {
         {
           id: 'edge-tts',
           title: 'Edge-TTS',
+          pickValue: 'edge-tts',
+          tags: ['免费', '无需 Key'],
           showCard: ['tts', 'edge-tts'],
-          desc: '微软 Edge 浏览器内置的高品质云端语音合成，免费免配置、多语言、开箱即用。',
+          desc: '微软 Edge 浏览器内置的高品质云端语音合成，免费免配置、多语言、开箱即用。不知道选哪个就用它。',
           rows: [
             [
               { kind: 'input', key: ['edge-tts', 'voice'], label: '说话人', w: 'md', hint: '如 zh-CN-XiaoxiaoNeural；完整音色列表见微软文档，直接手输即可' },
               { kind: 'input', key: ['edge-tts', 'rate'], label: '语速增益', w: 'sm', placeholder: '默认 +0%，注意别搞丢 + - % 符号' },
               { kind: 'input', key: ['edge-tts', 'volume'], label: '音量增益', w: 'sm', placeholder: '默认 +0%' },
+            ],
+          ],
+          rowsAdvanced: [
+            [
               { kind: 'input', key: ['edge-tts', 'proxy'], label: 'HTTP代理地址', w: 'md', placeholder: '例：http://127.0.0.1:10809' },
-            ],
-          ],
-        },
-        {
-          id: 'vits',
-          title: 'VITS-Simple-API',
-          showCard: ['tts', 'vits'],
-          desc: '基于 VITS-Simple-API 开源推理服务的本地/云端高拟真二次元音色生成。',
-          rows: [
-            [
-              { kind: 'select', key: ['vits', 'type'], label: '类型', w: 'sm', options: { vits: 'vits', bert_vits2: 'bert_vits2', gpt_sovits: 'gpt_sovits' } },
-              { kind: 'input', key: ['vits', 'config_path'], label: '配置文件路径', w: 'md', placeholder: '模型配置文件存储路径' },
-              { kind: 'input', key: ['vits', 'api_ip_port'], label: 'API地址', w: 'md', placeholder: 'vits-simple-api启动后监听的ip端口地址' },
-              { kind: 'number', key: ['vits', 'id'], label: '说话人ID', w: 'xs', int: true, hint: '不知道ID就点「检索说话人」，从返回列表里挑一个填进来' },
-              { kind: 'action', key: ['_a', 'speakers'], label: '检索说话人', w: 'sm', action: 'vits-speakers', params: { api_ip_port: ['vits', 'api_ip_port'] } },
-              { kind: 'select', key: ['vits', 'lang'], label: '语言', w: 'sm', options: LANG_OPTIONS },
-            ],
-            [
-              { kind: 'number', key: ['vits', 'length'], label: '语音长度', w: 'sm', placeholder: '相当于调节语速，越大越慢' },
-              { kind: 'number', key: ['vits', 'noise'], label: '噪声', w: 'sm', placeholder: '控制感情变化程度' },
-              { kind: 'number', key: ['vits', 'noisew'], label: '噪声偏差', w: 'sm', placeholder: '控制音素发音长度' },
-              { kind: 'number', key: ['vits', 'max'], label: '分段阈值', w: 'sm', placeholder: '按标点分段，加起来大于max为一段；<=0不分段' },
-              { kind: 'input', key: ['vits', 'format'], label: '音频格式', w: 'sm', placeholder: '支持wav,ogg,silk,mp3,flac' },
-              { kind: 'number', key: ['vits', 'sdp_radio'], label: 'SDP/DP混合比', w: 'sm', placeholder: '越高语调方差越大' },
-            ],
-          ],
-          cards: [
-            {
-              id: 'vits-gpt-sovits',
-              title: 'gpt_sovits（vits 模式）',
-              rows: [
-                [
-                  { kind: 'number', key: ['vits', 'gpt_sovits', 'id'], label: '说话人ID', w: 'xs', int: true },
-                  { kind: 'select', key: ['vits', 'gpt_sovits', 'lang'], label: '语言', w: 'sm', options: GPT_SOVITS_TEXT_LANG },
-                  { kind: 'input', key: ['vits', 'gpt_sovits', 'format'], label: '音频格式', w: 'sm' },
-                  { kind: 'number', key: ['vits', 'gpt_sovits', 'segment_size'], label: 'segment_size', w: 'xs', int: true },
-                  { kind: 'input', key: ['vits', 'gpt_sovits', 'reference_audio'], label: '参考音频路径', w: 'md' },
-                  { kind: 'input', key: ['vits', 'gpt_sovits', 'prompt_text'], label: '参考音频文本内容', w: 'md' },
-                  { kind: 'select', key: ['vits', 'gpt_sovits', 'prompt_lang'], label: '参考音频语言', w: 'sm', options: GPT_SOVITS_PROMPT_LANG },
-                  { kind: 'number', key: ['vits', 'gpt_sovits', 'top_k'], label: 'top_k', w: 'xs' },
-                  { kind: 'number', key: ['vits', 'gpt_sovits', 'top_p'], label: 'top_p', w: 'xs' },
-                  { kind: 'number', key: ['vits', 'gpt_sovits', 'temperature'], label: 'temperature', w: 'xs' },
-                  { kind: 'input', key: ['vits', 'gpt_sovits', 'preset'], label: 'preset', w: 'sm' },
-                ],
-              ],
-            },
-          ],
-        },
-        {
-          id: 'bert-vits2',
-          title: 'bert_vits2',
-          showCard: ['tts', 'bert_vits2'],
-          desc: 'Bert-VITS2 情感语音合成系统，引入 BERT 增强语意，音调更自然富含情感。',
-          rows: [
-            [
-              { kind: 'select', key: ['bert_vits2', 'type'], label: '类型', w: 'md', options: { hiyori: 'hiyori', '刘悦-中文特化API': '刘悦-中文特化API' } },
-            ],
-          ],
-          cards: [
-            {
-              id: 'bert-vits2-hiyori',
-              title: 'hiyori',
-              rows: [
-                [
-                  { kind: 'input', key: ['bert_vits2', 'api_ip_port'], label: 'API地址', w: 'md' },
-                  { kind: 'number', key: ['bert_vits2', 'model_id'], label: '模型ID', w: 'xs', int: true },
-                  { kind: 'input', key: ['bert_vits2', 'speaker_name'], label: '说话人名称', w: 'sm' },
-                  { kind: 'number', key: ['bert_vits2', 'speaker_id'], label: '说话人ID', w: 'xs', int: true },
-                  { kind: 'select', key: ['bert_vits2', 'language'], label: '语言', w: 'sm', options: { zh: 'zh', ja: 'ja', en: 'en', mix: 'mix', auto: 'auto', auto_yue: 'auto_yue', yue: 'yue' } },
-                ],
-                [
-                  { kind: 'number', key: ['bert_vits2', 'length'], label: '语音长度', w: 'sm' },
-                  { kind: 'number', key: ['bert_vits2', 'noise'], label: '噪声', w: 'sm' },
-                  { kind: 'number', key: ['bert_vits2', 'noisew'], label: '噪声偏差', w: 'sm' },
-                  { kind: 'number', key: ['bert_vits2', 'sdp_radio'], label: 'SDP/DP混合比', w: 'sm' },
-                  { kind: 'input', key: ['bert_vits2', 'emotion'], label: 'emotion', w: 'sm' },
-                  { kind: 'input', key: ['bert_vits2', 'style_text'], label: '风格文本', w: 'sm' },
-                  { kind: 'number', key: ['bert_vits2', 'style_weight'], label: '风格权重', w: 'sm', placeholder: '0仅主文本，1仅辅助文本' },
-                  { kind: 'switch', key: ['bert_vits2', 'auto_translate'], label: '自动翻译' },
-                  { kind: 'switch', key: ['bert_vits2', 'auto_split'], label: '自动切分' },
-                ],
-              ],
-            },
-            {
-              id: 'bert-vits2-liuyue',
-              title: '刘悦-中文特化API',
-              rows: [
-                [
-                  { kind: 'input', key: ['bert_vits2', '刘悦-中文特化API', 'api_ip_port'], label: 'API地址', w: 'md' },
-                  { kind: 'input', key: ['bert_vits2', '刘悦-中文特化API', 'speaker'], label: '说话人名称', w: 'sm' },
-                  { kind: 'select', key: ['bert_vits2', '刘悦-中文特化API', 'language'], label: '语言', w: 'sm', options: { zh: 'zh' } },
-                ],
-                [
-                  { kind: 'number', key: ['bert_vits2', '刘悦-中文特化API', 'length_scale'], label: '语音长度', w: 'sm' },
-                  { kind: 'number', key: ['bert_vits2', '刘悦-中文特化API', 'interval_between_para'], label: 'interval_between_para', w: 'sm' },
-                  { kind: 'number', key: ['bert_vits2', '刘悦-中文特化API', 'interval_between_sent'], label: 'interval_between_sent', w: 'sm' },
-                  { kind: 'number', key: ['bert_vits2', '刘悦-中文特化API', 'noise_scale'], label: '噪声', w: 'sm' },
-                  { kind: 'number', key: ['bert_vits2', '刘悦-中文特化API', 'noise_scale_w'], label: '噪声偏差', w: 'sm' },
-                  { kind: 'number', key: ['bert_vits2', '刘悦-中文特化API', 'sdp_radio'], label: 'SDP/DP混合比', w: 'sm' },
-                  { kind: 'input', key: ['bert_vits2', '刘悦-中文特化API', 'emotion'], label: 'emotion', w: 'sm' },
-                  { kind: 'input', key: ['bert_vits2', '刘悦-中文特化API', 'style_text'], label: '风格文本', w: 'sm' },
-                  { kind: 'number', key: ['bert_vits2', '刘悦-中文特化API', 'style_weight'], label: '风格权重', w: 'sm' },
-                  { kind: 'switch', key: ['bert_vits2', '刘悦-中文特化API', 'cut_by_sent'], label: 'cut_by_sent' },
-                ],
-              ],
-            },
-          ],
-        },
-        {
-          id: 'elevenlabs',
-          title: 'elevenlabs',
-          showCard: ['tts', 'elevenlabs'],
-          desc: 'ElevenLabs 商业级极高拟真度多语言语音生成服务。',
-          rows: [
-            [
-              { kind: 'input', key: ['elevenlabs', 'api_key'], label: 'api密钥', w: 'lg', placeholder: '可以不填，默认有一定免费额度' },
-              { kind: 'input', key: ['elevenlabs', 'voice'], label: '说话人', w: 'md' },
-              { kind: 'input', key: ['elevenlabs', 'model'], label: '模型', w: 'md' },
-            ],
-          ],
-        },
-        {
-          id: 'openai-tts',
-          title: 'OpenAI TTS',
-          showCard: ['tts', 'openai_tts'],
-          desc: 'OpenAI 官方语音合成模型（如 tts-1 / tts-1-hd），发音清晰自然。',
-          rows: [
-            [
-              { kind: 'select', key: ['openai_tts', 'type'], label: '类型', w: 'sm', options: { api: 'api', huggingface: 'huggingface' } },
-              { kind: 'input', key: ['openai_tts', 'api_ip_port'], label: 'API地址', w: 'md' },
-              { kind: 'select', key: ['openai_tts', 'model'], label: '模型', w: 'sm', options: { 'tts-1': 'tts-1', 'tts-1-hd': 'tts-1-hd' } },
-              { kind: 'select', key: ['openai_tts', 'voice'], label: '说话人', w: 'sm', options: { alloy: 'alloy', echo: 'echo', fable: 'fable', onyx: 'onyx', nova: 'nova', shimmer: 'shimmer' } },
-              { kind: 'input', key: ['openai_tts', 'api_key'], label: 'api key', w: 'md' },
-            ],
-          ],
-        },
-        {
-          id: 'gradio-tts',
-          title: 'Gradio',
-          showCard: ['tts', 'gradio_tts'],
-          desc: '通用 Gradio WebUI TTS 接口对接，可连接各类以 Gradio 形式部署的语音合成服务。',
-          rows: [
-            [
-              { kind: 'textarea', key: ['gradio_tts', 'request_parameters'], label: '请求参数', w: 'xl', placeholder: '{content}替换待合成文本；url是请求地址；fn_index是api索引；data_analysis是数据解析规则；参数顺序需和API请求一致' },
             ],
           ],
         },
         {
           id: 'gpt-sovits',
           title: 'GPT-SoVITS',
+          pickValue: 'gpt_sovits',
+          tags: ['需本地部署'],
           showCard: ['tts', 'gpt_sovits'],
           desc: '少样本零样本语音克隆神器，仅需数秒音频即可精准复刻主播或特定角色声线。',
           rows: [
             [
               { kind: 'select', key: ['gpt_sovits', 'type'], label: 'API类型', w: 'md', options: { api: 'api', api_0322: 'api_0322', api_0706: 'api_0706', v2_api_0821: 'v2_api_0821', webtts: 'WebTTS', gradio_0322: 'gradio_0322' } },
-              { kind: 'input', key: ['gpt_sovits', 'gradio_ip_port'], label: 'Gradio API地址', w: 'md' },
               { kind: 'input', key: ['gpt_sovits', 'api_ip_port'], label: 'API地址', w: 'md' },
+            ],
+            [
               { kind: 'input', key: ['gpt_sovits', 'gpt_model_path'], label: 'GPT模型路径', w: 'lg', placeholder: '填绝对路径' },
               { kind: 'input', key: ['gpt_sovits', 'sovits_model_path'], label: 'SOVITS模型路径', w: 'lg', placeholder: '填绝对路径' },
+            ],
+          ],
+          rowsAdvanced: [
+            [
+              { kind: 'input', key: ['gpt_sovits', 'gradio_ip_port'], label: 'Gradio API地址', w: 'md' },
             ],
           ],
           cards: [
@@ -404,8 +162,166 @@ export const voiceWorkspace: Workspace = {
           ],
         },
         {
+          id: 'vits',
+          title: 'VITS-Simple-API',
+          pickValue: 'vits',
+          tags: ['需本地部署'],
+          showCard: ['tts', 'vits'],
+          desc: '基于 VITS-Simple-API 开源推理服务的本地/云端高拟真二次元音色生成。',
+          rows: [
+            [
+              { kind: 'select', key: ['vits', 'type'], label: '类型', w: 'sm', options: { vits: 'vits', bert_vits2: 'bert_vits2', gpt_sovits: 'gpt_sovits' } },
+              { kind: 'input', key: ['vits', 'api_ip_port'], label: 'API地址', w: 'md', placeholder: 'vits-simple-api启动后监听的ip端口地址' },
+              { kind: 'number', key: ['vits', 'id'], label: '说话人ID', w: 'xs', int: true, hint: '不知道ID就点「检索说话人」，从返回列表里挑一个填进来' },
+              { kind: 'action', key: ['_a', 'speakers'], label: '检索说话人', w: 'sm', action: 'vits-speakers', params: { api_ip_port: ['vits', 'api_ip_port'] } },
+              { kind: 'select', key: ['vits', 'lang'], label: '语言', w: 'sm', options: LANG_OPTIONS },
+            ],
+          ],
+          rowsAdvanced: [
+            [
+              { kind: 'input', key: ['vits', 'config_path'], label: '配置文件路径', w: 'md', placeholder: '模型配置文件存储路径' },
+              { kind: 'number', key: ['vits', 'length'], label: '语音长度', w: 'sm', placeholder: '相当于调节语速，越大越慢' },
+              { kind: 'number', key: ['vits', 'noise'], label: '噪声', w: 'sm', placeholder: '控制感情变化程度' },
+              { kind: 'number', key: ['vits', 'noisew'], label: '噪声偏差', w: 'sm', placeholder: '控制音素发音长度' },
+              { kind: 'number', key: ['vits', 'max'], label: '分段阈值', w: 'sm', placeholder: '按标点分段，加起来大于max为一段；<=0不分段' },
+              { kind: 'input', key: ['vits', 'format'], label: '音频格式', w: 'sm', placeholder: '支持wav,ogg,silk,mp3,flac' },
+              { kind: 'number', key: ['vits', 'sdp_radio'], label: 'SDP/DP混合比', w: 'sm', placeholder: '越高语调方差越大' },
+            ],
+          ],
+          cards: [
+            {
+              id: 'vits-gpt-sovits',
+              title: 'gpt_sovits（vits 模式）',
+              rows: [
+                [
+                  { kind: 'number', key: ['vits', 'gpt_sovits', 'id'], label: '说话人ID', w: 'xs', int: true },
+                  { kind: 'select', key: ['vits', 'gpt_sovits', 'lang'], label: '语言', w: 'sm', options: GPT_SOVITS_TEXT_LANG },
+                  { kind: 'input', key: ['vits', 'gpt_sovits', 'format'], label: '音频格式', w: 'sm' },
+                  { kind: 'number', key: ['vits', 'gpt_sovits', 'segment_size'], label: 'segment_size', w: 'xs', int: true },
+                  { kind: 'input', key: ['vits', 'gpt_sovits', 'reference_audio'], label: '参考音频路径', w: 'md' },
+                  { kind: 'input', key: ['vits', 'gpt_sovits', 'prompt_text'], label: '参考音频文本内容', w: 'md' },
+                  { kind: 'select', key: ['vits', 'gpt_sovits', 'prompt_lang'], label: '参考音频语言', w: 'sm', options: GPT_SOVITS_PROMPT_LANG },
+                  { kind: 'number', key: ['vits', 'gpt_sovits', 'top_k'], label: 'top_k', w: 'xs' },
+                  { kind: 'number', key: ['vits', 'gpt_sovits', 'top_p'], label: 'top_p', w: 'xs' },
+                  { kind: 'number', key: ['vits', 'gpt_sovits', 'temperature'], label: 'temperature', w: 'xs' },
+                  { kind: 'input', key: ['vits', 'gpt_sovits', 'preset'], label: 'preset', w: 'sm' },
+                ],
+              ],
+            },
+          ],
+        },
+        {
+          id: 'bert-vits2',
+          title: 'bert_vits2',
+          pickValue: 'bert_vits2',
+          tags: ['需本地部署'],
+          showCard: ['tts', 'bert_vits2'],
+          desc: 'Bert-VITS2 情感语音合成系统，引入 BERT 增强语意，音调更自然富含情感。',
+          rows: [
+            [
+              { kind: 'select', key: ['bert_vits2', 'type'], label: '类型', w: 'md', options: { hiyori: 'hiyori', '刘悦-中文特化API': '刘悦-中文特化API' } },
+            ],
+          ],
+          cards: [
+            {
+              id: 'bert-vits2-hiyori',
+              title: 'hiyori',
+              rows: [
+                [
+                  { kind: 'input', key: ['bert_vits2', 'api_ip_port'], label: 'API地址', w: 'md' },
+                  { kind: 'number', key: ['bert_vits2', 'model_id'], label: '模型ID', w: 'xs', int: true },
+                  { kind: 'input', key: ['bert_vits2', 'speaker_name'], label: '说话人名称', w: 'sm' },
+                  { kind: 'number', key: ['bert_vits2', 'speaker_id'], label: '说话人ID', w: 'xs', int: true },
+                  { kind: 'select', key: ['bert_vits2', 'language'], label: '语言', w: 'sm', options: { zh: 'zh', ja: 'ja', en: 'en', mix: 'mix', auto: 'auto', auto_yue: 'auto_yue', yue: 'yue' } },
+                ],
+                [
+                  { kind: 'number', key: ['bert_vits2', 'length'], label: '语音长度', w: 'sm' },
+                  { kind: 'number', key: ['bert_vits2', 'noise'], label: '噪声', w: 'sm' },
+                  { kind: 'number', key: ['bert_vits2', 'noisew'], label: '噪声偏差', w: 'sm' },
+                  { kind: 'number', key: ['bert_vits2', 'sdp_radio'], label: 'SDP/DP混合比', w: 'sm' },
+                  { kind: 'input', key: ['bert_vits2', 'emotion'], label: 'emotion', w: 'sm' },
+                  { kind: 'input', key: ['bert_vits2', 'style_text'], label: '风格文本', w: 'sm' },
+                  { kind: 'number', key: ['bert_vits2', 'style_weight'], label: '风格权重', w: 'sm', placeholder: '0仅主文本，1仅辅助文本' },
+                  { kind: 'switch', key: ['bert_vits2', 'auto_translate'], label: '自动翻译' },
+                  { kind: 'switch', key: ['bert_vits2', 'auto_split'], label: '自动切分' },
+                ],
+              ],
+            },
+            {
+              id: 'bert-vits2-liuyue',
+              title: '刘悦-中文特化API',
+              rows: [
+                [
+                  { kind: 'input', key: ['bert_vits2', '刘悦-中文特化API', 'api_ip_port'], label: 'API地址', w: 'md' },
+                  { kind: 'input', key: ['bert_vits2', '刘悦-中文特化API', 'speaker'], label: '说话人名称', w: 'sm' },
+                  { kind: 'select', key: ['bert_vits2', '刘悦-中文特化API', 'language'], label: '语言', w: 'sm', options: { zh: 'zh' } },
+                ],
+                [
+                  { kind: 'number', key: ['bert_vits2', '刘悦-中文特化API', 'length_scale'], label: '语音长度', w: 'sm' },
+                  { kind: 'number', key: ['bert_vits2', '刘悦-中文特化API', 'interval_between_para'], label: 'interval_between_para', w: 'sm' },
+                  { kind: 'number', key: ['bert_vits2', '刘悦-中文特化API', 'interval_between_sent'], label: 'interval_between_sent', w: 'sm' },
+                  { kind: 'number', key: ['bert_vits2', '刘悦-中文特化API', 'noise_scale'], label: '噪声', w: 'sm' },
+                  { kind: 'number', key: ['bert_vits2', '刘悦-中文特化API', 'noise_scale_w'], label: '噪声偏差', w: 'sm' },
+                  { kind: 'number', key: ['bert_vits2', '刘悦-中文特化API', 'sdp_radio'], label: 'SDP/DP混合比', w: 'sm' },
+                  { kind: 'input', key: ['bert_vits2', '刘悦-中文特化API', 'emotion'], label: 'emotion', w: 'sm' },
+                  { kind: 'input', key: ['bert_vits2', '刘悦-中文特化API', 'style_text'], label: '风格文本', w: 'sm' },
+                  { kind: 'number', key: ['bert_vits2', '刘悦-中文特化API', 'style_weight'], label: '风格权重', w: 'sm' },
+                  { kind: 'switch', key: ['bert_vits2', '刘悦-中文特化API', 'cut_by_sent'], label: 'cut_by_sent' },
+                ],
+              ],
+            },
+          ],
+        },
+        {
+          id: 'elevenlabs',
+          title: 'elevenlabs',
+          pickValue: 'elevenlabs',
+          tags: ['需 API Key', '有免费额度'],
+          showCard: ['tts', 'elevenlabs'],
+          desc: 'ElevenLabs 商业级极高拟真度多语言语音生成服务。',
+          rows: [
+            [
+              { kind: 'input', key: ['elevenlabs', 'api_key'], label: 'api密钥', w: 'lg', placeholder: '可以不填，默认有一定免费额度' },
+              { kind: 'input', key: ['elevenlabs', 'voice'], label: '说话人', w: 'md' },
+              { kind: 'input', key: ['elevenlabs', 'model'], label: '模型', w: 'md' },
+            ],
+          ],
+        },
+        {
+          id: 'openai-tts',
+          title: 'OpenAI TTS',
+          pickValue: 'openai_tts',
+          tags: ['需 API Key'],
+          showCard: ['tts', 'openai_tts'],
+          desc: 'OpenAI 官方语音合成模型（如 tts-1 / tts-1-hd），发音清晰自然。',
+          rows: [
+            [
+              { kind: 'select', key: ['openai_tts', 'type'], label: '类型', w: 'sm', options: { api: 'api', huggingface: 'huggingface' } },
+              { kind: 'input', key: ['openai_tts', 'api_ip_port'], label: 'API地址', w: 'md' },
+              { kind: 'select', key: ['openai_tts', 'model'], label: '模型', w: 'sm', options: { 'tts-1': 'tts-1', 'tts-1-hd': 'tts-1-hd' } },
+              { kind: 'select', key: ['openai_tts', 'voice'], label: '说话人', w: 'sm', options: { alloy: 'alloy', echo: 'echo', fable: 'fable', onyx: 'onyx', nova: 'nova', shimmer: 'shimmer' } },
+              { kind: 'input', key: ['openai_tts', 'api_key'], label: 'api key', w: 'md' },
+            ],
+          ],
+        },
+        {
+          id: 'gradio-tts',
+          title: 'Gradio',
+          pickValue: 'gradio_tts',
+          tags: ['需外部服务'],
+          showCard: ['tts', 'gradio_tts'],
+          desc: '通用 Gradio WebUI TTS 接口对接，可连接各类以 Gradio 形式部署的语音合成服务。',
+          rows: [
+            [
+              { kind: 'textarea', key: ['gradio_tts', 'request_parameters'], label: '请求参数', w: 'xl', placeholder: '{content}替换待合成文本；url是请求地址；fn_index是api索引；data_analysis是数据解析规则；参数顺序需和API请求一致' },
+            ],
+          ],
+        },
+        {
           id: 'azure-tts',
           title: 'azure_tts',
+          pickValue: 'azure_tts',
+          tags: ['需 API Key'],
           showCard: ['tts', 'azure_tts'],
           desc: '微软 Azure 认知服务官方语音合成，工业级稳定性和超丰富多国语言音色。',
           rows: [
@@ -419,13 +335,19 @@ export const voiceWorkspace: Workspace = {
         {
           id: 'cosyvoice',
           title: 'CosyVoice',
+          pickValue: 'cosyvoice',
+          tags: ['需本地部署'],
           showCard: ['tts', 'cosyvoice'],
           desc: '阿里通义实验室开源的多语言情感语音合成与零样本音色克隆模型。',
           rows: [
             [
               { kind: 'select', key: ['cosyvoice', 'type'], label: '类型', w: 'sm', options: { api_0819: 'api_0819', gradio_0707: 'gradio_0707' } },
-              { kind: 'input', key: ['cosyvoice', 'gradio_ip_port'], label: 'Gradio API地址', w: 'md' },
               { kind: 'input', key: ['cosyvoice', 'api_ip_port'], label: 'API地址', w: 'md' },
+            ],
+          ],
+          rowsAdvanced: [
+            [
+              { kind: 'input', key: ['cosyvoice', 'gradio_ip_port'], label: 'Gradio API地址', w: 'md' },
             ],
           ],
           cards: [
@@ -459,6 +381,8 @@ export const voiceWorkspace: Workspace = {
         {
           id: 'f5-tts',
           title: 'F5-TTS',
+          pickValue: 'f5_tts',
+          tags: ['需本地部署'],
           showCard: ['tts', 'f5_tts'],
           desc: '基于非自回归 Flow Matching 的零样本语音克隆框架，生成速度极快。',
           rows: [
@@ -469,6 +393,8 @@ export const voiceWorkspace: Workspace = {
               { kind: 'input', key: ['f5_tts', 'ref_audio_orig'], label: '参考音频路径', w: 'sm', placeholder: '例如：E:\\1.wav' },
               { kind: 'input', key: ['f5_tts', 'ref_text'], label: '参考文本', w: 'sm', placeholder: '参考音频的文本' },
             ],
+          ],
+          rowsAdvanced: [
             [
               { kind: 'switch', key: ['f5_tts', 'remove_silence'], label: 'remove_silence' },
               { kind: 'number', key: ['f5_tts', 'cross_fade_duration'], label: 'cross_fade_duration', w: 'xs', placeholder: '0.15' },
@@ -479,21 +405,29 @@ export const voiceWorkspace: Workspace = {
         {
           id: 'multitts',
           title: 'MultiTTS',
+          pickValue: 'multitts',
+          tags: ['需外部服务'],
           showCard: ['tts', 'multitts'],
           desc: '对接安卓端 MultiTTS 语音引擎聚合服务端。',
           rows: [
             [
               { kind: 'input', key: ['multitts', 'api_ip_port'], label: 'API地址', w: 'md' },
+              { kind: 'input', key: ['multitts', 'voice'], label: '声音ID', w: 'sm', placeholder: '不填就是默认选中的发言人' },
+            ],
+          ],
+          rowsAdvanced: [
+            [
               { kind: 'number', key: ['multitts', 'speed'], label: '语速', w: 'xs', placeholder: '0-100，默认1' },
               { kind: 'number', key: ['multitts', 'volume'], label: '音量', w: 'xs', placeholder: '0-100，默认50' },
               { kind: 'number', key: ['multitts', 'pitch'], label: '音调', w: 'xs', placeholder: '0-100，默认50' },
-              { kind: 'input', key: ['multitts', 'voice'], label: '声音ID', w: 'sm', placeholder: '不填就是默认选中的发言人' },
             ],
           ],
         },
         {
           id: 'melotts',
           title: 'MeloTTS',
+          pickValue: 'melotts',
+          tags: ['需本地部署'],
           showCard: ['tts', 'melotts'],
           desc: '轻量级极速多语言 TTS 库，CPU 上即可实现毫秒级快速合成。',
           rows: [
@@ -503,6 +437,8 @@ export const voiceWorkspace: Workspace = {
               { kind: 'select', key: ['melotts', 'device'], label: '设备', w: 'xs', options: { auto: 'auto', cpu: 'cpu', cuda: 'cuda' } },
               { kind: 'switch', key: ['melotts', 'use_hf'], label: '使用HF默认模型' },
             ],
+          ],
+          rowsAdvanced: [
             [
               { kind: 'input', key: ['melotts', 'config_path'], label: '配置文件路径', w: 'md', placeholder: 'config.json路径' },
               { kind: 'input', key: ['melotts', 'ckpt_path'], label: '模型路径', w: 'md', placeholder: 'G_*.pth模型路径' },
@@ -517,6 +453,8 @@ export const voiceWorkspace: Workspace = {
         {
           id: 'index-tts',
           title: 'Index-TTS',
+          pickValue: 'index_tts',
+          tags: ['需本地部署'],
           showCard: ['tts', 'index_tts'],
           desc: 'Index 语音合成模型接口，适用于特定训练音色。',
           rows: [
@@ -527,31 +465,39 @@ export const voiceWorkspace: Workspace = {
             ],
           ],
         },
+        // 音频播放策略挂在「说话」页签尾部：换 TTS 不用重配播放
+        ...audioOutputSections,
       ],
     },
     {
-      title: '语音识别 (STT)',
+      title: '听话',
       sections: [
         {
           id: 'talk-basic',
           title: '语音对话与拾音',
-          desc: '通过本地麦克风捕捉说话声音并转写为文字，让主播能与 AI 进行面对面语音对话。声卡设备枚举和试录在 v2 语音页。',
+          desc: '通过本地麦克风捕捉说话声音并转写为文字，让主播能与 AI 进行面对面语音对话。',
           rows: [
             [
-              { kind: 'switch', key: ['talk', 'key_listener_enable'], label: '启用按键监听', hint: '启用后可按录音按键启动语音识别对话' },
-              { kind: 'switch', key: ['talk', 'direct_run_talk'], label: '直接语音对话', hint: '首次运行直接进入语音识别，不需手动按键；配合连续对话和唤醒词使用' },
+              { kind: 'select', key: ['talk', 'type'], label: '识别引擎', w: 'sm', options: { google: 'google（免费在线）', baidu: 'baidu', faster_whisper: 'faster_whisper', sensevoice: 'sensevoice' } },
               { kind: 'input', key: ['talk', 'device_index'], label: '声卡输入设备索引', w: 'sm', placeholder: '设备索引号' },
               { kind: 'action', key: ['_a', 'devices'], label: '枚举声卡', w: 'sm', action: 'audio-devices', hint: '列出本机声卡输入设备（索引=名称），把想要的索引填进左边' },
-              { kind: 'switch', key: ['talk', 'no_recording_during_playback'], label: '播放中不进行录音', hint: '防止麦克风和扬声器太近导致循环录音' },
-              { kind: 'number', key: ['talk', 'no_recording_during_playback_sleep_interval'], label: '播放中不录音的检测间隔(秒)', w: 'sm' },
+              { kind: 'switch', key: ['talk', 'key_listener_enable'], label: '启用按键监听', hint: '启用后可按录音按键启动语音识别对话' },
+              { kind: 'switch', key: ['talk', 'direct_run_talk'], label: '直接语音对话', hint: '首次运行直接进入语音识别，不需手动按键；配合连续对话和唤醒词使用' },
               { kind: 'switch', key: ['talk', 'continuous_talk'], label: '连续对话', hint: '仅需按一次录音按键，按沉默阈值自动切分连续录音' },
             ],
             [
-              { kind: 'select', key: ['talk', 'type'], label: '录音类型', w: 'sm', options: { google: 'google', baidu: 'baidu', faster_whisper: 'faster_whisper', sensevoice: 'sensevoice' } },
+              { kind: 'switch', key: ['talk', 'no_recording_during_playback'], label: '播放中不进行录音', hint: '防止麦克风和扬声器太近导致循环录音' },
+            ],
+          ],
+          rowsAdvanced: [
+            [
               { kind: 'input', key: ['talk', 'trigger_key'], label: '录音按键', w: 'sm', hint: '按键名参考 data/keyboard.txt（如 Q、Space），直接手输' },
               { kind: 'input', key: ['talk', 'stop_trigger_key'], label: '停止录音按键', w: 'sm', hint: '按键名参考 data/keyboard.txt，直接手输' },
               { kind: 'number', key: ['talk', 'volume_threshold'], label: '音量阈值', w: 'xs', placeholder: '触发录音的起始音量，按麦克风微调' },
               { kind: 'number', key: ['talk', 'silence_threshold'], label: '停录计数', w: 'xs', placeholder: '低于阈值的计数，越大切分越慢' },
+            ],
+            [
+              { kind: 'number', key: ['talk', 'no_recording_during_playback_sleep_interval'], label: '播放中不录音的检测间隔(秒)', w: 'sm' },
               { kind: 'number', key: ['talk', 'CHANNELS'], label: 'CHANNELS', w: 'xs', int: true },
               { kind: 'number', key: ['talk', 'RATE'], label: 'RATE', w: 'xs', int: true },
             ],
@@ -616,6 +562,52 @@ export const voiceWorkspace: Workspace = {
               { kind: 'input', key: ['talk', 'sensevoice', 'text_norm'], label: 'text_norm', w: 'xs' },
               { kind: 'number', key: ['talk', 'sensevoice', 'batch_size_s'], label: 'batch_size_s', w: 'xs', int: true },
               { kind: 'number', key: ['talk', 'sensevoice', 'batch_size'], label: 'batch_size', w: 'xs', int: true },
+            ],
+          ],
+        },
+      ],
+    },
+    {
+      title: '变声',
+      sections: [
+        {
+          id: 'ddsp-svc',
+          title: 'DDSP-SVC',
+          showCard: ['svc', 'ddsp_svc'],
+          desc: '基于可微数字信号处理（DDSP）的超低延迟实时歌声与语音变声，适合直播实时换声。',
+          rows: [
+            [
+              { kind: 'switch', key: ['ddsp_svc', 'enable'], label: '启用' },
+              { kind: 'input', key: ['ddsp_svc', 'api_ip_port'], label: 'API地址', w: 'md' },
+              { kind: 'number', key: ['ddsp_svc', 'fSafePrefixPadLength'], label: '安全前缀填充长度', w: 'sm', placeholder: '默认为0' },
+              { kind: 'number', key: ['ddsp_svc', 'fPitchChange'], label: '变调', w: 'xs', placeholder: '默认为0' },
+              { kind: 'number', key: ['ddsp_svc', 'sSpeakId'], label: '说话人ID', w: 'xs', placeholder: '需和模型数据对应，默认为0' },
+              { kind: 'number', key: ['ddsp_svc', 'sampleRate'], label: '采样率', w: 'sm', placeholder: 'DAW所需的采样率，默认44100' },
+            ],
+          ],
+          rowsAdvanced: [
+            [
+              { kind: 'input', key: ['ddsp_svc', 'config_path'], label: '配置文件路径', w: 'md', placeholder: '模型配置文件config.yaml的路径（可不留，暂时没用到）' },
+            ],
+          ],
+        },
+        {
+          id: 'so-vits-svc',
+          title: 'SO-VITS-SVC',
+          showCard: ['svc', 'so_vits_svc'],
+          desc: '基于 SoftVC VITS 深度学习架构的高保真音色转换变声系统。',
+          rows: [
+            [
+              { kind: 'switch', key: ['so_vits_svc', 'enable'], label: '启用' },
+              { kind: 'input', key: ['so_vits_svc', 'api_ip_port'], label: 'API地址', w: 'md' },
+              { kind: 'input', key: ['so_vits_svc', 'spk'], label: '说话人', w: 'sm', placeholder: '需和配置文件内容对应' },
+              { kind: 'number', key: ['so_vits_svc', 'tran'], label: '音调', w: 'xs', placeholder: '默认为1' },
+              { kind: 'input', key: ['so_vits_svc', 'wav_format'], label: '输出音频格式', w: 'sm' },
+            ],
+          ],
+          rowsAdvanced: [
+            [
+              { kind: 'input', key: ['so_vits_svc', 'config_path'], label: '配置文件路径', w: 'md', placeholder: '模型配置文件config.json的路径' },
             ],
           ],
         },

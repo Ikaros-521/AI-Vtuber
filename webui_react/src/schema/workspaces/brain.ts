@@ -1,9 +1,10 @@
-/** 人设与大脑工作区：LLM 各家 provider、对话与回复模板、本地问答、翻译、图像识别。
+/** 基础设置 · 第 2 步「AI 大脑」：LLM 选卡墙（选中即所见）+ 记忆与模板 + 快捷问答。
 
- * 字段与 config 键逐项对齐 v2 llm.py / translate.py / image_recognition.py /
- * common_config.py（对话模板那排裸 row 在 v2 就归这页，本地问答同理）。
+ * 与 v2 llm.py / translate.py / image_recognition.py / common_config.py 的 config 键逐项对齐。
+ * 图像识别与翻译搬去了「玩法库 · 进阶联动」，这里只保留模型接入与知识两块。
  */
-import type { Field, Workspace } from '../types'
+import { CHAT_TYPE_OPTIONS } from '../options'
+import type { Field, Section, Workspace } from '../types'
 
 const CHATGPT_PRESET_MODELS = [
   'gpt-3.5-turbo', 'gpt-3.5-turbo-instruct', 'gpt-3.5-turbo-0125', 'gpt-4', 'gpt-4-turbo-preview',
@@ -18,14 +19,17 @@ const LLM_HISTORY = (prefix: (string | number)[]): Field[] => [
 
 export const brainWorkspace: Workspace = {
   id: 'brain',
-  title: '人设与大脑',
+  title: 'AI 大脑',
+  pick: { key: ['chat_type'], options: CHAT_TYPE_OPTIONS },
   groups: [
     {
-      title: '模型引擎 (LLM)',
+      title: '模型接入',
       sections: [
         {
           id: 'llm-chatgpt',
           title: 'OpenAI / Ollama / 通用模型',
+          pickValue: 'chatgpt',
+          tags: ['需 API Key'],
           showCard: ['llm', 'chatgpt'],
           desc: '兼容 OpenAI 标准接口协议的大语言模型服务（如 ChatGPT、DeepSeek、Moonshot、通义千问兼容端点等）。',
           rows: [
@@ -37,6 +41,10 @@ export const brainWorkspace: Workspace = {
             [
               { kind: 'select', key: ['chatgpt', 'model'], label: '模型', w: 'md', free: true, options: Object.fromEntries(CHATGPT_PRESET_MODELS.map((m) => [m, m])), dynamicOptions: 'llm-models', hint: '没找到你用的模型名就直接手输；搜索来的和你手输的都会保留' },
               { kind: 'action', key: ['_action', 'models'], label: '搜索模型', w: 'sm', action: 'llm-models', params: { base_url: ['openai', 'api'], api_keys: ['openai', 'api_key'] }, hint: '用上面的 API地址 + 密钥列表里的第一个 key 请求 /v1/models，把返回的模型名填进左边的下拉框' },
+            ],
+          ],
+          rowsAdvanced: [
+            [
               { kind: 'number', key: ['chatgpt', 'temperature'], label: '温度', w: 'sm', placeholder: '控制生成文本的随机性，高更随机，低更确定' },
               { kind: 'number', key: ['chatgpt', 'max_tokens'], label: '最大token数', w: 'sm', int: true, placeholder: '限制生成回答的最大长度' },
               { kind: 'number', key: ['chatgpt', 'top_p'], label: 'top_p', w: 'sm', placeholder: 'Nucleus采样' },
@@ -52,6 +60,8 @@ export const brainWorkspace: Workspace = {
         {
           id: 'llm-langchain',
           title: 'Langchain_ChatChat',
+          pickValue: 'langchain_chatchat',
+          tags: ['需本地部署'],
           showCard: ['llm', 'langchain_chatchat'],
           desc: '基于 Langchain-ChatChat 开源框架部署的本地知识库与搜索引擎问答服务接口。',
           rows: [
@@ -102,6 +112,8 @@ export const brainWorkspace: Workspace = {
         {
           id: 'llm-zhipu',
           title: '智谱AI',
+          pickValue: 'zhipu',
+          tags: ['需 API Key'],
           showCard: ['llm', 'zhipu'],
           desc: '智谱开放平台 GLM 系列大语言模型服务（支持联网搜索与代码执行）。',
           rows: [
@@ -110,6 +122,8 @@ export const brainWorkspace: Workspace = {
               { kind: 'select', key: ['zhipu', 'model'], label: '模型', w: 'md', free: true, options: Object.fromEntries(['应用', '智能体', 'glm-3-turbo', 'glm-4', 'glm-4-flash', 'charglm-3', 'characterglm', 'chatglm_turbo', 'chatglm_pro', 'chatglm_std', 'chatglm_lite', 'chatglm_lite_32k'].map((m) => [m, m])) },
               { kind: 'input', key: ['zhipu', 'app_id'], label: '应用ID', w: 'md', placeholder: '在 模型为：应用 时，从日志里复制你需要的应用ID' },
             ],
+          ],
+          rowsAdvanced: [
             [
               { kind: 'input', key: ['zhipu', 'top_p'], label: 'top_p', w: 'sm', placeholder: '(0.0,1.0) 开区间' },
               { kind: 'input', key: ['zhipu', 'temperature'], label: 'temperature', w: 'sm', placeholder: '(0.0,1.0] 采样温度' },
@@ -141,6 +155,8 @@ export const brainWorkspace: Workspace = {
         {
           id: 'llm-wenxin',
           title: '千帆大模型',
+          pickValue: 'my_wenxinworkshop',
+          tags: ['需 API Key'],
           showCard: ['llm', 'my_wenxinworkshop'],
           desc: '百度智能云千帆大模型平台（文心一言 ERNIE 系列模型接口）。',
           rows: [
@@ -153,6 +169,10 @@ export const brainWorkspace: Workspace = {
               { kind: 'input', key: ['my_wenxinworkshop', 'api_key'], label: 'api_key', w: 'lg', placeholder: '千帆大模型平台，应用接入-创建应用，填入api key' },
               { kind: 'input', key: ['my_wenxinworkshop', 'secret_key'], label: 'secret_key', w: 'lg', placeholder: '应用接入-创建应用，填入secret key' },
               { kind: 'select', key: ['my_wenxinworkshop', 'model'], label: '模型', w: 'md', options: Object.fromEntries(['ERNIEBot', 'ERNIEBot_turbo', 'ERNIEBot_4_0', 'ERNIE_SPEED_128K', 'ERNIE_SPEED_8K', 'ERNIE_LITE_8K', 'ERNIE_LITE_8K_0922', 'ERNIE_TINY_8K', 'BLOOMZ_7B', 'LLAMA_2_7B', 'LLAMA_2_13B', 'LLAMA_2_70B', 'QIANFAN_BLOOMZ_7B_COMPRESSED', 'QIANFAN_CHINESE_LLAMA_2_7B', 'CHATGLM2_6B_32K', 'AQUILACHAT_7B', 'ERNIE_BOT_8K', 'CODELLAMA_7B_INSTRUCT', 'XUANYUAN_70B_CHAT', 'CHATLAW'].map((m) => [m, m])) },
+            ],
+          ],
+          rowsAdvanced: [
+            [
               { kind: 'number', key: ['my_wenxinworkshop', 'temperature'], label: '温度', w: 'sm', placeholder: '(0, 1.0]' },
               { kind: 'number', key: ['my_wenxinworkshop', 'top_p'], label: '前p个选择', w: 'sm', placeholder: '[0, 1.0]' },
               { kind: 'number', key: ['my_wenxinworkshop', 'penalty_score'], label: '惩罚得分', w: 'sm', placeholder: '[1.0, 2.0]' },
@@ -166,17 +186,21 @@ export const brainWorkspace: Workspace = {
         {
           id: 'llm-gemini',
           title: 'Gemini',
+          pickValue: 'gemini',
+          tags: ['需 API Key', '需代理'],
           showCard: ['llm', 'gemini'],
           desc: 'Google 谷歌多模态大语言模型，具备极高的响应速度与丰富的知识储备。',
           rows: [
             [
               { kind: 'input', key: ['gemini', 'api_key'], label: 'api_key', w: 'lg', placeholder: '谷歌AI Studio创建api key' },
               { kind: 'select', key: ['gemini', 'model'], label: '模型', w: 'sm', free: true, options: { 'gemini-pro': 'gemini-pro' } },
-              ...LLM_HISTORY(['gemini']),
             ],
+          ],
+          rowsAdvanced: [
             [
               { kind: 'input', key: ['gemini', 'http_proxy'], label: 'HTTP代理地址', w: 'md', placeholder: '需要魔法才能使用，所以需要配置此项' },
               { kind: 'input', key: ['gemini', 'https_proxy'], label: 'HTTPS代理地址', w: 'md', placeholder: '需要魔法才能使用，所以需要配置此项' },
+              ...LLM_HISTORY(['gemini']),
             ],
             [
               { kind: 'number', key: ['gemini', 'max_output_tokens'], label: '最大输出token数', w: 'sm', int: true },
@@ -189,6 +213,8 @@ export const brainWorkspace: Workspace = {
         {
           id: 'llm-anythingllm',
           title: 'AnythingLLM',
+          pickValue: 'anythingllm',
+          tags: ['需本地部署'],
           showCard: ['llm', 'anythingllm'],
           desc: '对接 AnythingLLM 工作区 API，将整套本地工作区文档库集成进直播问答中。',
           rows: [
@@ -204,17 +230,23 @@ export const brainWorkspace: Workspace = {
         {
           id: 'llm-tongyi',
           title: '通义千问/阿里云百炼',
+          pickValue: 'tongyi',
+          tags: ['需 API Key'],
           showCard: ['llm', 'tongyi'],
           desc: '阿里云通义千问（Qwen）官方大模型 API，支持超长上下文与丰富的系统人设。',
           rows: [
             [
-              { kind: 'select', key: ['tongyi', 'type'], label: '类型', w: 'xs', options: { web: 'web', api: 'api' } },
-              { kind: 'input', key: ['tongyi', 'cookie_path'], label: 'cookie路径', w: 'xl', placeholder: 'web类型下，通义千问登录后用浏览器插件 Cookie Editor 导出 JSON 存到这个路径' },
-            ],
-            [
               { kind: 'select', key: ['tongyi', 'model'], label: '模型', w: 'md', free: true, options: Object.fromEntries(['qwen-turbo', 'qwen-plus', 'qwen-long', 'qwen-max-longcontext', 'qwen-max', 'qwen-max-0428', 'baichuan2-turbo', 'moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k', 'yi-large', 'yi-large-turbo', 'yi-medium'].map((m) => [m, m])) },
               { kind: 'input', key: ['tongyi', 'api_key'], label: '密钥', w: 'md', placeholder: 'API类型下，DashScope平台申请的API密钥' },
+            ],
+          ],
+          rowsAdvanced: [
+            [
+              { kind: 'select', key: ['tongyi', 'type'], label: '类型', w: 'xs', options: { web: 'web', api: 'api' } },
+              { kind: 'input', key: ['tongyi', 'cookie_path'], label: 'cookie路径', w: 'xl', placeholder: 'web类型下，通义千问登录后用浏览器插件 Cookie Editor 导出 JSON 存到这个路径' },
               { kind: 'input', key: ['tongyi', 'preset'], label: '预设', w: 'xl', placeholder: 'API类型下，用于指定一组预定义的设置' },
+            ],
+            [
               { kind: 'number', key: ['tongyi', 'temperature'], label: 'temperature', w: 'xs' },
               { kind: 'number', key: ['tongyi', 'top_p'], label: 'top_p', w: 'xs' },
               { kind: 'number', key: ['tongyi', 'top_k'], label: 'top_k', w: 'xs' },
@@ -230,6 +262,8 @@ export const brainWorkspace: Workspace = {
         {
           id: 'llm-dify',
           title: 'Dify',
+          pickValue: 'dify',
+          tags: ['需自建服务'],
           showCard: ['llm', 'dify'],
           desc: '对接 Dify.ai 企业级大语言模型工作流/Agent 平台，支持复杂提示词编排与多工具协同。',
           rows: [
@@ -246,12 +280,18 @@ export const brainWorkspace: Workspace = {
         {
           id: 'llm-volcengine',
           title: '火山引擎',
+          pickValue: 'volcengine',
+          tags: ['需 API Key'],
           showCard: ['llm', 'volcengine'],
           desc: '字节跳动火山引擎豆包（Doubao）大语言模型 API 接入。',
           rows: [
             [
               { kind: 'input', key: ['volcengine', 'model'], label: '模型ID', w: 'md', placeholder: '推理接入点名称' },
               { kind: 'input', key: ['volcengine', 'api_key'], label: 'API密钥', w: 'md', placeholder: 'API密钥，API页面获取' },
+            ],
+          ],
+          rowsAdvanced: [
+            [
               { kind: 'input', key: ['volcengine', 'preset'], label: '预设', w: 'xl', placeholder: '用于指定一组预定义的设置' },
               { kind: 'switch', key: ['volcengine', 'history_enable'], label: '上下文记忆' },
               { kind: 'number', key: ['volcengine', 'history_max_len'], label: '最大记忆长度', w: 'md', int: true },
@@ -262,6 +302,8 @@ export const brainWorkspace: Workspace = {
         {
           id: 'llm-custom',
           title: '自定义LLM',
+          pickValue: 'custom_llm',
+          tags: ['HTTP 接口'],
           showCard: ['llm', 'custom_llm'],
           desc: '自定义通用 HTTP 接口，可灵活对接任意遵循标准 JSON 格式的自建大模型或第三方中转服务。',
           rows: [
@@ -283,12 +325,12 @@ export const brainWorkspace: Workspace = {
       ],
     },
     {
-      title: '人设与知识',
+      title: '记忆与模板',
       sections: [
         {
           id: 'chat-template',
           title: '对话与回复模板',
-          desc: '追在弹幕前后发给 LLM 的提示词，以及弹幕/回复内容的改写模板。',
+          desc: '追在弹幕前后发给 LLM 的提示词（人设就写在这里），以及弹幕/回复内容的改写模板。',
           rows: [
             [
               { kind: 'select', key: ['need_lang'], label: '回复语言', w: 'sm', options: { none: '所有', zh: '中文', en: '英文', jp: '日文' }, hint: '限制回复的语言，如：选中中文，则只会回复中文提问，其他语言将被跳过' },
@@ -306,19 +348,17 @@ export const brainWorkspace: Workspace = {
             ],
           ],
         },
+      ],
+    },
+    {
+      title: '快捷问答',
+      sections: [
         {
           id: 'local-qa',
           title: '本地问答',
           showCard: ['common_config', 'local_qa'],
-          desc: '优先于大模型的预设问答库：命中关键词时秒回预设文案，不耗 Token 且回答 100% 精准。',
+          desc: '优先于大模型的预设问答库：命中关键词时秒回预设文案，不耗 Token 且回答 100% 精准。自我介绍、直播时间表这类固定问题放这里最合适。',
           rows: [
-            [
-              { kind: 'switch', key: ['local_qa', 'periodic_trigger', 'enable'], label: '周期性触发启用' },
-              { kind: 'number', key: ['local_qa', 'periodic_trigger', 'periodic_time_min'], label: '触发周期最小值', w: 'sm', int: true },
-              { kind: 'number', key: ['local_qa', 'periodic_trigger', 'periodic_time_max'], label: '触发周期最大值', w: 'sm', int: true },
-              { kind: 'number', key: ['local_qa', 'periodic_trigger', 'trigger_num_min'], label: '触发次数最小值', w: 'sm', int: true },
-              { kind: 'number', key: ['local_qa', 'periodic_trigger', 'trigger_num_max'], label: '触发次数最大值', w: 'sm', int: true },
-            ],
             [
               { kind: 'switch', key: ['local_qa', 'text', 'enable'], label: '启用文本匹配' },
               { kind: 'select', key: ['local_qa', 'text', 'type'], label: '问答数据类型', w: 'sm', options: { json: '自定义json', text: '一问一答' } },
@@ -327,123 +367,132 @@ export const brainWorkspace: Workspace = {
               { kind: 'number', key: ['local_qa', 'text', 'username_max_len'], label: '用户名最大长度', w: 'sm', int: true },
             ],
             [
+              { kind: 'file-json', key: ['local_qa', 'text', 'file_path'], label: 'JSON文件内容', w: 'xl', hint: '「问答数据类型」为 自定义json 时生效：加载上面的路径，改完保存写回文件' },
+            ],
+          ],
+          rowsAdvanced: [
+            [
+              { kind: 'switch', key: ['local_qa', 'periodic_trigger', 'enable'], label: '周期性触发启用' },
+              { kind: 'frequency', key: ['local_qa', 'periodic_trigger'], label: '触发频率', w: 'xl' },
+            ],
+            [
               { kind: 'switch', key: ['local_qa', 'audio', 'enable'], label: '启用音频匹配' },
               { kind: 'input', key: ['local_qa', 'audio', 'file_path'], label: '音频存储路径', w: 'md', placeholder: '本地问答音频文件存储路径' },
               { kind: 'number', key: ['local_qa', 'audio', 'similarity'], label: '音频最低相似度', w: 'sm', placeholder: '和本地音频库文件名的最低相似度' },
-            ],
-            [
-              { kind: 'file-json', key: ['local_qa', 'text', 'file_path'], label: 'JSON文件内容', w: 'xl', hint: '「问答数据类型」为 自定义json 时生效：加载上面的路径，改完保存写回文件' },
             ],
           ],
         },
       ],
     },
+  ],
+}
+
+/* ---------- 多模态与翻译：搬去「玩法库 · 进阶联动」的区块 ---------- */
+
+export const imageRecognitionSection: Section = {
+  id: 'image-recognition',
+  title: '画面识别',
+  icon: 'cam',
+  masterKey: ['image_recognition', 'enable'],
+  desc: '截图/摄像头取图后交给 Gemini 或智谱分析，结果作为回复播报。',
+  rows: [
+    [
+      { kind: 'switch', key: ['image_recognition', 'enable'], label: '启用' },
+      { kind: 'select', key: ['image_recognition', 'model'], label: '模型', w: 'sm', options: { gemini: 'gemini', zhipu: '智谱AI' } },
+      { kind: 'input', key: ['image_recognition', 'img_save_path'], label: '截图保存路径', w: 'md', placeholder: '支持绝对或相对路径' },
+      { kind: 'input', key: ['image_recognition', 'prompt'], label: '携带的提示词', w: 'xl', placeholder: '图片识别时附带的提示词，协同图片获取回答' },
+    ],
+  ],
+  cards: [
     {
-      title: '多模态与翻译',
-      sections: [
-        {
-          id: 'image-recognition',
-          title: '图像识别',
-          desc: '截图/摄像头取图后交给 Gemini 或智谱分析，结果作为复读消息发送。',
-          rows: [
-            [
-              { kind: 'switch', key: ['image_recognition', 'enable'], label: '启用' },
-              { kind: 'select', key: ['image_recognition', 'model'], label: '模型', w: 'sm', options: { gemini: 'gemini', zhipu: '智谱AI' } },
-              { kind: 'input', key: ['image_recognition', 'img_save_path'], label: '截图保存路径', w: 'md', placeholder: '支持绝对或相对路径' },
-              { kind: 'input', key: ['image_recognition', 'prompt'], label: '携带的提示词', w: 'xl', placeholder: '图片识别时附带的提示词，协同图片获取回答' },
-            ],
-          ],
-          cards: [
-            {
-              id: 'img-screenshot',
-              title: '电脑截图',
-              desc: '截取指定窗口画面，交由多模态模型进行视觉识别与实时解说。截图识别需要核心程序在运行。',
-              rows: [
-                [
-                  { kind: 'select', key: ['image_recognition', 'screenshot_window_title'], label: '截图窗口标题', w: 'lg', options: {}, dynamicOptions: 'window-titles', free: true },
-                  { kind: 'action', key: ['_action', 'win-list'], label: '刷新窗口列表', w: 'sm', action: 'window-titles' },
-                  { kind: 'number', key: ['image_recognition', 'screenshot_delay'], label: 'N秒后进行截图', w: 'sm', placeholder: '截图延迟，方便打开对应窗口' },
-                  { kind: 'action', key: ['_action', 'shot'], label: '截图并发送', w: 'sm', action: 'img-screenshot', params: { source: 'window', title_or_index: ['image_recognition', 'screenshot_window_title'], img_save_path: ['image_recognition', 'img_save_path'], prompt: ['image_recognition', 'prompt'], model: ['image_recognition', 'model'] } },
-                ],
-                [
-                  { kind: 'switch', key: ['image_recognition', 'loop_screenshot_enable'], label: '循环截图并发送', hint: '由核心程序按下面的间隔自动截图识别' },
-                  { kind: 'number', key: ['image_recognition', 'loop_screenshot_delay'], label: 'N秒后自动截图', w: 'sm', int: true, placeholder: '自动截图延迟' },
-                ],
-              ],
-            },
-            {
-              id: 'img-cam',
-              title: '摄像头截图',
-              rows: [
-                [
-                  { kind: 'switch', key: ['image_recognition', 'cam_screenshot_enable'], label: '启用' },
-                  { kind: 'select', key: ['image_recognition', 'cam_index'], label: '摄像头索引', w: 'xs', options: {}, dynamicOptions: 'cameras' },
-                  { kind: 'action', key: ['_action', 'cam-list'], label: '刷新摄像头列表', w: 'sm', action: 'cameras' },
-                  { kind: 'number', key: ['image_recognition', 'cam_screenshot_delay'], label: 'N秒后进行截图', w: 'sm' },
-                  { kind: 'action', key: ['_action', 'shot'], label: '截图并发送', w: 'sm', action: 'img-screenshot', params: { source: 'camera', title_or_index: ['image_recognition', 'cam_index'], img_save_path: ['image_recognition', 'img_save_path'], prompt: ['image_recognition', 'prompt'], model: ['image_recognition', 'model'] } },
-                ],
-                [
-                  { kind: 'switch', key: ['image_recognition', 'loop_cam_screenshot_enable'], label: '循环截图并发送' },
-                  { kind: 'number', key: ['image_recognition', 'loop_cam_screenshot_delay'], label: 'N秒后自动截图', w: 'sm', int: true },
-                ],
-              ],
-            },
-            {
-              id: 'img-gemini',
-              title: 'Gemini',
-              rows: [[
-                { kind: 'select', key: ['image_recognition', 'gemini', 'model'], label: '模型', w: 'md', options: { 'gemini-pro-vision': 'gemini-pro-vision' } },
-                { kind: 'input', key: ['image_recognition', 'gemini', 'api_key'], label: 'API Key', w: 'md' },
-                { kind: 'input', key: ['image_recognition', 'gemini', 'http_proxy'], label: 'HTTP代理地址', w: 'md' },
-                { kind: 'input', key: ['image_recognition', 'gemini', 'https_proxy'], label: 'HTTPS代理地址', w: 'md' },
-              ]],
-            },
-            {
-              id: 'img-zhipu',
-              title: '智谱AI',
-              rows: [[
-                { kind: 'select', key: ['image_recognition', 'zhipu', 'model'], label: '模型', w: 'sm', options: { 'glm-4v': 'glm-4v' } },
-                { kind: 'input', key: ['image_recognition', 'zhipu', 'api_key'], label: 'API Key', w: 'md' },
-              ]],
-            },
-          ],
-        },
-        {
-          id: 'translate',
-          title: '翻译设置',
-          desc: '直播双语翻译：支持观众外语弹幕实时中译、主播回复自动外译，降低跨语种直播门槛。',
-          rows: [
-            [
-              { kind: 'switch', key: ['translate', 'enable'], label: '启用' },
-              { kind: 'select', key: ['translate', 'type'], label: '类型', w: 'sm', options: { baidu: '百度翻译', google: '谷歌翻译' } },
-              { kind: 'select', key: ['translate', 'trans_type'], label: '翻译类型', w: 'md', options: { 弹幕: '弹幕', 回复: '回复', '弹幕+回复': '弹幕+回复' } },
-            ],
-          ],
-          cards: [
-            {
-              id: 'translate-baidu',
-              title: '百度翻译',
-              desc: '对接百度翻译开放平台官方 API 接口。',
-              rows: [[
-                { kind: 'input', key: ['translate', 'baidu', 'appid'], label: 'APP ID', w: 'md', placeholder: '翻译开放平台 开发者中心 APP ID' },
-                { kind: 'input', key: ['translate', 'baidu', 'appkey'], label: '密钥', w: 'md', placeholder: '翻译开放平台 开发者中心 密钥' },
-                { kind: 'select', key: ['translate', 'baidu', 'from_lang'], label: '源语言', w: 'sm', options: { auto: '自动检测', zh: '中文', cht: '繁体中文', en: '英文', jp: '日文', kor: '韩文', yue: '粤语', wyw: '文言文' } },
-                { kind: 'select', key: ['translate', 'baidu', 'to_lang'], label: '目标语言', w: 'sm', options: { zh: '中文', cht: '繁体中文', en: '英文', jp: '日文', kor: '韩文', yue: '粤语', wyw: '文言文' } },
-              ]],
-            },
-            {
-              id: 'translate-google',
-              title: '谷歌翻译',
-              desc: '对接 Google 在线翻译接口。',
-              rows: [[
-                { kind: 'input', key: ['translate', 'google', 'proxy'], label: '代理地址', w: 'lg', placeholder: '代理的完整地址，请携带协议' },
-                { kind: 'select', key: ['translate', 'google', 'src_lang'], label: '源语言', w: 'sm', options: { auto: '自动', 'zh-CN': '中文', en: '英文', ja: '日文' } },
-                { kind: 'select', key: ['translate', 'google', 'tgt_lang'], label: '目标语言', w: 'sm', options: { 'zh-CN': '中文', en: '英文', ja: '日文' } },
-              ]],
-            },
-          ],
-        },
+      id: 'img-screenshot',
+      title: '电脑截图',
+      desc: '截取指定窗口画面，交由多模态模型进行视觉识别与实时解说。截图识别需要核心程序在运行。',
+      rows: [
+        [
+          { kind: 'select', key: ['image_recognition', 'screenshot_window_title'], label: '截图窗口标题', w: 'lg', options: {}, dynamicOptions: 'window-titles', free: true },
+          { kind: 'action', key: ['_action', 'win-list'], label: '刷新窗口列表', w: 'sm', action: 'window-titles' },
+          { kind: 'number', key: ['image_recognition', 'screenshot_delay'], label: 'N秒后进行截图', w: 'sm', placeholder: '截图延迟，方便打开对应窗口' },
+          { kind: 'action', key: ['_action', 'shot'], label: '截图并发送', w: 'sm', action: 'img-screenshot', params: { source: 'window', title_or_index: ['image_recognition', 'screenshot_window_title'], img_save_path: ['image_recognition', 'img_save_path'], prompt: ['image_recognition', 'prompt'], model: ['image_recognition', 'model'] } },
+        ],
+        [
+          { kind: 'switch', key: ['image_recognition', 'loop_screenshot_enable'], label: '循环截图并发送', hint: '由核心程序按下面的间隔自动截图识别' },
+          { kind: 'number', key: ['image_recognition', 'loop_screenshot_delay'], label: 'N秒后自动截图', w: 'sm', int: true, placeholder: '自动截图延迟' },
+        ],
       ],
+    },
+    {
+      id: 'img-cam',
+      title: '摄像头截图',
+      rows: [
+        [
+          { kind: 'switch', key: ['image_recognition', 'cam_screenshot_enable'], label: '启用' },
+          { kind: 'select', key: ['image_recognition', 'cam_index'], label: '摄像头索引', w: 'xs', options: {}, dynamicOptions: 'cameras' },
+          { kind: 'action', key: ['_action', 'cam-list'], label: '刷新摄像头列表', w: 'sm', action: 'cameras' },
+          { kind: 'number', key: ['image_recognition', 'cam_screenshot_delay'], label: 'N秒后进行截图', w: 'sm' },
+          { kind: 'action', key: ['_action', 'shot'], label: '截图并发送', w: 'sm', action: 'img-screenshot', params: { source: 'camera', title_or_index: ['image_recognition', 'cam_index'], img_save_path: ['image_recognition', 'img_save_path'], prompt: ['image_recognition', 'prompt'], model: ['image_recognition', 'model'] } },
+        ],
+        [
+          { kind: 'switch', key: ['image_recognition', 'loop_cam_screenshot_enable'], label: '循环截图并发送' },
+          { kind: 'number', key: ['image_recognition', 'loop_cam_screenshot_delay'], label: 'N秒后自动截图', w: 'sm', int: true },
+        ],
+      ],
+    },
+    {
+      id: 'img-gemini',
+      title: 'Gemini',
+      rows: [[
+        { kind: 'select', key: ['image_recognition', 'gemini', 'model'], label: '模型', w: 'md', options: { 'gemini-pro-vision': 'gemini-pro-vision' } },
+        { kind: 'input', key: ['image_recognition', 'gemini', 'api_key'], label: 'API Key', w: 'md' },
+        { kind: 'input', key: ['image_recognition', 'gemini', 'http_proxy'], label: 'HTTP代理地址', w: 'md' },
+        { kind: 'input', key: ['image_recognition', 'gemini', 'https_proxy'], label: 'HTTPS代理地址', w: 'md' },
+      ]],
+    },
+    {
+      id: 'img-zhipu',
+      title: '智谱AI',
+      rows: [[
+        { kind: 'select', key: ['image_recognition', 'zhipu', 'model'], label: '模型', w: 'sm', options: { 'glm-4v': 'glm-4v' } },
+        { kind: 'input', key: ['image_recognition', 'zhipu', 'api_key'], label: 'API Key', w: 'md' },
+      ]],
+    },
+  ],
+}
+
+export const translateSection: Section = {
+  id: 'translate',
+  title: '双语翻译',
+  icon: 'globe',
+  masterKey: ['translate', 'enable'],
+  desc: '直播双语翻译：支持观众外语弹幕实时中译、主播回复自动外译，降低跨语种直播门槛。',
+  rows: [
+    [
+      { kind: 'switch', key: ['translate', 'enable'], label: '启用' },
+      { kind: 'select', key: ['translate', 'type'], label: '类型', w: 'sm', options: { baidu: '百度翻译', google: '谷歌翻译' } },
+      { kind: 'select', key: ['translate', 'trans_type'], label: '翻译类型', w: 'md', options: { 弹幕: '弹幕', 回复: '回复', '弹幕+回复': '弹幕+回复' } },
+    ],
+  ],
+  cards: [
+    {
+      id: 'translate-baidu',
+      title: '百度翻译',
+      desc: '对接百度翻译开放平台官方 API 接口。',
+      rows: [[
+        { kind: 'input', key: ['translate', 'baidu', 'appid'], label: 'APP ID', w: 'md', placeholder: '翻译开放平台 开发者中心 APP ID' },
+        { kind: 'input', key: ['translate', 'baidu', 'appkey'], label: '密钥', w: 'md', placeholder: '翻译开放平台 开发者中心 密钥' },
+        { kind: 'select', key: ['translate', 'baidu', 'from_lang'], label: '源语言', w: 'sm', options: { auto: '自动检测', zh: '中文', cht: '繁体中文', en: '英文', jp: '日文', kor: '韩文', yue: '粤语', wyw: '文言文' } },
+        { kind: 'select', key: ['translate', 'baidu', 'to_lang'], label: '目标语言', w: 'sm', options: { zh: '中文', cht: '繁体中文', en: '英文', jp: '日文', kor: '韩文', yue: '粤语', wyw: '文言文' } },
+      ]],
+    },
+    {
+      id: 'translate-google',
+      title: '谷歌翻译',
+      desc: '对接 Google 在线翻译接口。',
+      rows: [[
+        { kind: 'input', key: ['translate', 'google', 'proxy'], label: '代理地址', w: 'lg', placeholder: '代理的完整地址，请携带协议' },
+        { kind: 'select', key: ['translate', 'google', 'src_lang'], label: '源语言', w: 'sm', options: { auto: '自动', 'zh-CN': '中文', en: '英文', ja: '日文' } },
+        { kind: 'select', key: ['translate', 'google', 'tgt_lang'], label: '目标语言', w: 'sm', options: { 'zh-CN': '中文', en: '英文', ja: '日文' } },
+      ]],
     },
   ],
 }

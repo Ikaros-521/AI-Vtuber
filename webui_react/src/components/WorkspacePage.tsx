@@ -1,5 +1,5 @@
-/** schema 驱动的工作区页面：吸顶区块索引 + 分组区块卡片 + 跳转闪烁。 */
-import { useEffect } from 'react'
+/** schema 驱动的工作区页面：吸顶区块索引 + 分组区块卡片 + 跳转闪烁；tabbed 工作区组即页签。 */
+import { useEffect, useState } from 'react'
 import { useConfigStore } from '../state/configStore'
 import { useJumpStore } from '../state/ui'
 import { sectionVisible } from '../schema'
@@ -58,22 +58,62 @@ function StubCard({ workspace }: { workspace: Workspace }) {
   )
 }
 
+/** 按板块开关过滤后的可见分组。 */
+function groupsOf(workspace: Workspace, draft: ReturnType<typeof useConfigStore.getState>['draft']) {
+  return workspace.groups
+    .map((g) => ({ ...g, sections: g.sections.filter((s) => sectionVisible(s, draft)) }))
+    .filter((g) => g.sections.length > 0)
+}
+
 export function WorkspacePage({ workspace }: { workspace: Workspace }) {
   const draft = useConfigStore((s) => s.draft)
+  const jumpTarget = useJumpStore((s) => s.target)
+  const [tab, setTab] = useState(0)
+
+  // 跳转目标是当前藏着的页签时，先切到那页再闪（须在提前 return 之前，钩子不能条件化）
+  useEffect(() => {
+    if (!workspace.tabbed || !jumpTarget || jumpTarget.workspace !== workspace.id) return
+    const sec = jumpTarget.sectionId
+      ? jumpTarget.sectionId.replace(`${workspace.id}__`, '')
+      : jumpTarget.fieldId?.split('__')[1]
+    if (!sec) return
+    const gi = groupsOf(workspace, draft).findIndex((g) =>
+      g.sections.some((s) => s.id === sec || (s.cards ?? []).some((c) => c.id === sec)),
+    )
+    if (gi >= 0) setTab(gi)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jumpTarget, workspace, draft])
 
   if (workspace.stub) return <StubCard workspace={workspace} />
 
-  const groups = workspace.groups
-    .map((g) => ({ ...g, sections: g.sections.filter((s) => sectionVisible(s, draft)) }))
-    .filter((g) => g.sections.length > 0)
+  const groups = groupsOf(workspace, draft)
+
+  // tabbed 工作区（弹幕管家）：组就是页签，切着看而不是一长条
+  const activeIndex = Math.min(tab, groups.length - 1)
+  const activeGroups = workspace.tabbed ? [groups[activeIndex]] : groups
 
   return (
-    <div className="mx-auto w-full max-w-[1180px] px-4 pb-28 pt-4">
+    <div className="flex flex-col gap-5">
       <JumpFlash workspaceId={workspace.id} />
 
+      {workspace.tabbed && groups.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          {groups.map((g, i) => (
+            <button
+              key={g.title}
+              className={`rounded-full px-3.5 py-1 text-[12.5px] transition ${i === activeIndex ? 'font-semibold text-white' : 'text-[var(--ink-mut)] ring-1 ring-slate-300 hover:text-[var(--accent)]'}`}
+              style={i === activeIndex ? { background: 'var(--ink)' } : undefined}
+              onClick={() => setTab(i)}
+            >
+              {g.title}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* 吸顶区块索引：让人先看得见这页有什么 */}
-      {groups.some((g) => g.sections.length >= 2) && (
-        <div className="sticky top-[57px] z-30 mb-4 flex flex-wrap items-center gap-x-1.5 gap-y-1.5 rounded-xl border border-slate-200/90 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
+      {!workspace.tabbed && groups.some((g) => g.sections.length >= 2) && (
+        <div className="sticky top-[57px] z-30 mb-1 flex flex-wrap items-center gap-x-1.5 gap-y-1.5 rounded-xl border border-slate-200/90 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
           <span className="mr-1 text-xs font-semibold text-[var(--ink-mut)]">本页区块</span>
           {groups.map((g) => (
             <span key={g.title} className="flex flex-wrap items-center gap-1.5">
@@ -100,9 +140,9 @@ export function WorkspacePage({ workspace }: { workspace: Workspace }) {
       )}
 
       <div className="flex flex-col gap-5">
-        {groups.map((g, gi) => (
+        {activeGroups.map((g, gi) => (
           <div key={g.title} className="flex flex-col gap-4">
-            {groups.length > 1 && (
+            {!workspace.tabbed && activeGroups.length > 1 && (
               <div className="flex items-center gap-3 pt-1">
                 <span className="rounded-md bg-slate-200/70 px-2.5 py-1 text-xs font-semibold tracking-wide text-[var(--ink)]">
                   {g.title}

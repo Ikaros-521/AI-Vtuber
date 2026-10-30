@@ -67,6 +67,8 @@ export interface JumpTarget {
 interface JumpState {
   target: JumpTarget | null
   jump: (workspace: string, target: { fieldId?: string; sectionId?: string }) => void
+  /** 一次性消费：AppShell 完成路由后清掉，避免残留目标在渲染期顶掉用户的手动切换 */
+  clear: () => void
 }
 
 let jumpSeq = 0
@@ -74,4 +76,5 @@ let jumpSeq = 0
 export const useJumpStore = create<JumpState>((set) => ({
   target: null,
   jump: (workspace, target) => set({ target: { workspace, ...target, seq: ++jumpSeq } }),
+  clear: () => set({ target: null }),
 }))

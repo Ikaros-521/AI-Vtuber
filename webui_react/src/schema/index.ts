@@ -1,29 +1,83 @@
-/** 工作区注册表与字段索引。
+/** 工作区注册表与字段索引 —— 重设计后的新 IA（2026-10 方案文档 docs/redesign/）。
 
- * 9 大核心工作区与 v2 webui_app/overview.PAGE_LIST 一一对应；尚未迁移的
- * 工作区标记 stub，页面会明确提示「继续用 v2 配置」，不放假数据。
+ * 顶层 5 页：开播台(dash) / 基础设置(settings=platform+brain+voice+body 四步) /
+ * 玩法库(play) / 弹幕管家(mod) / 系统(sys)；聊天(chat) 从开播台进入，不占主导航。
+ * ?tab= 深链兼容老 v3 的九个标题，也接受新页面 id。
  */
 import type { JsonObject, Path } from '../lib/path'
+import { bodyWorkspace } from './workspaces/body'
 import { brainWorkspace } from './workspaces/brain'
 import { danmuWorkspace } from './workspaces/danmu'
-import { hardwareWorkspace } from './workspaces/hardware'
-import { interactionWorkspace } from './workspaces/interaction'
-import { liveWorkspace } from './workspaces/live'
+import { platformWorkspace } from './workspaces/platform'
+import { playWorkspace } from './workspaces/play'
 import { systemWorkspace } from './workspaces/system'
 import { voiceWorkspace } from './workspaces/voice'
 import type { Field, Section, Workspace } from './types'
 
 export const WORKSPACES: Workspace[] = [
-  { id: 'overview', title: '总览', groups: [], custom: 'overview' },
-  { id: 'chat', title: '聊天', groups: [], custom: 'chat' },
-  liveWorkspace,
+  platformWorkspace,
   brainWorkspace,
   voiceWorkspace,
+  bodyWorkspace,
+  playWorkspace,
   danmuWorkspace,
-  interactionWorkspace,
-  hardwareWorkspace,
   systemWorkspace,
 ]
+
+/** 基础设置的四个步骤（也是信号链的四个节点）。 */
+export const SETTINGS_STEPS: Workspace[] = [platformWorkspace, brainWorkspace, voiceWorkspace, bodyWorkspace]
+
+/** 顶层页面：dash/chat 是非表单页，其余映射到工作区或 settings 组合页。 */
+export type PageId = 'dash' | 'settings' | 'play' | 'mod' | 'sys' | 'chat'
+
+export interface PageDef {
+  id: PageId
+  title: string
+  sub: string
+}
+
+export const PAGES: PageDef[] = [
+  { id: 'dash', title: '开播台', sub: '现在能开播吗？差哪一步？' },
+  { id: 'settings', title: '基础设置', sub: '四步配齐信号链：直播间 → AI 大脑 → 声音 → 形象' },
+  { id: 'play', title: '玩法库', sub: '可选玩法，开关式启用' },
+  { id: 'mod', title: '弹幕管家', sub: '什么弹幕进、怎么答谢、谁先播' },
+  { id: 'sys', title: '系统', sub: '数据 / 备份 / 账号 / 外观 / 模块' },
+]
+
+/** 老 v3 九工作区标题 → 新页面（+settings 步骤）。 */
+const LEGACY_TAB_MAP: Record<string, { page: PageId; step?: string }> = {
+  总览: { page: 'dash' },
+  聊天: { page: 'chat' },
+  直播接入: { page: 'settings', step: 'platform' },
+  人设与大脑: { page: 'settings', step: 'brain' },
+  声音与表现: { page: 'settings', step: 'voice' },
+  弹幕与礼仪: { page: 'mod' },
+  互动与玩法: { page: 'play' },
+  外设与联动: { page: 'play' },
+  运维与系统: { page: 'sys' },
+  // 新 id 直填也认
+  dash: { page: 'dash' },
+  chat: { page: 'chat' },
+  settings: { page: 'settings' },
+  play: { page: 'play' },
+  mod: { page: 'mod' },
+  sys: { page: 'sys' },
+  platform: { page: 'settings', step: 'platform' },
+  brain: { page: 'settings', step: 'brain' },
+  voice: { page: 'settings', step: 'voice' },
+  body: { page: 'settings', step: 'body' },
+}
+
+/** ?tab= 的值 → 页面 + 步骤。认老标题、新 id、settings 步骤 id。 */
+export function resolveTab(tab: string | null): { page: PageId; step: string } {
+  if (!tab) return { page: 'dash', step: 'platform' }
+  const hit = LEGACY_TAB_MAP[tab]
+  if (hit) return { page: hit.page, step: hit.step ?? 'platform' }
+  // 没见过的标题：如果恰好是某个 settings 步骤的标题也接住
+  const byTitle = SETTINGS_STEPS.find((w) => w.title === tab)
+  if (byTitle) return { page: 'settings', step: byTitle.id }
+  return { page: 'dash', step: 'platform' }
+}
 
 /** 聊天页里的三个配置字段（talk.username 等），未保存清单里要显示中文标签。 */
 export const CHAT_SETTINGS_SECTION: Section = {
@@ -51,7 +105,14 @@ export function sectionVisible(section: Section, draft: JsonObject | null): bool
   return Boolean(cur)
 }
 
-// ---------- 字段索引（搜索、未保存清单标签、总览跳转共用） ----------
+/** pickValue 是否命中当前选择值（string 或 string[] 都支持）。 */
+export function pickMatches(section: Section, value: unknown): boolean {
+  if (section.pickValue === undefined) return false
+  const v = String(value ?? '')
+  return Array.isArray(section.pickValue) ? section.pickValue.includes(v) : section.pickValue === v
+}
+
+// ---------- 字段索引（搜索、未保存清单标签、开播台跳转共用） ----------
 
 export interface FieldIndexEntry {
   workspaceId: string
@@ -65,7 +126,7 @@ export interface FieldIndexEntry {
 
 function indexSection(ws: Workspace, groupTitle: string, section: Section, out: FieldIndexEntry[]) {
   const baseFieldId = (field: Field) => `${ws.id}__${section.id}__${field.key.join('.')}`
-  for (const row of section.rows ?? []) {
+  for (const row of [...(section.rows ?? []), ...(section.rowsAdvanced ?? [])]) {
     for (const field of row) {
       const entry: FieldIndexEntry = {
         workspaceId: ws.id,

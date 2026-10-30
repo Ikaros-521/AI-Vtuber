@@ -91,6 +91,9 @@ export function FieldControl({ field, fieldId, basePath = [] }: { field: Field; 
     case 'checkboxes':
       return <CheckboxesField field={field} fieldId={fieldId} basePath={basePath} />
 
+    case 'frequency':
+      return <FrequencyField field={field} fieldId={fieldId} basePath={basePath} />
+
     case 'action':
       return <ActionField field={field} fieldId={fieldId} basePath={basePath} />
 
@@ -254,6 +257,49 @@ function CheckboxesField({ field, fieldId, basePath }: { field: Extract<Field, {
         </label>
       ))}
     </div>,
+  )
+}
+
+/** 周期触发复合控件：把「周期 min/max + 次数 min/max」四件套收成一行。
+ * key 指向 periodic_trigger 对象基座，四个子键 periodic_time_min/max（秒）、trigger_num_min/max。 */
+function FrequencyField({ field, fieldId, basePath }: { field: Extract<Field, { kind: 'frequency' }>; fieldId: string; basePath: Path }) {
+  return shell(
+    field,
+    fieldId,
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-2 rounded-lg border border-slate-200 bg-slate-50/60 px-3.5 py-2.5 text-[13px]">
+      <span className="text-[var(--ink-mut)]">每隔</span>
+      <FreqNum field={field} basePath={basePath} sub="periodic_time_min" />
+      <span className="text-[var(--ink-mut)]">~</span>
+      <FreqNum field={field} basePath={basePath} sub="periodic_time_max" />
+      <span>秒触发</span>
+      <span className="mx-1.5 h-4 w-px bg-slate-300" aria-hidden />
+      <span className="text-[var(--ink-mut)]">每次播</span>
+      <FreqNum field={field} basePath={basePath} sub="trigger_num_min" />
+      <span className="text-[var(--ink-mut)]">~</span>
+      <FreqNum field={field} basePath={basePath} sub="trigger_num_max" />
+      <span>条</span>
+    </div>,
+  )
+}
+
+function FreqNum({ field, basePath, sub }: { field: Extract<Field, { kind: 'frequency' }>; basePath: Path; sub: string }) {
+  const value = useConfigStore((s) => (s.draft ? getByPath(s.draft, [...basePath, ...field.key, sub]) : undefined))
+  const setValue = useConfigStore((s) => s.setValue)
+  const [raw, setRaw] = useState<string | null>(null)
+  const shown = raw ?? (value === null || value === undefined ? '' : String(value))
+
+  return (
+    <input
+      className="inp w-[72px] px-2 py-1 text-center font-mono text-xs"
+      inputMode="numeric"
+      value={shown}
+      onChange={(e) => {
+        setRaw(e.target.value)
+        const n = parseInt(e.target.value, 10)
+        if (!Number.isNaN(n)) setValue([...basePath, ...field.key, sub], n)
+      }}
+      onBlur={() => setRaw(null)}
+    />
   )
 }
 

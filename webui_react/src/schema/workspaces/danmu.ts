@@ -1,20 +1,19 @@
-/** 弹幕与礼仪工作区：念弹幕、答谢（入场/礼物/关注）、过滤。
+/** 弹幕管家工作区：触发规则 / 过滤屏蔽 / 念弹幕与答谢 / 播报顺序 四页签。
 
- * 字段与 config 键逐项对齐 v2 common_config.py（念弹幕/答谢）与 interact_filter.py。
+ * 字段与 config 键逐项对齐 v2 common_config.py（念弹幕/答谢）与 interact_filter.py；
+ * 原先一张巨型「过滤」卡按任务拆成了页签，config 键不变。
  */
 import type { Field, Workspace } from '../types'
 
 const PERIODIC_TRIGGER_HINT = '每隔这个周期的时间会触发n次此功能，周期时间从最大最小值之间随机生成'
 const TRIGGER_NUM_HINT = '周期到后，会触发n次此功能，次数从最大最小值之间随机生成'
 
-/** 周期性触发四件套，念弹幕/本地问答/答谢三处重复出现。 */
+/** 周期性触发，念弹幕/本地问答/答谢三处重复出现：
+ * 开关 + 频率复合控件（周期 min/max 秒 · 次数 min/max 一行编辑）。 */
 function periodic(prefix: (string | number)[]): Field[] {
   return [
     { kind: 'switch', key: [...prefix, 'enable'], label: '周期性触发启用' },
-    { kind: 'number', key: [...prefix, 'periodic_time_min'], label: '触发周期最小值', w: 'sm', int: true, placeholder: '例如：5', hint: PERIODIC_TRIGGER_HINT },
-    { kind: 'number', key: [...prefix, 'periodic_time_max'], label: '触发周期最大值', w: 'sm', int: true, placeholder: '例如：10' },
-    { kind: 'number', key: [...prefix, 'trigger_num_min'], label: '触发次数最小值', w: 'sm', int: true, placeholder: '例如：0', hint: TRIGGER_NUM_HINT },
-    { kind: 'number', key: [...prefix, 'trigger_num_max'], label: '触发次数最大值', w: 'sm', int: true, placeholder: '例如：1' },
+    { kind: 'frequency', key: prefix, label: '触发频率', w: 'xl', hint: `${PERIODIC_TRIGGER_HINT}；${TRIGGER_NUM_HINT}` },
   ]
 }
 
@@ -26,37 +25,44 @@ function forget(kind: string, label: string): Field[] {
   ]
 }
 
-function priority(label: string, key: string): Field {
-  return { kind: 'number', key: ['filter', 'priority_mapping', key], label: `${label} 优先级`, w: 'sm', int: true, placeholder: '数字越大，优先级越高' }
-}
+/** 板块开关：整块「过滤」被关掉时四个页签里的过滤内容一起隐藏。 */
+const FILTER_CARD: [page: string, key: string] = ['common_config', 'filter']
 
 export const danmuWorkspace: Workspace = {
-  id: 'danmu',
-  title: '弹幕与礼仪',
+  id: 'mod',
+  title: '弹幕管家',
+  tabbed: true,
   groups: [
     {
-      title: '安全风控',
+      title: '触发规则',
       sections: [
         {
-          id: 'filter',
-          title: '过滤',
-          showCard: ['common_config', 'filter'],
-          desc: '弹幕触发/过滤前后缀、违禁词、消息历史清理、队列优先级与黑名单。这块被「板块显示/隐藏」关掉时，本组会整体隐藏。',
+          id: 'filter-trigger',
+          title: '触发前后缀',
+          showCard: FILTER_CARD,
+          desc: '不设任何前后缀 = 所有弹幕都进大脑，新手建议全空；弹幕太吵时再设置触发词。',
           rows: [
             [
               { kind: 'string-list', key: ['filter', 'before_must_str'], label: '弹幕触发前缀', w: 'md', placeholder: '前缀必须携带其中任一字符串才能触发\n例如：配置#，那么这个会触发：#你好' },
               { kind: 'string-list', key: ['filter', 'after_must_str'], label: '弹幕触发后缀', w: 'md', placeholder: '后缀必须携带其中任一字符串才能触发\n例如：配置。那么这个会触发：你好。' },
-              { kind: 'string-list', key: ['filter', 'before_filter_str'], label: '弹幕过滤前缀', w: 'md', placeholder: '当前缀为其中任一字符串时，弹幕会被过滤\n例如：配置#，那么这个会被过滤：#你好' },
-              { kind: 'string-list', key: ['filter', 'after_filter_str'], label: '弹幕过滤后缀', w: 'md', placeholder: '当后缀为其中任一字符串时，弹幕会被过滤\n例如：配置#，那么这个会被过滤：你好#' },
               { kind: 'string-list', key: ['filter', 'before_must_str_for_llm'], label: 'LLM触发前缀', w: 'md', placeholder: '前缀必须携带其中任一字符串才能触发LLM\n例如：配置#，那么这个会触发：#你好' },
               { kind: 'string-list', key: ['filter', 'after_must_str_for_llm'], label: 'LLM触发后缀', w: 'md', placeholder: '后缀必须携带其中任一字符串才能触发LLM\n例如：配置。那么这个会触发：你好。' },
+              { kind: 'string-list', key: ['filter', 'before_filter_str'], label: '弹幕过滤前缀', w: 'md', placeholder: '当前缀为其中任一字符串时，弹幕会被过滤\n例如：配置#，那么这个会被过滤：#你好' },
+              { kind: 'string-list', key: ['filter', 'after_filter_str'], label: '弹幕过滤后缀', w: 'md', placeholder: '当后缀为其中任一字符串时，弹幕会被过滤\n例如：配置#，那么这个会被过滤：你好#' },
             ],
-            [
-              { kind: 'number', key: ['filter', 'max_len'], label: '最大单词数', w: 'sm', int: true, placeholder: '最长阅读的英文单词数（空格分隔）' },
-              { kind: 'number', key: ['filter', 'max_char_len'], label: '最大字符数', w: 'sm', int: true, placeholder: '最长阅读的字符数，双重过滤，避免溢出' },
-              { kind: 'switch', key: ['filter', 'username_convert_digits_to_chinese'], label: '用户名中的数字转中文' },
-              { kind: 'switch', key: ['filter', 'emoji'], label: '弹幕表情过滤' },
-            ],
+          ],
+        },
+      ],
+    },
+    {
+      title: '过滤屏蔽',
+      sections: [
+        {
+          id: 'filter-block',
+          title: '屏蔽规则',
+          showCard: FILTER_CARD,
+          desc: '违禁词、黑名单与长度限制：不让脏东西和杠精进直播间。',
+          rows: [
             [
               { kind: 'switch', key: ['filter', 'badwords', 'enable'], label: '违禁词过滤' },
               { kind: 'switch', key: ['filter', 'badwords', 'discard'], label: '违禁语句丢弃' },
@@ -64,21 +70,22 @@ export const danmuWorkspace: Workspace = {
               { kind: 'input', key: ['filter', 'badwords', 'bad_pinyin_path'], label: '违禁拼音路径', w: 'md', placeholder: '本地违禁拼音数据路径（你如果不需要，可以清空文件内容）' },
               { kind: 'input', key: ['filter', 'badwords', 'replace'], label: '违禁词替换', w: 'md', placeholder: '在不丢弃违禁语句的前提下，将违禁词替换成此项的文本' },
             ],
+            [
+              { kind: 'number', key: ['filter', 'max_len'], label: '最大单词数', w: 'sm', int: true, placeholder: '最长阅读的英文单词数（空格分隔）' },
+              { kind: 'number', key: ['filter', 'max_char_len'], label: '最大字符数', w: 'sm', int: true, placeholder: '最长阅读的字符数，双重过滤，避免溢出' },
+              { kind: 'switch', key: ['filter', 'username_convert_digits_to_chinese'], label: '用户名中的数字转中文' },
+              { kind: 'switch', key: ['filter', 'emoji'], label: '弹幕表情过滤' },
+            ],
           ],
           cards: [
             {
-              id: 'filter-forget',
-              title: '消息历史清理设置',
-              desc: '程序会把收到的弹幕/礼物等留在内存里。清理间隔是每隔多少秒丢一次这段时间内收到的旧消息，保留条数是每次清理之后仍留在内存里的最新条数。两类都只影响内存，不动数据库文件。',
+              id: 'filter-blacklist',
+              title: '弹幕黑名单',
               rows: [
-                forget('comment', '弹幕'),
-                forget('gift', '礼物'),
-                forget('entrance', '入场'),
-                forget('follow', '关注'),
-                forget('talk', '聊天'),
-                forget('schedule', '定时'),
-                forget('idle_time_task', '闲时任务'),
-                forget('image_recognition_schedule', '图像识别'),
+                [
+                  { kind: 'switch', key: ['filter', 'blacklist', 'enable'], label: '启用' },
+                  { kind: 'string-list', key: ['filter', 'blacklist', 'username'], label: '用户名 黑名单', w: 'xl', placeholder: '屏蔽此名单内所有用户的弹幕，用户名以换行分隔' },
+                ],
               ],
             },
             {
@@ -94,53 +101,18 @@ export const danmuWorkspace: Workspace = {
               ],
             },
             {
-              id: 'filter-queue',
-              title: '待合成音频的消息&待播放音频队列',
-              desc: '下方优先级配置请使用正整数，数字越大优先级越高，会优先合成播放。注意：目前队列长度按文本切分后计算，回复内容过长时可能丢数据。',
+              id: 'filter-forget',
+              title: '消息历史清理设置',
+              desc: '程序会把收到的弹幕/礼物等留在内存里。清理间隔是每隔多少秒丢一次这段时间内收到的旧消息，保留条数是每次清理之后仍留在内存里的最新条数。两类都只影响内存，不动数据库文件。',
               rows: [
-                [
-                  { kind: 'number', key: ['filter', 'message_queue_max_len'], label: '消息队列最大保留长度', w: 'md', int: true, hint: '收到的消息生成的文本会按优先级存入消息队列，当新消息优先级低于队列中所有消息且超过此长度时会被丢弃' },
-                  { kind: 'number', key: ['filter', 'voice_tmp_path_queue_max_len'], label: '音频播放队列最大保留长度', w: 'md', int: true, hint: '合成后的音频按优先级存入待播放队列，当新音频优先级低于队列所有音频且超过此长度时会被丢弃' },
-                  { kind: 'number', key: ['filter', 'voice_tmp_path_queue_min_start_play'], label: '音频播放队列首次触发播放阈值', w: 'md', int: true, hint: '缓存一定数量的音频后再开始播放；不想开播前缓冲就配 0' },
-                ],
-                [
-                  priority('闲时任务', 'idle_time_task'),
-                  priority('图像识别', 'image_recognition_schedule'),
-                  priority('本地问答-音频', 'local_qa_audio'),
-                  priority('弹幕回复', 'comment'),
-                  priority('文案', 'copywriting'),
-                ],
-                [
-                  priority('点歌', 'song'),
-                  priority('念弹幕', 'read_comment'),
-                  priority('入场欢迎', 'entrance'),
-                  priority('礼物答谢', 'gift'),
-                  priority('关注答谢', 'follow'),
-                ],
-                [
-                  priority('聊天（语音输入）', 'talk'),
-                  priority('复读', 'reread'),
-                  priority('按键映射', 'key_mapping'),
-                  priority('积分', 'integral'),
-                  priority('最高优先级复读', 'reread_top_priority'),
-                ],
-                [
-                  priority('异常报警', 'abnormal_alarm'),
-                  priority('动态文案', 'trends_copywriting'),
-                  priority('定时任务', 'schedule'),
-                  priority('助播-文本', 'assistant_anchor_text'),
-                  priority('助播-音频', 'assistant_anchor_audio'),
-                ],
-              ],
-            },
-            {
-              id: 'filter-blacklist',
-              title: '弹幕黑名单',
-              rows: [
-                [
-                  { kind: 'switch', key: ['filter', 'blacklist', 'enable'], label: '启用' },
-                  { kind: 'string-list', key: ['filter', 'blacklist', 'username'], label: '用户名 黑名单', w: 'xl', placeholder: '屏蔽此名单内所有用户的弹幕，用户名以换行分隔' },
-                ],
+                forget('comment', '弹幕'),
+                forget('gift', '礼物'),
+                forget('entrance', '入场'),
+                forget('follow', '关注'),
+                forget('talk', '聊天'),
+                forget('schedule', '定时'),
+                forget('idle_time_task', '闲时任务'),
+                forget('image_recognition_schedule', '图像识别'),
               ],
             },
           ],
@@ -148,7 +120,7 @@ export const danmuWorkspace: Workspace = {
       ],
     },
     {
-      title: '弹幕响应',
+      title: '念弹幕与答谢',
       sections: [
         {
           id: 'read-comment',
@@ -214,6 +186,31 @@ export const danmuWorkspace: Workspace = {
                 periodic(['thanks', 'follow', 'periodic_trigger']),
               ],
             },
+          ],
+        },
+      ],
+    },
+    {
+      title: '播报顺序',
+      sections: [
+        {
+          id: 'filter-priority',
+          title: '播报优先级',
+          custom: 'priority-list',
+          showCard: FILTER_CARD,
+          desc: '消息排队时谁先合成先播放。拖拽排序，越靠上越优先（数据对应 filter.priority_mapping）。',
+        },
+        {
+          id: 'filter-queue',
+          title: '消息与音频队列',
+          showCard: FILTER_CARD,
+          desc: '队列长度按文本切分后计算，回复内容过长时可能丢数据。',
+          rows: [
+            [
+              { kind: 'number', key: ['filter', 'message_queue_max_len'], label: '消息队列最大保留长度', w: 'md', int: true, hint: '收到的消息生成的文本会按优先级存入消息队列，当新消息优先级低于队列中所有消息且超过此长度时会被丢弃' },
+              { kind: 'number', key: ['filter', 'voice_tmp_path_queue_max_len'], label: '音频播放队列最大保留长度', w: 'md', int: true, hint: '合成后的音频按优先级存入待播放队列，当新音频优先级低于队列所有音频且超过此长度时会被丢弃' },
+              { kind: 'number', key: ['filter', 'voice_tmp_path_queue_min_start_play'], label: '音频播放队列首次触发播放阈值', w: 'md', int: true, hint: '缓存一定数量的音频后再开始播放；不想开播前缓冲就配 0' },
+            ],
           ],
         },
       ],

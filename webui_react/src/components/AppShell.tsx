@@ -1,36 +1,74 @@
-/** 应用外壳：顶部导航（9 大工作区芯片）+ 页面内容 + 操作坞 + 全局浮层。
+/** 应用外壳（重设计版）：左侧 5 项主导航 + 顶栏（保存/运行状态/搜索）+ 页面路由。
 
- * ?tab= 深链与 v2 行为一致：切页写地址栏，刷新/分享能回到原来那一页。
+ * ?tab= 深链认新页面 id，也兼容老 v3 的九个工作区标题（resolveTab）。
+ * 保存模型从右下角操作坞收编到顶栏常驻；运行控制在开播台。
  */
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
-import { WORKSPACES } from '../schema'
-import { useChanges } from '../state/configStore'
+import { PAGES, resolveTab, WORKSPACES, SETTINGS_STEPS, type PageId } from '../schema'
+import { entryForPath } from '../schema'
+import { useChanges, useConfigStore } from '../state/configStore'
 import { useOpsStore } from '../state/opsStore'
-import { useJumpStore } from '../state/ui'
+import { notify, useJumpStore } from '../state/ui'
+import { getByPath, type JsonObject } from '../lib/path'
+import {
+  AUDIO_SYNTHESIS_TYPE_OPTIONS,
+  CHAT_TYPE_OPTIONS,
+  PLATFORM_OPTIONS,
+  VISUAL_BODY_OPTIONS,
+} from '../schema/options'
 import { ChatPage } from './ChatPage'
-import { OpsDock } from './OpsDock'
-import { OverviewPage } from './OverviewPage'
+import { DashboardPage } from './DashboardPage'
+import { DirtyListDialog } from './Dialogs'
+import { PlayPage } from './PlayPage'
 import { SearchDialog } from './SearchDialog'
 import { ConfirmHost, ToastHost } from './Overlays'
+import { SettingsPage } from './SettingsPage'
+import { Wizard } from './Wizard'
 import { WorkspacePage } from './WorkspacePage'
 
-function initialWorkspaceId(): string {
-  const tab = new URLSearchParams(window.location.search).get('tab')
-  const hit = WORKSPACES.find((w) => w.title === tab)
-  return hit ? hit.id : 'overview'
+function initialRoute(): { page: PageId; step: string } {
+  return resolveTab(new URLSearchParams(window.location.search).get('tab'))
+}
+
+/** 保存前给用户一条配置摘要（v2 save_config 的提示行为）。 */
+function summarize(config: JsonObject): string {
+  const platform = getByPath(config, ['platform']) as string | undefined
+  const chatType = getByPath(config, ['chat_type']) as string | undefined
+  const tts = getByPath(config, ['audio_synthesis_type']) as string | undefined
+  const body = getByPath(config, ['visual_body']) as string | undefined
+  return [
+    `平台：${PLATFORM_OPTIONS[platform ?? ''] ?? platform}`,
+    `大语言模型：${CHAT_TYPE_OPTIONS[chatType ?? ''] ?? chatType}`,
+    `语音合成：${AUDIO_SYNTHESIS_TYPE_OPTIONS[tts ?? ''] ?? tts}`,
+    `虚拟身体：${VISUAL_BODY_OPTIONS[body ?? ''] ?? body}`,
+  ].join(' | ')
 }
 
 export function AppShell() {
   const refreshOps = useOpsStore((s) => s.refresh)
   const jumpTarget = useJumpStore((s) => s.target)
   const changes = useChanges()
+  const save = useConfigStore((s) => s.save)
+  const running = useOpsStore((s) => s.running)
 
-  const [workspaceId, setWorkspaceId] = useState(initialWorkspaceId)
+  const [route, setRoute] = useState(initialRoute)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [dirtyOpen, setDirtyOpen] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(false)
+  const config = useConfigStore((s) => s.config)
   const [loginUser, setLoginUser] = useState<string | null>(null)
 
-  // 登录功能启用时，导航右侧给一个退出入口
+  // 首次使用向导：没配平台或大脑时自动弹一次；关掉后本会话不再打扰
+  useEffect(() => {
+    if (!config) return
+    if (sessionStorage.getItem('aiv-wizard-seen')) return
+    const platform = getByPath(config, ['platform'])
+    const chatType = getByPath(config, ['chat_type'])
+    if (!platform || !chatType || chatType === 'none') setWizardOpen(true)
+  }, [config])
+
+  // 登录功能启用时，侧栏底部给一个退出入口
   useEffect(() => {
     api.authStatus().then(
       (resp) => setLoginUser(resp.enabled && resp.authed ? (resp.username ?? '') : null),
@@ -43,7 +81,7 @@ export function AppShell() {
     window.location.reload()
   }
 
-  const workspace = WORKSPACES.find((w) => w.id === workspaceId) ?? WORKSPACES[0]
+  const page = PAGES.find((p) => p.id === route.page) ?? PAGES[0]
 
   // 运行态轮询：状态也会被 /sys_cmd 从别处改掉，只能轮询
   useEffect(() => {
@@ -52,17 +90,29 @@ export function AppShell() {
     return () => clearInterval(timer)
   }, [refreshOps])
 
-  // 跳转可能要求切页
+  // 跳转可能要求切页（搜索 / 未保存清单 / 开播台信号链共用）；
+  // 路由完成后清掉目标——跳转是一次性指令，不能常驻渲染期和用户的手动切换打架
   useEffect(() => {
-    if (jumpTarget) setWorkspaceId((cur) => (cur === jumpTarget.workspace ? cur : jumpTarget.workspace))
+    if (!jumpTarget) return
+    const wsId = jumpTarget.workspace
+    if (SETTINGS_STEPS.some((w) => w.id === wsId)) {
+      setRoute((cur) => (cur.page === 'settings' && cur.step === wsId ? cur : { page: 'settings', step: wsId }))
+    } else if (WORKSPACES.some((w) => w.id === wsId)) {
+      setRoute((cur) => (cur.page === wsId ? cur : { page: wsId as PageId, step: cur.step }))
+    } else if (wsId === 'chat') {
+      setRoute((cur) => (cur.page === 'chat' ? cur : { page: 'chat', step: cur.step }))
+    } else if (wsId === 'overview' || wsId === 'dash') {
+      setRoute((cur) => (cur.page === 'dash' ? cur : { page: 'dash', step: cur.step }))
+    }
+    useJumpStore.getState().clear()
   }, [jumpTarget])
 
   // ?tab= 深链同步
   useEffect(() => {
-    const url = `?tab=${encodeURIComponent(workspace.title)}`
+    const url = `?tab=${encodeURIComponent(route.page === 'settings' ? route.step : route.page)}`
     window.history.replaceState(null, '', url)
-    document.title = `${workspace.title} · AI Vtuber`
-  }, [workspace.title])
+    document.title = `${route.page === 'settings' ? '基础设置 · ' + (SETTINGS_STEPS.find((w) => w.id === route.step)?.title ?? '') : page.title} · AI Vtuber`
+  }, [route, page.title])
 
   // Ctrl+K 搜索
   useEffect(() => {
@@ -87,60 +137,155 @@ export function AppShell() {
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
   }, [changes.length])
 
+  const handleSave = async () => {
+    if (changes.length === 0) {
+      notify.info('没有未保存的改动')
+      return
+    }
+    notify.info(summarize(useConfigStore.getState().draft ?? {}))
+    const outcome = await save()
+    if (outcome.ok) notify.ok(outcome.message)
+    else {
+      notify.err(outcome.message)
+      // 校验失败：把用户带到那个框上
+      if (outcome.path) {
+        const entry = entryForPath(outcome.path)
+        if (entry) useJumpStore.getState().jump(entry.workspaceId, { fieldId: entry.fieldId })
+      }
+    }
+  }
+
+  const modWorkspace = WORKSPACES.find((w) => w.id === 'mod')!
+  const sysWorkspace = WORKSPACES.find((w) => w.id === 'sys')!
+  const playWorkspace = WORKSPACES.find((w) => w.id === 'play')!
+
+  const navGo = (p: PageId) => setRoute((cur) => (cur.page === p ? cur : { page: p, step: cur.step }))
+
   return (
-    <div className="min-h-screen">
-      {/* 顶部导航 */}
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-[1180px] items-center gap-2 px-4 py-2.5">
-          <span className="flex-none text-[15px] font-bold tracking-wide">AI&nbsp;Vtuber</span>
-          {/* 窄屏单行横向滚动，不折行：换行会把导航挤成两层 */}
-          <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {WORKSPACES.map((w) => {
-              const active = w.id === workspaceId
-              return (
-                <button
-                  key={w.id}
-                  onClick={() => setWorkspaceId(w.id)}
-                  className={`flex-none rounded-md px-2.5 py-1 text-[13px] font-medium transition ${active ? 'text-white' : 'text-[var(--ink)] hover:bg-slate-100'}`}
-                  style={active ? { background: 'var(--accent)' } : undefined}
-                >
-                  {w.title}
-                </button>
-              )
-            })}
-          </nav>
-          <button
-            className="flex flex-none items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1 text-[13px] text-[var(--ink-mut)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-            onClick={() => setSearchOpen(true)}
-            title="Ctrl+K"
+    <div className="flex min-h-screen">
+      {/* 左侧主导航 */}
+      <aside className="sticky top-0 hidden h-screen w-[204px] flex-none flex-col border-r border-slate-200 bg-white md:flex">
+        <div className="flex items-center gap-2.5 px-[18px] pb-3.5 pt-[18px]">
+          <span
+            className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[9px] text-sm font-bold text-white"
+            style={{ background: 'var(--accent)' }}
           >
-            🔍 搜索配置项
-          </button>
+            ▶
+          </span>
+          <div className="min-w-0">
+            <div className="text-[15px] font-bold">AI&nbsp;Vtuber</div>
+          </div>
+        </div>
+        <nav className="flex flex-col gap-0.5 px-2.5">
+          {PAGES.map((p) => {
+            const active = route.page === p.id
+            return (
+              <button
+                key={p.id}
+                onClick={() => navGo(p.id)}
+                className={`rounded-lg px-2.5 py-2 text-left text-[13.5px] transition ${active ? 'font-semibold' : 'text-[var(--ink-mut)] hover:bg-slate-100'}`}
+                style={active ? { background: 'color-mix(in srgb, var(--accent) 12%, white)', color: 'var(--accent)' } : undefined}
+              >
+                {p.title}
+              </button>
+            )
+          })}
+        </nav>
+        <div className="mt-auto flex flex-col gap-2 px-3.5 py-3.5">
           {loginUser !== null && (
             <button
-              className="flex flex-none items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1 text-[13px] text-[var(--ink-mut)] hover:border-red-400 hover:text-red-500"
+              className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs text-[var(--ink-mut)] transition hover:border-red-400 hover:text-red-500"
               onClick={() => void logout()}
               title={`当前登录：${loginUser || '（未知）'}`}
             >
               退出登录
             </button>
           )}
+          <p className="text-center text-[11px] leading-relaxed text-[var(--ink-mut)]">
+            改版说明见<br />docs/redesign/
+          </p>
         </div>
-      </header>
+      </aside>
 
-      {/* 页面内容 */}
-      <main>
-        {workspace.custom === 'overview' ? (
-          <OverviewPage />
-        ) : workspace.custom === 'chat' ? (
-          <ChatPage />
-        ) : (
-          <WorkspacePage workspace={workspace} />
-        )}
-      </main>
+      {/* 主区 */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* 顶栏：页面标题 + 保存 + 运行状态 + 搜索 */}
+        <header className="sticky top-0 z-40 flex h-[58px] items-center gap-3.5 border-b border-slate-200 bg-white/95 px-6 backdrop-blur">
+          <div className="min-w-0">
+            <div className="truncate text-[15px] font-bold">
+              {route.page === 'settings'
+                ? `基础设置 · ${SETTINGS_STEPS.find((w) => w.id === route.step)?.title ?? ''}`
+                : page.title}
+            </div>
+            <div className="truncate text-xs text-[var(--ink-mut)]">{page.sub}</div>
+          </div>
 
-      <OpsDock />
+          <div className="ml-auto flex flex-none items-center gap-2.5">
+            <button
+              className="flex items-center gap-2 rounded-lg border border-slate-300 px-2.5 py-1 text-[13px] text-[var(--ink-mut)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              onClick={() => setSearchOpen(true)}
+              title="Ctrl+K"
+            >
+              🔍 搜索配置项
+            </button>
+            <button
+              className="flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1 text-xs transition hover:border-[var(--accent)]"
+              style={{ color: running ? 'var(--ok)' : 'var(--ink-mut)' }}
+              onClick={() => navGo('dash')}
+              title="到开播台看运行状态"
+            >
+              <span className="inline-block h-[7px] w-[7px] rounded-full" style={{ background: running ? 'var(--ok)' : '#cbd5e1' }} />
+              {running ? '运行中' : '未运行'}
+            </button>
+            {changes.length > 0 && (
+              <button
+                className="rounded-full px-2.5 py-1 text-xs font-semibold"
+                style={{ background: 'color-mix(in srgb, var(--warn) 14%, white)', color: 'var(--warn)' }}
+                onClick={() => setDirtyOpen(true)}
+                title="点开看哪些项还没保存"
+              >
+                ● {changes.length} 项未保存
+              </button>
+            )}
+            <button
+              className="rounded-lg px-3.5 py-1.5 text-[13px] font-medium text-white transition hover:opacity-90"
+              style={{ background: 'var(--accent)' }}
+              onClick={() => void handleSave()}
+            >
+              保存
+            </button>
+          </div>
+        </header>
+
+        {/* 页面内容 */}
+        <main className="mx-auto w-full max-w-[1240px] flex-1 px-6 pb-16 pt-5">
+          {route.page === 'dash' && <DashboardPage onOpenChat={() => navGo('chat')} onOpenWizard={() => setWizardOpen(true)} />}
+          {route.page === 'settings' && (
+            <SettingsPage step={route.step} onStep={(s) => setRoute({ page: 'settings', step: s })} />
+          )}
+          {route.page === 'play' && <PlayPage workspace={playWorkspace} />}
+          {route.page === 'mod' && <WorkspacePage workspace={modWorkspace} />}
+          {route.page === 'sys' && <WorkspacePage workspace={sysWorkspace} />}
+          {route.page === 'chat' && <ChatPage />}
+        </main>
+      </div>
+
+      {wizardOpen && (
+        <Wizard
+          open={wizardOpen}
+          onClose={() => {
+            sessionStorage.setItem('aiv-wizard-seen', '1')
+            setWizardOpen(false)
+          }}
+          onApply={(goSettings) => {
+            sessionStorage.setItem('aiv-wizard-seen', '1')
+            setWizardOpen(false)
+            if (goSettings) setRoute({ page: 'settings', step: 'platform' })
+          }}
+        />
+      )}
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
+      {dirtyOpen && <DirtyListDialog onClose={() => setDirtyOpen(false)} />}
       <ToastHost />
       <ConfirmHost />
     </div>
