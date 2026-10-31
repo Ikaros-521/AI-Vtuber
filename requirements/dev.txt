@@ -1,3 +1,4 @@
 # 开发/CI 依赖，装在 core.lock.txt 之上。
 # 安装：uv pip install --python .venv/Scripts/python.exe -r requirements/dev.txt
 pytest==9.1.1
+ruff==0.17.3
