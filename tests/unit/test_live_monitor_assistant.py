@@ -14,11 +14,6 @@ import pytest
 
 from fakes import FakeConfig
 from utils.platforms import PLATFORM_LISTENERS
-from webui_app.options import (
-    LEGACY_LIVE_MONITOR_PLATFORMS,
-    PLATFORM_OPTIONS,
-    platform_options,
-)
 
 ASSISTANT_MODULE = "utils.platforms.lx_live_monitor_assistant"
 LEGACY_KEYS = ("ks2", "pdd", "douyu", "1688", "taobao")
@@ -50,31 +45,6 @@ def test_the_unified_key_routes_to_the_assistant_listener():
 def test_legacy_platform_names_still_route_to_it(legacy):
     """删掉下拉里的五项容易，让老 config.json 继续能收弹幕才是重点。"""
     assert PLATFORM_LISTENERS[legacy] == ASSISTANT_MODULE
-
-
-def test_the_dropdown_only_offers_the_unified_name():
-    for legacy in LEGACY_KEYS:
-        assert legacy not in PLATFORM_OPTIONS
-    assert PLATFORM_OPTIONS["live_monitor_assistant"] == "直播弹幕监听助手"
-
-
-def test_a_saved_legacy_name_is_still_shown_in_the_dropdown():
-    """老配置存的是 pdd，下拉里必须还能看见它。
-
-    收成一五项之后如果不做这一步，用户打开页面看到的是空白平台，
-    随手点一次保存就把自己的平台改没了。
-    """
-    options = platform_options("pdd")
-
-    assert "pdd" in options
-    assert options["pdd"] == LEGACY_LIVE_MONITOR_PLATFORMS["pdd"]
-
-
-def test_the_unified_name_is_shown_without_any_legacy_entry():
-    options = platform_options("live_monitor_assistant")
-
-    assert "pdd" not in options
-    assert list(PLATFORM_OPTIONS) == list(options)
 
 
 def test_listener_binds_the_configured_address(monkeypatch):

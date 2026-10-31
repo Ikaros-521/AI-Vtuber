@@ -14,7 +14,6 @@ readme = "README.md"
 python = "^3.10"
 
 # --- core：WebUI 与本地对话/播报主链路（requirements/core.txt） ---
-nicegui = "==3.18.0"
 fastapi = "==0.159.1"
 starlette = "==1.7.0"
 uvicorn = "==0.54.0"
@@ -44,7 +43,7 @@ keyboard = "==0.13.5"
 SpeechRecognition = "==3.17.0"
 baidu-aip = "==4.16.13"
 chardet = "==7.7.0"
-# aiohttp/nicegui 的传递依赖，父约束只有下限，显式抬到最新
+# aiohttp 的传递依赖，父约束只有下限，显式抬到最新
 multidict = "==7.1.0"
 async-timeout = "==5.0.1"
 docutils = "==0.23"

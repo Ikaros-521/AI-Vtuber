@@ -86,8 +86,6 @@ npm install && npm run build    # 重新构建，产物在 dist/（带 hash 文�
 npm run dev                     # 开发模式：5173 端口，/api 自动代理到本地的 webui_server
 ```
 
-> 旧版 `webui.py`（NiceGUI 服务端渲染）已停用，仅作回退保留：v3 缺你需要的交互时可临时
-> `python webui.py` 起老界面（两边读写同一份 config.json），后续版本会移除。
 > 对 main.py 的 `/set_config` `/sys_cmd` `/send` `/callback` `/tts` `/llm` 接口由
 > `webui_server` 原样提供，外部脚本无需改动。
 
@@ -97,7 +95,7 @@ npm run dev                     # 开发模式：5173 端口，/api 自动代理
 
 | 分组 | 内容 | 何时需要 |
 | --- | --- | --- |
-| `core.txt` | WebUI（FastAPI 后端 + React 前端，另含已停用的 nicegui 老前端）、本地对话、edge-tts、拾音、文本处理 | 必装（82 个包） |
+| `core.txt` | WebUI（FastAPI 后端 + React 前端）、本地对话、edge-tts、拾音、文本处理 | 必装（82 个包） |
 | `llm.txt` | 智谱/通义/千帆/Gemini/火山引擎/Dify 等模型 SDK | 选用对应 `chat_type` |
 | `tts.txt` | elevenlabs、Azure TTS、gradio_client | 选用对应 TTS |
 | `asr.txt` | FunASR、Faster-Whisper（会带 torch） | 本地语音识别 |

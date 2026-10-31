@@ -9,7 +9,6 @@
 │ 入口层                                                    │
 │   main.py            主程序入口（~120 行，只做编排）          │
 │   webui_server/      WebUI v3 后端（FastAPI, python -m 启动）│
-│   webui.py + webui_app/   [已停用] v2 NiceGUI 回退保留      │
 ├─────────────────────────────────────────────────────────┤
 │ 应用服务层 app/（仅 main.py 使用）                          │
 │   state.py       AppState 运行上下文（收编原模块级全局）      │
@@ -97,8 +96,8 @@
 
 ## 已知的缓办项（按需推进）
 
-1. v2（webui.py/webui_app）仍在仓库中作为回退，待 v3 稳定后删除（连同其 ~114 个单测）。
-2. webui_server 响应体尚无 `response_model` 声明（信封结构由测试锁定）。
-3. `Audio` 多实例共享类属性（webui 同进程建第二个 `Audio(type=2)` 时共享队列/标志位）——当前 main 与 webui 分进程运行，实际不触发；若未来同进程嵌入需改造为实例属性。
+1. webui_server 响应体尚无 `response_model` 声明（信封结构由测试锁定）。
+2. `Audio` 多实例共享类属性（webui 同进程建第二个 `Audio(type=2)` 时共享队列/标志位）——当前 main 与 webui 分进程运行，实际不触发；若未来同进程嵌入需改造为实例属性。
+3. requirements/*.lock.txt 仍含 nicegui（v2 遗留，再生成 lock 时自然消失，装出来无害）。
 
-> 已完成：~~共享状态加锁~~（state_lock，2026-10-31）、~~integral/filters 拆分~~（utils/integral.py + utils/filters.py）。
+> 已完成：~~共享状态加锁~~（state_lock，2026-10-31）、~~integral/filters 拆分~~（utils/integral.py + utils/filters.py）、~~v2 删除~~（webui.py/webui_app 及其单测/nicegui 依赖，2026-10-31）。

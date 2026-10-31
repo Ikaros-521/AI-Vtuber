@@ -1,10 +1,9 @@
 # WebUI 与本地对话/播报主链路，最小可运行集
-nicegui==3.18.0
 fastapi==0.159.1
 starlette==1.7.0
 uvicorn==0.54.0
 httpx==0.28.1
-# nicegui 3 要求 aiohttp>=3.14.3，后者要求 yarl>=1.25.1。
+# aiohttp 要求 yarl>=1.25.1（历史上还有已删除的 nicegui 3 前端要求 aiohttp>=3.14.3）。
 # 原先卡住这两个的 blivedm 已改为内置源码（见 vendor/blivedm/README.md），不再约束这里。
 aiohttp==3.14.5
 yarl==1.25.1
@@ -41,7 +40,7 @@ baidu-aip==4.16.13
 # baidu-aip 代码里 import 了 chardet 却没声明依赖，不显式装上会在 import aip 时报 ModuleNotFoundError
 chardet==7.7.0
 
-# 下面三个是 aiohttp/nicegui 的传递依赖，父约束只有下限，uv 默认会解到刚满足的旧版；
+# 下面三个是 aiohttp 的传递依赖，父约束只有下限，uv 默认会解到刚满足的旧版；
 # 显式抬到当前最新，避免 lock 里长期留着过期编译扩展
 multidict==7.1.0
 async-timeout==5.0.1

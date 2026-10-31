@@ -21,13 +21,6 @@ class FakeConfig:
         return self.config.get(key)
 
 
-class FakeWidget:
-    """替代 nicegui 输入控件，处理函数只用 .value。"""
-
-    def __init__(self, value):
-        self.value = value
-
-
 class FakeAudio:
     """记录调用，便于断言委托关系。"""
 

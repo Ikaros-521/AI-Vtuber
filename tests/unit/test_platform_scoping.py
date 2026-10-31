@@ -24,8 +24,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
 def _production_files():
-    out = [str(p) for d in ("utils", "webui_app") for p in (ROOT / d).rglob("*.py")]
-    out += [str(ROOT / "main.py"), str(ROOT / "webui.py")]
+    out = [str(p) for d in ("utils",) for p in (ROOT / d).rglob("*.py")]
+    out += [str(ROOT / "main.py")]  # v2 的 webui.py 已删除
     return sorted(f for f in out if "__pycache__" not in f)
 
 
