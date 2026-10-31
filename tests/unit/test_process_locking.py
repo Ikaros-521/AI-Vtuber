@@ -9,8 +9,6 @@
 import time
 import threading
 
-from luna.core.my_handle import My_handle
-
 
 def _cfg(*flags):
     """间隔给到 300s：测试要自己决定什么时候跑这一批，不能让计时器抢在前面。"""
@@ -96,7 +94,7 @@ def test_is_handleing_is_reset_when_a_handler_raises(configure, monkeypatch):
     handle.process_data({"content": "a"}, "comment")
     handle.process_last_data("comment")
 
-    assert My_handle.is_handleing == 0
+    assert handle.is_handleing == 0
     assert seen == ["a"]
 
 
@@ -141,4 +139,4 @@ def test_empty_buffer_runs_no_handler(configure, monkeypatch):
     handle.process_last_data("comment")
 
     assert calls == []
-    assert My_handle.is_handleing == 0
+    assert handle.is_handleing == 0

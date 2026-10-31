@@ -8,7 +8,6 @@ except 吞成 return None，于是礼物感谢在顺序模式下永远不出声�
 import pytest
 
 from fakes import FakeConfig
-from luna.core.my_handle import My_handle
 
 
 THANKS = {
@@ -30,8 +29,8 @@ def thanks_handle(configure):
     handle.key_mapping_handle = lambda *a, **k: None
     handle.custom_cmd_handle = lambda *a, **k: None
     handle.audio_synthesis_handle = lambda message: None
-    My_handle.thanks_gift_copy = []
-    My_handle.thanks_entrance_copy = []
+    handle.thanks_gift_copy = []
+    handle.thanks_entrance_copy = []
     return handle
 
 
@@ -48,24 +47,24 @@ def test_sequential_gift_thanks_rotates_through_the_config_copies(thanks_handle)
 def test_sequential_gift_thanks_refills_after_the_queue_is_drained(thanks_handle):
     for _ in range(3):
         thanks_handle.gift_handle(gift_data())
-    assert My_handle.thanks_gift_copy == []
+    assert thanks_handle.thanks_gift_copy == []
 
     assert thanks_handle.gift_handle(gift_data())["content"] == "谢谢 小心心"
 
 
 def test_gift_thanks_is_skipped_below_the_lowest_price(thanks_handle):
-    My_handle.config = FakeConfig({"thanks": dict(THANKS, lowest_price=100)})
+    thanks_handle.config = FakeConfig({"thanks": dict(THANKS, lowest_price=100)})
 
     assert thanks_handle.gift_handle(gift_data()) is None
 
 
 def test_random_gift_thanks_does_not_consume_the_sequential_queue(thanks_handle):
-    My_handle.config = FakeConfig({"thanks": dict(THANKS, gift_random=True)})
+    thanks_handle.config = FakeConfig({"thanks": dict(THANKS, gift_random=True)})
 
     for _ in range(5):
         assert thanks_handle.gift_handle(gift_data()) is not None
 
-    assert My_handle.thanks_gift_copy == []
+    assert thanks_handle.thanks_gift_copy == []
 
 
 def test_entrance_thanks_rotates_and_refills(thanks_handle):

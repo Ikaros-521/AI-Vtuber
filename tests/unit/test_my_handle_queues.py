@@ -3,20 +3,19 @@
 import pytest
 
 from fakes import FakeAudio
-from luna.core.my_handle import My_handle
 
 
 def test_clear_queue_delegates_to_audio(configure):
     handle = configure({"filter": {}})
-    My_handle.audio = FakeAudio()
+    handle.audio = FakeAudio()
 
     assert handle.clear_queue("message_queue") is True
-    assert My_handle.audio.calls == [("clear_queue", ("message_queue",))]
+    assert handle.audio.calls == [("clear_queue", ("message_queue",))]
 
 
 def test_clear_queue_returns_false_on_error(configure):
     handle = configure({"filter": {}})
-    My_handle.audio = FakeAudio(raises=True)
+    handle.audio = FakeAudio(raises=True)
 
     assert handle.clear_queue("voice_tmp_path_queue") is False
     assert handle.stop_audio() is False
@@ -24,12 +23,12 @@ def test_clear_queue_returns_false_on_error(configure):
 
 def test_queue_predicates_delegate(configure):
     handle = configure({"filter": {}})
-    My_handle.audio = FakeAudio()
+    handle.audio = FakeAudio()
 
     assert handle.is_playback_busy() is False
     assert handle.is_queue_less_or_greater_than("message_queue", less=5) is True
     assert handle.get_audio_info() == {"message_queue": 0}
-    assert [c[0] for c in My_handle.audio.calls] == [
+    assert [c[0] for c in handle.audio.calls] == [
         "is_playback_busy",
         "is_queue_less_or_greater_than",
         "get_audio_info",
@@ -39,9 +38,9 @@ def test_queue_predicates_delegate(configure):
 def test_is_handle_empty_reflects_shared_flag(configure):
     handle = configure({"filter": {}})
 
-    My_handle.is_handleing = 1
+    handle.is_handleing = 1
     assert handle.is_handle_empty() == 1
-    My_handle.is_handleing = 0
+    handle.is_handleing = 0
     assert handle.is_handle_empty() == 0
 
 
@@ -78,7 +77,7 @@ def test_dedup_flags_repeated_comment(configure):
     assert handle.is_data_repeat_in_limited_time("comment", first) is False
     assert handle.is_data_repeat_in_limited_time("comment", dict(first)) is True
     # 命中重复时不再入队，队列里只有第一条
-    assert My_handle.live_data["comment"] == [first]
+    assert handle.live_data["comment"] == [first]
 
 
 def test_dedup_treats_gift_by_username_only(configure):
@@ -92,7 +91,7 @@ def test_dedup_disabled_never_blocks_and_records_nothing(configure):
     handle = configure({"filter": {"limited_time_deduplication": {"enable": False}}})
 
     assert handle.is_data_repeat_in_limited_time("comment", {"username": "甲", "content": "你好"}) is False
-    assert My_handle.live_data["comment"] == []
+    assert handle.live_data["comment"] == []
 
 
 def test_dedup_ignores_empty_arguments(configure):
@@ -106,20 +105,20 @@ def test_abnormal_alarm_ignores_errors_while_disabled(configure):
     """关掉异常报警时不能攒计数——否则用户哪天打开后，
     第一个偶发错误就会把长期直播攒下的数直接顶过 auto_restart_error_num。"""
     handle = configure({"abnormal_alarm": {"llm": {"enable": False}}})
-    before = My_handle.abnormal_alarm_data["llm"]["error_count"]
+    before = handle.abnormal_alarm_data["llm"]["error_count"]
 
     assert handle.abnormal_alarm_handle("llm") is True
-    assert My_handle.abnormal_alarm_data["llm"]["error_count"] == before
+    assert handle.abnormal_alarm_data["llm"]["error_count"] == before
 
 
 def test_abnormal_alarm_counts_only_once_enabled(configure):
     handle = configure({"abnormal_alarm": {"llm": {"enable": True, "type": "none"}}})
-    before = My_handle.abnormal_alarm_data["llm"]["error_count"]
+    before = handle.abnormal_alarm_data["llm"]["error_count"]
 
     assert handle.abnormal_alarm_handle("llm") is True
-    assert My_handle.abnormal_alarm_data["llm"]["error_count"] == before + 1
+    assert handle.abnormal_alarm_data["llm"]["error_count"] == before + 1
 
 
 @pytest.mark.parametrize("category", ["platform", "llm", "tts", "svc", "visual_body", "other"])
-def test_abnormal_alarm_data_covers_every_category(category):
-    assert category in My_handle.abnormal_alarm_data
+def test_abnormal_alarm_data_covers_every_category(handle, category):
+    assert category in handle.abnormal_alarm_data

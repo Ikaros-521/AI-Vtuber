@@ -1,5 +1,6 @@
 import os
 import threading
+from typing import Any
 import json
 import random
 import difflib
@@ -38,7 +39,7 @@ r"""
 
 
 class SingletonMeta(type):
-    _instances = {}
+    _instances: dict = {}
     _lock = threading.Lock()
 
     def __call__(cls, *args, **kwargs):
@@ -49,62 +50,71 @@ class SingletonMeta(type):
 
 
 class My_handle(metaclass=SingletonMeta):
-    common = None
-    config = None
-    audio = None
-    my_translate = None
+    """交互处理编排器（单例门面）。
 
-    # 是否在数据处理中
-    is_handleing = 0
+    2026-10-31 起共享状态与依赖实例全部为实例属性——原先"类当全局状态袋"
+    （config=None 占位 + My_handle.X 类属性重绑 + self/My_handle 混用）是
+    103 处 mypy 报错的根源，也迫使测试只能靠类属性打桩互相污染。
+    单例语义不变：重复 My_handle(path) 返回同一实例且不会重复装配。
+    """
 
-    # 异常报警数据
-    abnormal_alarm_data = alarm.new_state()
+    def _init_state(self):
+        """初始化实例状态。测试用 __new__ 绕过 __init__ 后需手动调用本方法。"""
+        # 是否在数据处理中
+        self.is_handleing = 0
 
-    # 直播消息存储(入场、礼物、弹幕)，用于限定时间内的去重
-    live_data = {
-        "comment": [],
-        "gift": [],
-        "entrance": [],
-    }
+        # 异常报警数据
+        self.abnormal_alarm_data = alarm.new_state()
 
-    # 各个任务运行数据缓存 暂时用于 限定任务周期性触发
-    task_data = {
-        "read_comment": {"data": [], "time": 0},
-        "local_qa": {"data": [], "time": 0},
-        "thanks": {
-            "gift": {"data": [], "time": 0},
-            "entrance": {"data": [], "time": 0},
-            "follow": {"data": [], "time": 0},
-        },
-    }
+        # 直播消息存储(入场、礼物、弹幕)，用于限定时间内的去重
+        self.live_data = {
+            "comment": [],
+            "gift": [],
+            "entrance": [],
+        }
 
-    # 答谢板块文案数据临时存储
-    thanks_entrance_copy = []
-    thanks_gift_copy = []
-    thanks_follow_copy = []
+        # 各个任务运行数据缓存 暂时用于 限定任务周期性触发
+        self.task_data = {
+            "read_comment": {"data": [], "time": 0},
+            "local_qa": {"data": [], "time": 0},
+            "thanks": {
+                "gift": {"data": [], "time": 0},
+                "entrance": {"data": [], "time": 0},
+                "follow": {"data": [], "time": 0},
+            },
+        }
 
-    # 共享状态锁：护住 live_data / task_data / thanks_*轮转表 这几份类级共享可变状态的
-    # 复合操作（遍历+append、切片+清空、判空+pop）。
-    # 访问路径不再全部经过 handle_lock 串行——周期触发定时器线程、/send 直调的
-    # gift/entrance/follow 都会绕开它——所以在状态自身上加锁；
-    # 锁序约定：handle_lock -> state_lock，不得反向嵌套。
-    # RLock：同线程路径内可能重复进入。
-    state_lock = threading.RLock()
+        # 答谢板块文案数据临时存储
+        self.thanks_entrance_copy = []
+        self.thanks_gift_copy = []
+        self.thanks_follow_copy = []
+
+        # 共享状态锁：护住 live_data / task_data / thanks_*轮转表 这几份共享可变状态的
+        # 复合操作（遍历+append、切片+清空、判空+pop）。
+        # 访问路径不再全部经过 handle_lock 串行——周期触发定时器线程、/send 直调的
+        # gift/entrance/follow 都会绕开它——所以在状态自身上加锁；
+        # 锁序约定：handle_lock -> state_lock，不得反向嵌套。
+        # RLock：同线程路径内可能重复进入。
+        self.state_lock = threading.RLock()
 
     def __init__(self, config_path):
+        # 单例重复构造守卫（取代原先的 None 占位守卫）：SingletonMeta 让二次
+        # My_handle(path) 回到同一实例再跑一遍 __init__，这里直接短路
+        if getattr(self, "_state_ready", False):
+            return
+        self._state_ready = True
+
         logger.info("初始化My_handle...")
 
-        try:
-            if My_handle.common is None:
-                My_handle.common = Common()
-            if My_handle.config is None:
-                My_handle.config = Config(config_path)
-            if My_handle.audio is None:
-                My_handle.audio = Audio(config_path)
-            if My_handle.my_translate is None:
-                My_handle.my_translate = My_Translate(config_path)
+        self._init_state()
 
-            self.proxy = None
+        try:
+            self.common = Common()
+            self.config = Config(config_path)
+            self.audio = Audio(config_path)
+            self.my_translate = My_Translate(config_path)
+
+            self.proxy: Any = None
             # self.proxy = {
             #     "http": "http://127.0.0.1:10809",
             #     "https": "http://127.0.0.1:10809"
@@ -117,26 +127,26 @@ class My_handle(metaclass=SingletonMeta):
             self.handle_lock = threading.Lock()
             self.timers = {}
 
-            self.db = None
+            self.db: Any = None
 
             # 点歌模块
-            self.choose_song_song_lists = None
+            self.choose_song_song_lists: Any = None
 
             """
             新增LLM后，这边先定义下各个变量，下面会用到
             """
-            self.chatgpt = None
-            self.langchain_chatchat = None
-            self.zhipu = None
-            self.tongyi = None
-            self.my_wenxinworkshop = None
-            self.gemini = None
-            self.anythingllm = None
-            self.custom_llm = None
-            self.dify = None
-            self.volcengine = None
+            self.chatgpt: Any = None
+            self.langchain_chatchat: Any = None
+            self.zhipu: Any = None
+            self.tongyi: Any = None
+            self.my_wenxinworkshop: Any = None
+            self.gemini: Any = None
+            self.anythingllm: Any = None
+            self.custom_llm: Any = None
+            self.dify: Any = None
+            self.volcengine: Any = None
 
-            self.image_recognition_model = None
+            self.image_recognition_model: Any = None
 
             self.chat_type_list = [
                 "chatgpt",
@@ -172,7 +182,7 @@ class My_handle(metaclass=SingletonMeta):
             bool: 清空结果
         """
         try:
-            return My_handle.audio.clear_queue(type)
+            return self.audio.clear_queue(type)
         except Exception as e:
             logger.error(traceback.format_exc())
             logger.error(f"清空{type}队列失败：{e}")
@@ -181,7 +191,7 @@ class My_handle(metaclass=SingletonMeta):
     # 停止音频播放
     def stop_audio(self, type: str = "pygame", mixer_normal: bool = True, mixer_copywriting: bool = True):
         try:
-            return My_handle.audio.stop_audio(type, mixer_normal, mixer_copywriting)
+            return self.audio.stop_audio(type, mixer_normal, mixer_copywriting)
         except Exception as e:
             logger.error(traceback.format_exc())
             logger.error(f"停止音频播放失败：{e}")
@@ -191,7 +201,7 @@ class My_handle(metaclass=SingletonMeta):
     def periodic_trigger_data_handle(self):
         # 整体包 state_lock：task_data 的计时/切片/清空要与流水线线程的
         # append（见 _interaction_pipeline）互斥；内部只做计时与入队，持锁窗口极短
-        with My_handle.state_lock:
+        with self.state_lock:
             return self._periodic_trigger_data_handle_unlocked()
 
     def _periodic_trigger_data_handle_unlocked(self):
@@ -201,28 +211,28 @@ class My_handle(metaclass=SingletonMeta):
                 # 返回最后的 n 个元素，如果不足 n 个则返回实际元素个数
                 return data_list[-num:] if num > 0 else []
 
-            if My_handle.config.get("read_comment", "periodic_trigger", "enable"):
+            if self.config.get("read_comment", "periodic_trigger", "enable"):
                 type = "read_comment"
                 # 计时+1
-                My_handle.task_data[type]["time"] += 1
+                self.task_data[type]["time"] += 1
 
-                periodic_time_min = int(My_handle.config.get(type, "periodic_trigger", "periodic_time_min"))
-                periodic_time_max = int(My_handle.config.get(type, "periodic_trigger", "periodic_time_max"))
+                periodic_time_min = int(self.config.get(type, "periodic_trigger", "periodic_time_min"))
+                periodic_time_max = int(self.config.get(type, "periodic_trigger", "periodic_time_max"))
                 # 生成触发周期值
                 periodic_time = random.randint(periodic_time_min, periodic_time_max)
-                logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
+                logger.debug(f"type={type}, periodic_time={periodic_time}, self.task_data={self.task_data}")
 
                 # 计时时间是否超过限定的触发周期
-                if My_handle.task_data[type]["time"] >= periodic_time:
+                if self.task_data[type]["time"] >= periodic_time:
                     # 计时清零
-                    My_handle.task_data[type]["time"] = 0
+                    self.task_data[type]["time"] = 0
 
-                    trigger_num_min = int(My_handle.config.get(type, "periodic_trigger", "trigger_num_min"))
-                    trigger_num_max = int(My_handle.config.get(type, "periodic_trigger", "trigger_num_max"))
+                    trigger_num_min = int(self.config.get(type, "periodic_trigger", "trigger_num_min"))
+                    trigger_num_max = int(self.config.get(type, "periodic_trigger", "trigger_num_max"))
                     # 生成触发个数
                     trigger_num = random.randint(trigger_num_min, trigger_num_max)
                     # 获取数据
-                    data_list = get_last_n_items(My_handle.task_data[type]["data"], trigger_num)
+                    data_list = get_last_n_items(self.task_data[type]["data"], trigger_num)
                     logger.debug(f"type={type}, trigger_num={trigger_num}")
 
                     if data_list != []:
@@ -231,30 +241,30 @@ class My_handle(metaclass=SingletonMeta):
                             self.audio_synthesis_handle(data)
 
                     # 数据清空
-                    My_handle.task_data[type]["data"] = []
+                    self.task_data[type]["data"] = []
 
-            if My_handle.config.get("local_qa", "periodic_trigger", "enable"):
+            if self.config.get("local_qa", "periodic_trigger", "enable"):
                 type = "local_qa"
                 # 计时+1
-                My_handle.task_data[type]["time"] += 1
+                self.task_data[type]["time"] += 1
 
-                periodic_time_min = int(My_handle.config.get(type, "periodic_trigger", "periodic_time_min"))
-                periodic_time_max = int(My_handle.config.get(type, "periodic_trigger", "periodic_time_max"))
+                periodic_time_min = int(self.config.get(type, "periodic_trigger", "periodic_time_min"))
+                periodic_time_max = int(self.config.get(type, "periodic_trigger", "periodic_time_max"))
                 # 生成触发周期值
                 periodic_time = random.randint(periodic_time_min, periodic_time_max)
-                logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
+                logger.debug(f"type={type}, periodic_time={periodic_time}, self.task_data={self.task_data}")
 
                 # 计时时间是否超过限定的触发周期
-                if My_handle.task_data[type]["time"] >= periodic_time:
+                if self.task_data[type]["time"] >= periodic_time:
                     # 计时清零
-                    My_handle.task_data[type]["time"] = 0
+                    self.task_data[type]["time"] = 0
 
-                    trigger_num_min = int(My_handle.config.get(type, "periodic_trigger", "trigger_num_min"))
-                    trigger_num_max = int(My_handle.config.get(type, "periodic_trigger", "trigger_num_max"))
+                    trigger_num_min = int(self.config.get(type, "periodic_trigger", "trigger_num_min"))
+                    trigger_num_max = int(self.config.get(type, "periodic_trigger", "trigger_num_max"))
                     # 生成触发个数
                     trigger_num = random.randint(trigger_num_min, trigger_num_max)
                     # 获取数据
-                    data_list = get_last_n_items(My_handle.task_data[type]["data"], trigger_num)
+                    data_list = get_last_n_items(self.task_data[type]["data"], trigger_num)
                     logger.debug(f"type={type}, trigger_num={trigger_num}")
 
                     if data_list != []:
@@ -268,32 +278,32 @@ class My_handle(metaclass=SingletonMeta):
                             self.audio_synthesis_handle(data)
 
                     # 数据清空
-                    My_handle.task_data[type]["data"] = []
+                    self.task_data[type]["data"] = []
 
-            if My_handle.config.get("thanks", "gift", "periodic_trigger", "enable"):
+            if self.config.get("thanks", "gift", "periodic_trigger", "enable"):
                 type = "thanks"
                 type2 = "gift"
 
                 # 计时+1
-                My_handle.task_data[type][type2]["time"] += 1
+                self.task_data[type][type2]["time"] += 1
 
-                periodic_time_min = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_min"))
-                periodic_time_max = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_max"))
+                periodic_time_min = int(self.config.get(type, type2, "periodic_trigger", "periodic_time_min"))
+                periodic_time_max = int(self.config.get(type, type2, "periodic_trigger", "periodic_time_max"))
                 # 生成触发周期值
                 periodic_time = random.randint(periodic_time_min, periodic_time_max)
-                logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
+                logger.debug(f"type={type}, periodic_time={periodic_time}, self.task_data={self.task_data}")
 
                 # 计时时间是否超过限定的触发周期
-                if My_handle.task_data[type][type2]["time"] >= periodic_time:
+                if self.task_data[type][type2]["time"] >= periodic_time:
                     # 计时清零
-                    My_handle.task_data[type][type2]["time"] = 0
+                    self.task_data[type][type2]["time"] = 0
 
-                    trigger_num_min = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_min"))
-                    trigger_num_max = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_max"))
+                    trigger_num_min = int(self.config.get(type, type2, "periodic_trigger", "trigger_num_min"))
+                    trigger_num_max = int(self.config.get(type, type2, "periodic_trigger", "trigger_num_max"))
                     # 生成触发个数
                     trigger_num = random.randint(trigger_num_min, trigger_num_max)
                     # 获取数据
-                    data_list = get_last_n_items(My_handle.task_data[type][type2]["data"], trigger_num)
+                    data_list = get_last_n_items(self.task_data[type][type2]["data"], trigger_num)
                     logger.debug(f"type={type}, trigger_num={trigger_num}")
 
                     if data_list != []:
@@ -302,32 +312,32 @@ class My_handle(metaclass=SingletonMeta):
                             self.audio_synthesis_handle(data)
 
                     # 数据清空
-                    My_handle.task_data[type][type2]["data"] = []
+                    self.task_data[type][type2]["data"] = []
 
-            if My_handle.config.get("thanks", "entrance", "periodic_trigger", "enable"):
+            if self.config.get("thanks", "entrance", "periodic_trigger", "enable"):
                 type = "thanks"
                 type2 = "entrance"
 
                 # 计时+1
-                My_handle.task_data[type][type2]["time"] += 1
+                self.task_data[type][type2]["time"] += 1
 
-                periodic_time_min = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_min"))
-                periodic_time_max = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_max"))
+                periodic_time_min = int(self.config.get(type, type2, "periodic_trigger", "periodic_time_min"))
+                periodic_time_max = int(self.config.get(type, type2, "periodic_trigger", "periodic_time_max"))
                 # 生成触发周期值
                 periodic_time = random.randint(periodic_time_min, periodic_time_max)
-                logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
+                logger.debug(f"type={type}, periodic_time={periodic_time}, self.task_data={self.task_data}")
 
                 # 计时时间是否超过限定的触发周期
-                if My_handle.task_data[type][type2]["time"] >= periodic_time:
+                if self.task_data[type][type2]["time"] >= periodic_time:
                     # 计时清零
-                    My_handle.task_data[type][type2]["time"] = 0
+                    self.task_data[type][type2]["time"] = 0
 
-                    trigger_num_min = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_min"))
-                    trigger_num_max = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_max"))
+                    trigger_num_min = int(self.config.get(type, type2, "periodic_trigger", "trigger_num_min"))
+                    trigger_num_max = int(self.config.get(type, type2, "periodic_trigger", "trigger_num_max"))
                     # 生成触发个数
                     trigger_num = random.randint(trigger_num_min, trigger_num_max)
                     # 获取数据
-                    data_list = get_last_n_items(My_handle.task_data[type][type2]["data"], trigger_num)
+                    data_list = get_last_n_items(self.task_data[type][type2]["data"], trigger_num)
                     logger.debug(f"type={type}, trigger_num={trigger_num}")
 
                     if data_list != []:
@@ -336,32 +346,32 @@ class My_handle(metaclass=SingletonMeta):
                             self.audio_synthesis_handle(data)
 
                     # 数据清空
-                    My_handle.task_data[type][type2]["data"] = []
+                    self.task_data[type][type2]["data"] = []
 
-            if My_handle.config.get("thanks", "follow", "periodic_trigger", "enable"):
+            if self.config.get("thanks", "follow", "periodic_trigger", "enable"):
                 type = "thanks"
                 type2 = "follow"
 
                 # 计时+1
-                My_handle.task_data[type][type2]["time"] += 1
+                self.task_data[type][type2]["time"] += 1
 
-                periodic_time_min = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_min"))
-                periodic_time_max = int(My_handle.config.get(type, type2, "periodic_trigger", "periodic_time_max"))
+                periodic_time_min = int(self.config.get(type, type2, "periodic_trigger", "periodic_time_min"))
+                periodic_time_max = int(self.config.get(type, type2, "periodic_trigger", "periodic_time_max"))
                 # 生成触发周期值
                 periodic_time = random.randint(periodic_time_min, periodic_time_max)
-                logger.debug(f"type={type}, periodic_time={periodic_time}, My_handle.task_data={My_handle.task_data}")
+                logger.debug(f"type={type}, periodic_time={periodic_time}, self.task_data={self.task_data}")
 
                 # 计时时间是否超过限定的触发周期
-                if My_handle.task_data[type][type2]["time"] >= periodic_time:
+                if self.task_data[type][type2]["time"] >= periodic_time:
                     # 计时清零
-                    My_handle.task_data[type][type2]["time"] = 0
+                    self.task_data[type][type2]["time"] = 0
 
-                    trigger_num_min = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_min"))
-                    trigger_num_max = int(My_handle.config.get(type, type2, "periodic_trigger", "trigger_num_max"))
+                    trigger_num_min = int(self.config.get(type, type2, "periodic_trigger", "trigger_num_min"))
+                    trigger_num_max = int(self.config.get(type, type2, "periodic_trigger", "trigger_num_max"))
                     # 生成触发个数
                     trigger_num = random.randint(trigger_num_min, trigger_num_max)
                     # 获取数据
-                    data_list = get_last_n_items(My_handle.task_data[type][type2]["data"], trigger_num)
+                    data_list = get_last_n_items(self.task_data[type][type2]["data"], trigger_num)
                     logger.debug(f"type={type}, trigger_num={trigger_num}")
 
                     if data_list != []:
@@ -370,7 +380,7 @@ class My_handle(metaclass=SingletonMeta):
                             self.audio_synthesis_handle(data)
 
                     # 数据清空
-                    My_handle.task_data[type][type2]["data"] = []
+                    self.task_data[type][type2]["data"] = []
 
         except Exception:
             logger.error(traceback.format_exc())
@@ -384,24 +394,24 @@ class My_handle(metaclass=SingletonMeta):
     def clear_live_data(self, type: str = ""):
         if type != "" and type is not None:
             # 换新列表而非 .clear()：并发的去重遍历持有旧列表引用，可安全读完
-            with My_handle.state_lock:
-                My_handle.live_data[type] = []
+            with self.state_lock:
+                self.live_data[type] = []
 
         if type == "comment":
             self.comment_check_timer = threading.Timer(
-                int(My_handle.config.get("filter", "limited_time_deduplication", "comment")),
+                int(self.config.get("filter", "limited_time_deduplication", "comment")),
                 partial(self.clear_live_data, "comment"),
             )
             self.comment_check_timer.start()
         elif type == "gift":
             self.gift_check_timer = threading.Timer(
-                int(My_handle.config.get("filter", "limited_time_deduplication", "gift")),
+                int(self.config.get("filter", "limited_time_deduplication", "gift")),
                 partial(self.clear_live_data, "gift"),
             )
             self.gift_check_timer.start()
         elif type == "entrance":
             self.entrance_check_timer = threading.Timer(
-                int(My_handle.config.get("filter", "limited_time_deduplication", "entrance")),
+                int(self.config.get("filter", "limited_time_deduplication", "entrance")),
                 partial(self.clear_live_data, "entrance"),
             )
             self.entrance_check_timer.start()
@@ -409,22 +419,22 @@ class My_handle(metaclass=SingletonMeta):
     # 启动定时器
     def start_timers(self):
 
-        if My_handle.config.get("filter", "limited_time_deduplication", "enable"):
+        if self.config.get("filter", "limited_time_deduplication", "enable"):
             # 设置定时器，每隔n秒执行一次
             self.comment_check_timer = threading.Timer(
-                int(My_handle.config.get("filter", "limited_time_deduplication", "comment")),
+                int(self.config.get("filter", "limited_time_deduplication", "comment")),
                 partial(self.clear_live_data, "comment"),
             )
             self.comment_check_timer.start()
 
             self.gift_check_timer = threading.Timer(
-                int(My_handle.config.get("filter", "limited_time_deduplication", "gift")),
+                int(self.config.get("filter", "limited_time_deduplication", "gift")),
                 partial(self.clear_live_data, "gift"),
             )
             self.gift_check_timer.start()
 
             self.entrance_check_timer = threading.Timer(
-                int(My_handle.config.get("filter", "limited_time_deduplication", "entrance")),
+                int(self.config.get("filter", "limited_time_deduplication", "entrance")),
                 partial(self.clear_live_data, "entrance"),
             )
             self.entrance_check_timer.start()
@@ -437,14 +447,16 @@ class My_handle(metaclass=SingletonMeta):
 
     # 是否位于数据处理状态
     def is_handle_empty(self):
-        return My_handle.is_handleing
+        return self.is_handleing
 
     # 有没有要播/正在播的音频
     def is_playback_busy(self):
-        return My_handle.audio.is_playback_busy()
+        return self.audio.is_playback_busy()
 
     # 判断 等待合成消息队列|待播放音频队列 数是否小于或大于某个值，就返回True
-    def is_queue_less_or_greater_than(self, type: str = "message_queue", less: int = None, greater: int = None):
+    def is_queue_less_or_greater_than(
+        self, type: str = "message_queue", less: int | None = None, greater: int | None = None
+    ):
         """判断 等待合成消息队列|待播放音频队列 数是否小于或大于某个值
 
         Args:
@@ -455,11 +467,11 @@ class My_handle(metaclass=SingletonMeta):
         Returns:
             bool: 是否小于或大于某个值
         """
-        return My_handle.audio.is_queue_less_or_greater_than(type, less, greater)
+        return self.audio.is_queue_less_or_greater_than(type, less, greater)
 
     # 获取音频类信息
     def get_audio_info(self):
-        return My_handle.audio.get_audio_info()
+        return self.audio.get_audio_info()
 
     def get_chat_model(self, chat_type, config):
         GPT_MODEL.set_model_config(chat_type, config.get(chat_type))
@@ -470,35 +482,35 @@ class My_handle(metaclass=SingletonMeta):
         self.image_recognition_model = GPT_MODEL.get(chat_type)
 
     def handle_chat_type(self):
-        chat_type = My_handle.config.get("chat_type")
-        self.get_chat_model(chat_type, My_handle.config)
+        chat_type = self.config.get("chat_type")
+        self.get_chat_model(chat_type, self.config)
 
         if chat_type == "game":
-            self.game = importlib.import_module("luna.game." + My_handle.config.get("game", "module_name"))
+            self.game = importlib.import_module("luna.game." + self.config.get("game", "module_name"))
 
     # 配置加载
     def config_load(self):
         # 设置GPT_Model全局模型列表
-        GPT_MODEL.set_model_config("openai", My_handle.config.get("openai"))
-        GPT_MODEL.set_model_config("chatgpt", My_handle.config.get("chatgpt"))
+        GPT_MODEL.set_model_config("openai", self.config.get("openai"))
+        GPT_MODEL.set_model_config("chatgpt", self.config.get("chatgpt"))
 
         # 聊天相关类实例化
         self.handle_chat_type()
 
         # 判断是否使能了SD
-        if My_handle.config.get("sd")["enable"]:
+        if self.config.get("sd")["enable"]:
             from luna.core.sd import SD
 
-            self.sd = SD(My_handle.config.get("sd"))
+            self.sd = SD(self.config.get("sd"))
         # 特殊：在SD没有使能情况下，判断图片映射是否使能
-        elif My_handle.config.get("key_mapping", "img_path_trigger_type") != "不启用":
+        elif self.config.get("key_mapping", "img_path_trigger_type") != "不启用":
             # 沿用SD的虚拟摄像头来展示图片
             from luna.core.sd import SD
 
-            self.sd = SD({"enable": False, "visual_camera": My_handle.config.get("sd", "visual_camera")})
+            self.sd = SD({"enable": False, "visual_camera": self.config.get("sd", "visual_camera")})
 
         # 日志文件路径
-        self.log_file_path = "./log/log-" + My_handle.common.get_bj_time(1) + ".txt"
+        self.log_file_path = "./log/log-" + self.common.get_bj_time(1) + ".txt"
         if os.path.isfile(self.log_file_path):
             logger.info(f"{self.log_file_path} 日志文件已存在，跳过")
         else:
@@ -507,7 +519,7 @@ class My_handle(metaclass=SingletonMeta):
                 logger.info(f"{self.log_file_path} 日志文件已创建")
 
         # 生成弹幕文件
-        self.comment_file_path = "./log/comment-" + My_handle.common.get_bj_time(1) + ".txt"
+        self.comment_file_path = "./log/comment-" + self.common.get_bj_time(1) + ".txt"
         if os.path.isfile(self.comment_file_path):
             logger.info(f"{self.comment_file_path} 弹幕文件已存在，跳过")
         else:
@@ -544,8 +556,8 @@ class My_handle(metaclass=SingletonMeta):
         """
         try:
             # 数据库
-            self.db = SQLiteDB(My_handle.config.get("database", "path"))
-            logger.info(f"创建数据库:{My_handle.config.get('database', 'path')}")
+            self.db = SQLiteDB(self.config.get("database", "path"))
+            logger.info(f"创建数据库:{self.config.get('database', 'path')}")
 
             # 创建弹幕表
             create_table_sql = """
@@ -597,15 +609,15 @@ class My_handle(metaclass=SingletonMeta):
             logger.debug("创建integral（积分）表")
         except Exception:
             logger.error(traceback.format_exc())
-            logger.error(f"数据库 {My_handle.config.get('database', 'path')} 创建失败，请查看日志排查问题！！！")
+            logger.error(f"数据库 {self.config.get('database', 'path')} 创建失败，请查看日志排查问题！！！")
 
     # 重载config
     def reload_config(self, config_path):
         # Config 按路径单例：先重读磁盘，My_handle/Audio/Translate 共享同一视图
-        My_handle.config = Config(config_path)
-        My_handle.config.reload()
-        My_handle.audio.reload_config(config_path)
-        My_handle.my_translate.reload_config(config_path)
+        self.config = Config(config_path)
+        self.config.reload()
+        self.audio.reload_config(config_path)
+        self.my_translate.reload_config(config_path)
 
         self.config_load()
 
@@ -619,7 +631,7 @@ class My_handle(metaclass=SingletonMeta):
             resp_content (str): 显示的聊天内容的文本
         """
         try:
-            if My_handle.config.get("talk", "show_chat_log") is True:
+            if self.config.get("talk", "show_chat_log") is True:
                 if "ori_username" not in data:
                     data["ori_username"] = data["username"]
                 if "ori_content" not in data:
@@ -633,17 +645,15 @@ class My_handle(metaclass=SingletonMeta):
                         "username": data["ori_username"],
                         "content_type": "answer",
                         "content": f"错误：{data_type}无返回，请查看日志" if resp_content is None else resp_content,
-                        "timestamp": My_handle.common.get_bj_time(0),
+                        "timestamp": self.common.get_bj_time(0),
                     },
                 }
 
                 webui_ip = (
-                    "127.0.0.1"
-                    if My_handle.config.get("webui", "ip") == "0.0.0.0"
-                    else My_handle.config.get("webui", "ip")
+                    "127.0.0.1" if self.config.get("webui", "ip") == "0.0.0.0" else self.config.get("webui", "ip")
                 )
-                My_handle.common.send_request(
-                    f"http://{webui_ip}:{My_handle.config.get('webui', 'port')}/callback",
+                self.common.send_request(
+                    f"http://{webui_ip}:{self.config.get('webui', 'port')}/callback",
                     "POST",
                     return_webui_json,
                     timeout=30,
@@ -653,7 +663,7 @@ class My_handle(metaclass=SingletonMeta):
 
     # 获取房间号
     def get_room_id(self):
-        return My_handle.config.get("room_display_id")
+        return self.config.get("room_display_id")
 
     # 音频合成处理
     def audio_synthesis_handle(self, data_json):
@@ -691,15 +701,15 @@ class My_handle(metaclass=SingletonMeta):
                 data_json["content"] = data_json["content"].replace("\n", "")
 
         # 如果虚拟身体-Unity，则发送数据到中转站
-        if My_handle.config.get("visual_body") == "unity":
+        if self.config.get("visual_body") == "unity":
             # 判断 'config' 是否存在于字典中
             if "config" in data_json:
                 # 删除 'config' 对应的键值对
                 data_json.pop("config")
 
-            data_json["password"] = My_handle.config.get("unity", "password")
+            data_json["password"] = self.config.get("unity", "password")
 
-            resp_json = My_handle.common.send_request(My_handle.config.get("unity", "api_ip_port"), "POST", data_json)
+            resp_json = self.common.send_request(self.config.get("unity", "api_ip_port"), "POST", data_json)
             if resp_json:
                 if resp_json["code"] == 200:
                     logger.info("请求unity中转站成功")
@@ -709,39 +719,39 @@ class My_handle(metaclass=SingletonMeta):
                 logger.error("请求unity中转站失败")
         else:
             # 音频合成（edge-tts / vits_fast）并播放
-            My_handle.audio.audio_synthesis(data_json)
+            self.audio.audio_synthesis(data_json)
 
             logger.debug(f"data_json={data_json}")
 
             # 数据类型不在需要触发助播条件的范围内，则直接返回
-            if data_json["type"] not in My_handle.config.get("assistant_anchor", "type"):
+            if data_json["type"] not in self.config.get("assistant_anchor", "type"):
                 return
 
             # 1、匹配助播本地问答库 触发后不执行后面的其他功能
-            if My_handle.config.get("assistant_anchor", "local_qa", "text", "enable"):
+            if self.config.get("assistant_anchor", "local_qa", "text", "enable"):
                 # 根据类型，执行不同的问答匹配算法
-                if My_handle.config.get("assistant_anchor", "local_qa", "text", "format") == "text":
+                if self.config.get("assistant_anchor", "local_qa", "text", "format") == "text":
                     tmp = self.find_answer(
                         data_json["content"],
-                        My_handle.config.get("assistant_anchor", "local_qa", "text", "file_path"),
-                        My_handle.config.get("assistant_anchor", "local_qa", "text", "similarity"),
+                        self.config.get("assistant_anchor", "local_qa", "text", "file_path"),
+                        self.config.get("assistant_anchor", "local_qa", "text", "similarity"),
                     )
                 else:
                     tmp = self.find_similar_answer(
                         data_json["content"],
-                        My_handle.config.get("assistant_anchor", "local_qa", "text", "file_path"),
-                        My_handle.config.get("assistant_anchor", "local_qa", "text", "similarity"),
+                        self.config.get("assistant_anchor", "local_qa", "text", "file_path"),
+                        self.config.get("assistant_anchor", "local_qa", "text", "similarity"),
                     )
 
                 if tmp is not None:
                     logger.info(
-                        f"触发助播 本地问答库-文本 [{My_handle.config.get('assistant_anchor', 'username')}]: {data_json['content']}"
+                        f"触发助播 本地问答库-文本 [{self.config.get('assistant_anchor', 'username')}]: {data_json['content']}"
                     )
                     # 将问答库中设定的参数替换为指定内容，开发者可以自定义替换内容
                     # 假设有多个未知变量，用户可以在此处定义动态变量
                     variables = {
-                        "cur_time": My_handle.common.get_bj_time(5),
-                        "username": My_handle.config.get("assistant_anchor", "username"),
+                        "cur_time": self.common.get_bj_time(5),
+                        "username": self.config.get("assistant_anchor", "username"),
                     }
 
                     # 使用字典进行字符串替换
@@ -749,7 +759,7 @@ class My_handle(metaclass=SingletonMeta):
                         tmp = tmp.format(**{var: value for var, value in variables.items() if var in tmp})
 
                     # [1|2]括号语法随机获取一个值，返回取值完成后的字符串
-                    tmp = My_handle.common.brackets_text_randomize(tmp)
+                    tmp = self.common.brackets_text_randomize(tmp)
 
                     logger.info(f"助播 本地问答库-文本回答为: {tmp}")
 
@@ -758,50 +768,50 @@ class My_handle(metaclass=SingletonMeta):
                     self.write_to_comment_log(
                         resp_content,
                         {
-                            "username": My_handle.config.get("assistant_anchor", "username"),
+                            "username": self.config.get("assistant_anchor", "username"),
                             "content": data_json["content"],
                         },
                     )
 
                     message = build_message(
-                        My_handle.config,
+                        self.config,
                         "assistant_anchor_text",
-                        My_handle.config.get("assistant_anchor", "username"),
+                        self.config.get("assistant_anchor", "username"),
                         resp_content,
-                        tts_type=My_handle.config.get("assistant_anchor", "audio_synthesis_type"),
+                        tts_type=self.config.get("assistant_anchor", "audio_synthesis_type"),
                     )
 
                     if "insert_index" in data_json:
                         message["insert_index"] = data_json["insert_index"]
 
-                    My_handle.audio.audio_synthesis(message)
+                    self.audio.audio_synthesis(message)
 
                     return True
 
             # 如果开启了助播功能，则根据当前播放内容的文本信息，进行助播音频的播放
-            if My_handle.config.get("assistant_anchor", "enable"):
+            if self.config.get("assistant_anchor", "enable"):
                 # 2、匹配本地问答音频库 触发后不执行后面的其他功能
-                if My_handle.config.get("assistant_anchor", "local_qa", "audio", "enable"):
+                if self.config.get("assistant_anchor", "local_qa", "audio", "enable"):
                     # 输出当前用户发送的弹幕消息
                     # logger.info(f"[{username}]: {content}")
                     # 获取本地问答音频库文件夹内所有的音频文件名
-                    local_qa_audio_filename_list = My_handle.audio.get_dir_audios_filename(
-                        My_handle.config.get("assistant_anchor", "local_qa", "audio", "file_path"), type=1
+                    local_qa_audio_filename_list = self.audio.get_dir_audios_filename(
+                        self.config.get("assistant_anchor", "local_qa", "audio", "file_path"), type=1
                     )
-                    local_qa_audio_list = My_handle.audio.get_dir_audios_filename(
-                        My_handle.config.get("assistant_anchor", "local_qa", "audio", "file_path"), type=0
+                    local_qa_audio_list = self.audio.get_dir_audios_filename(
+                        self.config.get("assistant_anchor", "local_qa", "audio", "file_path"), type=0
                     )
 
-                    if My_handle.config.get("assistant_anchor", "local_qa", "audio", "type") == "相似度匹配":
+                    if self.config.get("assistant_anchor", "local_qa", "audio", "type") == "相似度匹配":
                         # 不含拓展名，在本地音频名列表中做查找
-                        local_qv_audio_filename = My_handle.common.find_best_match(
+                        local_qv_audio_filename = self.common.find_best_match(
                             data_json["content"],
                             local_qa_audio_filename_list,
-                            My_handle.config.get("assistant_anchor", "local_qa", "audio", "similarity"),
+                            self.config.get("assistant_anchor", "local_qa", "audio", "similarity"),
                         )
-                    elif My_handle.config.get("assistant_anchor", "local_qa", "audio", "type") == "包含关系":
+                    elif self.config.get("assistant_anchor", "local_qa", "audio", "type") == "包含关系":
                         # 在本地音频名列表中查找是否包含于当前这个传入的文本内容
-                        local_qv_audio_filename = My_handle.common.find_substring_in_list(
+                        local_qv_audio_filename = self.common.find_substring_in_list(
                             data_json["content"], local_qa_audio_filename_list
                         )
 
@@ -810,37 +820,37 @@ class My_handle(metaclass=SingletonMeta):
                     # 找到了匹配的结果
                     if local_qv_audio_filename is not None:
                         logger.info(
-                            f"触发 助播 本地问答库-语音 [{My_handle.config.get('assistant_anchor', 'username')}]: {data_json['content']}"
+                            f"触发 助播 本地问答库-语音 [{self.config.get('assistant_anchor', 'username')}]: {data_json['content']}"
                         )
                         # 把结果从原文件名列表中在查找一遍，补上拓展名。相似度设置为0，就能必定有返回的结果
-                        local_qv_audio_filename = My_handle.common.find_best_match(
+                        local_qv_audio_filename = self.common.find_best_match(
                             local_qv_audio_filename, local_qa_audio_list, 0
                         )
 
                         # 寻找对应的文件
-                        resp_content = My_handle.audio.search_files(
-                            My_handle.config.get("assistant_anchor", "local_qa", "audio", "file_path"),
+                        resp_content = self.audio.search_files(
+                            self.config.get("assistant_anchor", "local_qa", "audio", "file_path"),
                             local_qv_audio_filename,
                         )
                         if resp_content != []:
                             logger.debug(f"匹配到的音频原相对路径：{resp_content[0]}")
 
                             # 拼接音频文件路径
-                            resp_content = f"{My_handle.config.get('assistant_anchor', 'local_qa', 'audio', 'file_path')}/{resp_content[0]}"
+                            resp_content = f"{self.config.get('assistant_anchor', 'local_qa', 'audio', 'file_path')}/{resp_content[0]}"
                             logger.info(f"匹配到的音频路径：{resp_content}")
                             message = build_message(
-                                My_handle.config,
+                                self.config,
                                 "assistant_anchor_audio",
-                                My_handle.config.get("assistant_anchor", "username"),
+                                self.config.get("assistant_anchor", "username"),
                                 data_json["content"],
-                                tts_type=My_handle.config.get("assistant_anchor", "audio_synthesis_type"),
+                                tts_type=self.config.get("assistant_anchor", "audio_synthesis_type"),
                                 file_path=resp_content,
                             )
 
                             if "insert_index" in data_json:
                                 message["insert_index"] = data_json["insert_index"]
 
-                            My_handle.audio.audio_synthesis(message)
+                            self.audio.audio_synthesis(message)
 
                             return True
 
@@ -863,7 +873,7 @@ class My_handle(metaclass=SingletonMeta):
         q_list = [lines[i].strip() for i in range(0, len(lines), 2)]
         q_to_answer_index = {q: i + 1 for i, q in enumerate(q_list)}
 
-        q = My_handle.common.find_best_match(question, q_list, similarity)
+        q = self.common.find_best_match(question, q_list, similarity)
         # print(f"q={q}")
 
         if q is not None:
@@ -951,54 +961,54 @@ class My_handle(metaclass=SingletonMeta):
         content = data["content"]
 
         # 合并字符串末尾连续的*  主要针对获取不到用户名的情况
-        username = My_handle.common.merge_consecutive_asterisks(username)
+        username = self.common.merge_consecutive_asterisks(username)
 
         # 最大保留的用户名长度
         username = username[: self.config.get("local_qa", "text", "username_max_len")]
 
         # 1、匹配本地问答库 触发后不执行后面的其他功能
-        if My_handle.config.get("local_qa", "text", "enable"):
+        if self.config.get("local_qa", "text", "enable"):
             # 根据类型，执行不同的问答匹配算法
-            if My_handle.config.get("local_qa", "text", "type") == "text":
+            if self.config.get("local_qa", "text", "type") == "text":
                 tmp = self.find_answer(
                     content,
-                    My_handle.config.get("local_qa", "text", "file_path"),
-                    My_handle.config.get("local_qa", "text", "similarity"),
+                    self.config.get("local_qa", "text", "file_path"),
+                    self.config.get("local_qa", "text", "similarity"),
                 )
             else:
                 tmp = self.find_similar_answer(
                     content,
-                    My_handle.config.get("local_qa", "text", "file_path"),
-                    My_handle.config.get("local_qa", "text", "similarity"),
+                    self.config.get("local_qa", "text", "file_path"),
+                    self.config.get("local_qa", "text", "similarity"),
                 )
 
             if tmp is not None:
                 logger.info(f"触发本地问答库-文本 [{username}]: {content}")
                 # 将问答库中设定的参数替换为指定内容，开发者可以自定义替换内容
                 # 假设有多个未知变量，用户可以在此处定义动态变量
-                variables = {"cur_time": My_handle.common.get_bj_time(5), "username": username}
+                variables = {"cur_time": self.common.get_bj_time(5), "username": username}
 
                 # 使用字典进行字符串替换
                 if any(var in tmp for var in variables):
                     tmp = tmp.format(**{var: value for var, value in variables.items() if var in tmp})
 
                 # [1|2]括号语法随机获取一个值，返回取值完成后的字符串
-                tmp = My_handle.common.brackets_text_randomize(tmp)
+                tmp = self.common.brackets_text_randomize(tmp)
 
                 logger.info(f"本地问答库-文本回答为: {tmp}")
 
                 """
                 # 判断 回复模板 是否启用
-                if My_handle.config.get("reply_template", "enable"):
+                if self.config.get("reply_template", "enable"):
                     # 根据模板变量关系进行回复内容的替换
                     # 假设有多个未知变量，用户可以在此处定义动态变量
                     variables = {
                         'username': data["username"][:self.config.get("reply_template", "username_max_len")],
                         'data': tmp,
-                        'cur_time': My_handle.common.get_bj_time(5),
+                        'cur_time': self.common.get_bj_time(5),
                     }
 
-                    reply_template_copywriting = My_handle.common.get_list_random_or_default(self.config.get("reply_template", "copywriting"), "{data}")
+                    reply_template_copywriting = self.common.get_list_random_or_default(self.config.get("reply_template", "copywriting"), "{data}")
                     # 使用字典进行字符串替换
                     if any(var in reply_template_copywriting for var in variables):
                         tmp = reply_template_copywriting.format(**{var: value for var, value in variables.items() if var in reply_template_copywriting})
@@ -1010,24 +1020,23 @@ class My_handle(metaclass=SingletonMeta):
                 # 将 AI 回复记录到日志文件中
                 self.write_to_comment_log(resp_content, {"username": username, "content": content})
 
-                message = build_message(My_handle.config, "comment", username, resp_content)
+                message = build_message(self.config, "comment", username, resp_content)
 
                 # 洛曦 直播弹幕助手
                 if (
-                    My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
-                    and "comment_reply" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "type")
-                    and "消息产生时"
-                    in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
+                    self.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
+                    and "comment_reply" in self.config.get("luoxi_project", "Live_Comment_Assistant", "type")
+                    and "消息产生时" in self.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
                 ):
                     asyncio.run(
                         send_msg_to_live_comment_assistant(
-                            My_handle.config.get("luoxi_project", "Live_Comment_Assistant"), resp_content
+                            self.config.get("luoxi_project", "Live_Comment_Assistant"), resp_content
                         )
                     )
 
                 # 是否启用了周期性触发功能，启用此功能后，数据会被缓存，之后周期到了才会触发
-                if My_handle.config.get("local_qa", "periodic_trigger", "enable"):
-                    My_handle.task_data["local_qa"]["data"].append(message)
+                if self.config.get("local_qa", "periodic_trigger", "enable"):
+                    self.task_data["local_qa"]["data"].append(message)
                 else:
                     self.webui_show_chat_log_callback("本地问答-文本", data, resp_content)
 
@@ -1036,20 +1045,20 @@ class My_handle(metaclass=SingletonMeta):
                 return True
 
         # 2、匹配本地问答音频库 触发后不执行后面的其他功能
-        if My_handle.config.get("local_qa")["audio"]["enable"]:
+        if self.config.get("local_qa")["audio"]["enable"]:
             # 输出当前用户发送的弹幕消息
             # logger.info(f"[{username}]: {content}")
             # 获取本地问答音频库文件夹内所有的音频文件名
-            local_qa_audio_filename_list = My_handle.audio.get_dir_audios_filename(
-                My_handle.config.get("local_qa", "audio", "file_path"), type=1
+            local_qa_audio_filename_list = self.audio.get_dir_audios_filename(
+                self.config.get("local_qa", "audio", "file_path"), type=1
             )
-            local_qa_audio_list = My_handle.audio.get_dir_audios_filename(
-                My_handle.config.get("local_qa", "audio", "file_path"), type=0
+            local_qa_audio_list = self.audio.get_dir_audios_filename(
+                self.config.get("local_qa", "audio", "file_path"), type=0
             )
 
             # 不含拓展名做查找
-            local_qv_audio_filename = My_handle.common.find_best_match(
-                content, local_qa_audio_filename_list, My_handle.config.get("local_qa", "audio", "similarity")
+            local_qv_audio_filename = self.common.find_best_match(
+                content, local_qa_audio_filename_list, self.config.get("local_qa", "audio", "similarity")
             )
 
             # print(f"local_qv_audio_filename={local_qv_audio_filename}")
@@ -1058,27 +1067,23 @@ class My_handle(metaclass=SingletonMeta):
             if local_qv_audio_filename is not None:
                 logger.info(f"触发本地问答库-语音 [{username}]: {content}")
                 # 把结果从原文件名列表中在查找一遍，补上拓展名
-                local_qv_audio_filename = My_handle.common.find_best_match(
-                    local_qv_audio_filename, local_qa_audio_list, 0
-                )
+                local_qv_audio_filename = self.common.find_best_match(local_qv_audio_filename, local_qa_audio_list, 0)
 
                 # 寻找对应的文件
-                resp_content = My_handle.audio.search_files(
-                    My_handle.config.get("local_qa", "audio", "file_path"), local_qv_audio_filename
+                resp_content = self.audio.search_files(
+                    self.config.get("local_qa", "audio", "file_path"), local_qv_audio_filename
                 )
                 if resp_content != []:
                     logger.debug(f"匹配到的音频原相对路径：{resp_content[0]}")
 
                     # 拼接音频文件路径
-                    resp_content = f"{My_handle.config.get('local_qa', 'audio', 'file_path')}/{resp_content[0]}"
+                    resp_content = f"{self.config.get('local_qa', 'audio', 'file_path')}/{resp_content[0]}"
                     logger.info(f"匹配到的音频路径：{resp_content}")
-                    message = build_message(
-                        My_handle.config, "local_qa_audio", username, content, file_path=resp_content
-                    )
+                    message = build_message(self.config, "local_qa_audio", username, content, file_path=resp_content)
 
                     # 是否启用了周期性触发功能，启用此功能后，数据会被缓存，之后周期到了才会触发
-                    if My_handle.config.get("local_qa", "periodic_trigger", "enable"):
-                        My_handle.task_data["local_qa"]["data"].append(message)
+                    if self.config.get("local_qa", "periodic_trigger", "enable"):
+                        self.task_data["local_qa"]["data"].append(message)
                     else:
                         self.webui_show_chat_log_callback("本地问答-音频", data, resp_content)
 
@@ -1102,24 +1107,22 @@ class My_handle(metaclass=SingletonMeta):
         content = data["content"]
 
         # 合并字符串末尾连续的*  主要针对获取不到用户名的情况
-        username = My_handle.common.merge_consecutive_asterisks(username)
+        username = self.common.merge_consecutive_asterisks(username)
 
-        if My_handle.config.get("choose_song")["enable"] is True:
-            start_cmd = My_handle.common.starts_with_any(content, My_handle.config.get("choose_song", "start_cmd"))
-            stop_cmd = My_handle.common.starts_with_any(content, My_handle.config.get("choose_song", "stop_cmd"))
-            random_cmd = My_handle.common.starts_with_any(content, My_handle.config.get("choose_song", "random_cmd"))
+        if self.config.get("choose_song")["enable"] is True:
+            start_cmd = self.common.starts_with_any(content, self.config.get("choose_song", "start_cmd"))
+            stop_cmd = self.common.starts_with_any(content, self.config.get("choose_song", "stop_cmd"))
+            random_cmd = self.common.starts_with_any(content, self.config.get("choose_song", "random_cmd"))
 
             # 判断随机点歌命令是否正确
             if random_cmd:
-                resp_content = My_handle.common.random_search_a_audio_file(
-                    My_handle.config.get("choose_song", "song_path")
-                )
+                resp_content = self.common.random_search_a_audio_file(self.config.get("choose_song", "song_path"))
                 if resp_content is None:
                     return True
 
                 logger.info(f"随机到的音频路径：{resp_content}")
 
-                message = build_message(My_handle.config, "song", username, resp_content)
+                message = build_message(self.config, "song", username, resp_content)
 
                 self.audio_synthesis_handle(message)
 
@@ -1131,8 +1134,8 @@ class My_handle(metaclass=SingletonMeta):
                 logger.info(f"[{username}]: {content}")
 
                 # 获取本地音频文件夹内所有的音频文件名（不含拓展名）
-                choose_song_song_lists = My_handle.audio.get_dir_audios_filename(
-                    My_handle.config.get("choose_song", "song_path"), 1
+                choose_song_song_lists = self.audio.get_dir_audios_filename(
+                    self.config.get("choose_song", "song_path"), 1
                 )
 
                 # 去除命令前缀
@@ -1140,8 +1143,8 @@ class My_handle(metaclass=SingletonMeta):
 
                 # 说明用户仅发送命令，没有发送歌名，说明用户不会用
                 if content == "":
-                    resp_content = f"点歌命令错误，命令为 {My_handle.config.get('choose_song', 'start_cmd')}+歌名"
-                    message = build_message(My_handle.config, "comment", username, resp_content)
+                    resp_content = f"点歌命令错误，命令为 {self.config.get('choose_song', 'start_cmd')}+歌名"
+                    message = build_message(self.config, "comment", username, resp_content)
 
                     self.audio_synthesis_handle(message)
 
@@ -1150,16 +1153,16 @@ class My_handle(metaclass=SingletonMeta):
                     return True
 
                 # 判断是否有此歌曲
-                song_filename = My_handle.common.find_best_match(
-                    content, choose_song_song_lists, similarity=My_handle.config.get("choose_song", "similarity")
+                song_filename = self.common.find_best_match(
+                    content, choose_song_song_lists, similarity=self.config.get("choose_song", "similarity")
                 )
                 if song_filename is None:
                     # resp_content = f"抱歉，我还没学会唱{content}"
                     # 根据配置的 匹配失败回复文案来进行合成
-                    resp_content = My_handle.config.get("choose_song", "match_fail_copy").format(content=content)
+                    resp_content = self.config.get("choose_song", "match_fail_copy").format(content=content)
                     logger.info(f"[AI回复{username}]：{resp_content}")
 
-                    message = build_message(My_handle.config, "comment", username, resp_content)
+                    message = build_message(self.config, "comment", username, resp_content)
 
                     self.audio_synthesis_handle(message)
 
@@ -1167,20 +1170,18 @@ class My_handle(metaclass=SingletonMeta):
 
                     return True
 
-                resp_content = My_handle.audio.search_files(
-                    My_handle.config.get("choose_song", "song_path"), song_filename, True
-                )
+                resp_content = self.audio.search_files(self.config.get("choose_song", "song_path"), song_filename, True)
                 if resp_content == []:
                     return True
 
                 logger.debug(f"匹配到的音频原相对路径：{resp_content[0]}")
 
                 # 拼接音频文件路径
-                resp_content = f"{My_handle.config.get('choose_song', 'song_path')}/{resp_content[0]}"
+                resp_content = f"{self.config.get('choose_song', 'song_path')}/{resp_content[0]}"
                 resp_content = os.path.abspath(resp_content)
                 logger.info(f"点歌成功！匹配到的音频路径：{resp_content}")
 
-                message = build_message(My_handle.config, "song", username, resp_content)
+                message = build_message(self.config, "song", username, resp_content)
 
                 self.webui_show_chat_log_callback("点歌", data, resp_content)
 
@@ -1189,7 +1190,7 @@ class My_handle(metaclass=SingletonMeta):
                 return True
             # 判断取消点歌命令是否正确
             elif stop_cmd:
-                My_handle.audio.stop_current_audio()
+                self.audio.stop_current_audio()
 
                 return True
 
@@ -1220,15 +1221,15 @@ class My_handle(metaclass=SingletonMeta):
         content = data["content"]
 
         # 合并字符串末尾连续的*  主要针对获取不到用户名的情况
-        username = My_handle.common.merge_consecutive_asterisks(username)
+        username = self.common.merge_consecutive_asterisks(username)
 
-        if content.startswith(My_handle.config.get("sd", "trigger")):
+        if content.startswith(self.config.get("sd", "trigger")):
             # 违禁检测
             content = self.prohibitions_handle(content)
             if content is None:
                 return
 
-            if My_handle.config.get("sd", "enable") is False:
+            if self.config.get("sd", "enable") is False:
                 logger.info("您还未启用SD模式，无法使用画画功能")
                 return True
             else:
@@ -1236,23 +1237,21 @@ class My_handle(metaclass=SingletonMeta):
                 logger.info(f"[{username}]: {content}")
 
                 # 删除文本中的命令前缀
-                content = content[len(My_handle.config.get("sd", "trigger")) :]
+                content = content[len(self.config.get("sd", "trigger")) :]
 
-                if My_handle.config.get("sd", "translate_type") != "none":
+                if self.config.get("sd", "translate_type") != "none":
                     # 判断翻译类型 进行翻译工作
-                    tmp = My_handle.my_translate.trans(content, My_handle.config.get("sd", "translate_type"))
+                    tmp = self.my_translate.trans(content, self.config.get("sd", "translate_type"))
                     if tmp:
                         content = tmp
 
                 """
                 根据聊天类型执行不同逻辑
                 """
-                chat_type = My_handle.config.get("sd", "prompt_llm", "type")
+                chat_type = self.config.get("sd", "prompt_llm", "type")
                 if chat_type in self.chat_type_list:
                     content = (
-                        My_handle.config.get("sd", "prompt_llm", "before_prompt")
-                        + content
-                        + My_handle.config.get("after_prompt")
+                        self.config.get("sd", "prompt_llm", "before_prompt") + content + self.config.get("after_prompt")
                     )
 
                     data_json = {
@@ -1319,12 +1318,12 @@ class My_handle(metaclass=SingletonMeta):
                     return
 
                 # 判断字符串是否全为标点符号，是的话就过滤
-                if My_handle.common.is_punctuation_string(content):
+                if self.common.is_punctuation_string(content):
                     logger.debug(f"用户:{username}]，发送纯符号的弹幕，已过滤")
                     return
 
             # 音频合成时需要用到的重要数据
-            message = build_message(My_handle.config, type, username, content)
+            message = build_message(self.config, type, username, content)
 
             # 音频插入的索引（适用于audio_player_v2）
             if "insert_index" in data:
@@ -1334,13 +1333,13 @@ class My_handle(metaclass=SingletonMeta):
 
             # 洛曦 直播弹幕助手
             if (
-                My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
-                and "reread" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "type")
-                and "消息产生时" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
+                self.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
+                and "reread" in self.config.get("luoxi_project", "Live_Comment_Assistant", "type")
+                and "消息产生时" in self.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
             ):
                 asyncio.run(
                     send_msg_to_live_comment_assistant(
-                        My_handle.config.get("luoxi_project", "Live_Comment_Assistant"), content
+                        self.config.get("luoxi_project", "Live_Comment_Assistant"), content
                     )
                 )
 
@@ -1364,13 +1363,13 @@ class My_handle(metaclass=SingletonMeta):
             """
             根据聊天类型执行不同逻辑
             """
-            chat_type = My_handle.config.get("chat_type")
+            chat_type = self.config.get("chat_type")
             if chat_type in self.chat_type_list:
                 data_json["ori_username"] = data_json["username"]
                 data_json["ori_content"] = data_json["content"]
                 resp_content = self.llm_handle(chat_type, data_json)
                 if resp_content is not None:
-                    logger.info(f"[AI回复{My_handle.config.get('talk', 'username')}]：{resp_content}")
+                    logger.info(f"[AI回复{self.config.get('talk', 'username')}]：{resp_content}")
                 else:
                     logger.warning(f"警告：{chat_type}无返回")
         except Exception:
@@ -1393,14 +1392,14 @@ class My_handle(metaclass=SingletonMeta):
                 resp_content_joined = "\n".join(resp_content_substrings)
 
                 # 根据 弹幕日志类型进行各类日志写入
-                if My_handle.config.get("comment_log_type") == "问答":
+                if self.config.get("comment_log_type") == "问答":
                     f.write(
                         f"[{data['username']} 提问]:\n{data['content']}\n[AI回复{data['username']}]:{resp_content_joined}\n"
                         + tmp_content
                     )
-                elif My_handle.config.get("comment_log_type") == "问题":
+                elif self.config.get("comment_log_type") == "问题":
                     f.write(f"[{data['username']} 提问]:\n{data['content']}\n" + tmp_content)
-                elif My_handle.config.get("comment_log_type") == "回答":
+                elif self.config.get("comment_log_type") == "回答":
                     f.write(f"[AI回复{data['username']}]:\n{resp_content_joined}\n" + tmp_content)
         except Exception:
             logger.error(traceback.format_exc())
@@ -1442,20 +1441,20 @@ class My_handle(metaclass=SingletonMeta):
         """
         try:
             # 判断弹幕是否以xx起始，如果不是则返回None 不触发LLM
-            if My_handle.config.get("filter", "before_must_str_for_llm") != []:
+            if self.config.get("filter", "before_must_str_for_llm") != []:
                 if any(
                     data["ori_content"].startswith(prefix)
-                    for prefix in My_handle.config.get("filter", "before_must_str_for_llm")
+                    for prefix in self.config.get("filter", "before_must_str_for_llm")
                 ):
                     pass
                 else:
                     return None
 
             # 判断弹幕是否以xx结尾，如果不是则返回None
-            if My_handle.config.get("filter", "after_must_str_for_llm") != []:
+            if self.config.get("filter", "after_must_str_for_llm") != []:
                 if any(
                     data["ori_content"].endswith(prefix)
-                    for prefix in My_handle.config.get("filter", "after_must_str_for_llm")
+                    for prefix in self.config.get("filter", "after_must_str_for_llm")
                 ):
                     pass
                 else:
@@ -1468,7 +1467,7 @@ class My_handle(metaclass=SingletonMeta):
             if type == "chat":
                 # 使用 getattr 来动态获取属性
                 if getattr(self, chat_type, None) is None:
-                    self.get_chat_model(chat_type, My_handle.config)
+                    self.get_chat_model(chat_type, self.config)
                     # setattr(self, chat_type, GPT_MODEL.get(chat_type))
 
                 # 新增LLM需要在这里追加
@@ -1488,7 +1487,7 @@ class My_handle(metaclass=SingletonMeta):
             elif type == "vision":
                 # 使用 getattr 来动态获取属性
                 if getattr(self, chat_type, None) is None:
-                    self.get_vision_model(chat_type, My_handle.config.get("image_recognition", chat_type))
+                    self.get_vision_model(chat_type, self.config.get("image_recognition", chat_type))
 
                 # 新增LLM需要在这里追加
                 chat_model_methods = {
@@ -1507,19 +1506,19 @@ class My_handle(metaclass=SingletonMeta):
                 # 初始化过滤状态
                 filter_state = {"is_filtering": False, "current_tag": None, "buffer": ""}
                 # 过滤<></>标签内容 主要针对deepseek返回
-                resp_content = My_handle.common.llm_resp_content_filter_tags(resp_content, filter_state)
+                resp_content = self.common.llm_resp_content_filter_tags(resp_content, filter_state)
 
             # 判断 回复模板 是否启用
-            if My_handle.config.get("reply_template", "enable"):
+            if self.config.get("reply_template", "enable"):
                 # 根据模板变量关系进行回复内容的替换
                 # 假设有多个未知变量，用户可以在此处定义动态变量
                 variables = {
                     "username": data["username"][: self.config.get("reply_template", "username_max_len")],
                     "data": resp_content,
-                    "cur_time": My_handle.common.get_bj_time(5),
+                    "cur_time": self.common.get_bj_time(5),
                 }
 
-                reply_template_copywriting = My_handle.common.get_list_random_or_default(
+                reply_template_copywriting = self.common.get_list_random_or_default(
                     self.config.get("reply_template", "copywriting"), "{data}"
                 )
                 # 使用字典进行字符串替换
@@ -1562,20 +1561,20 @@ class My_handle(metaclass=SingletonMeta):
         """
         try:
             # 判断弹幕是否以xx起始，如果不是则返回None 不触发LLM
-            if My_handle.config.get("filter", "before_must_str_for_llm") != []:
+            if self.config.get("filter", "before_must_str_for_llm") != []:
                 if any(
                     data["ori_content"].startswith(prefix)
-                    for prefix in My_handle.config.get("filter", "before_must_str_for_llm")
+                    for prefix in self.config.get("filter", "before_must_str_for_llm")
                 ):
                     pass
                 else:
                     return None
 
             # 判断弹幕是否以xx结尾，如果不是则返回None
-            if My_handle.config.get("filter", "after_must_str_for_llm") != []:
+            if self.config.get("filter", "after_must_str_for_llm") != []:
                 if any(
                     data["ori_content"].endswith(prefix)
-                    for prefix in My_handle.config.get("filter", "after_must_str_for_llm")
+                    for prefix in self.config.get("filter", "after_must_str_for_llm")
                 ):
                     pass
                 else:
@@ -1592,7 +1591,7 @@ class My_handle(metaclass=SingletonMeta):
             if type == "chat":
                 # 使用 getattr 来动态获取属性
                 if getattr(self, chat_type, None) is None:
-                    self.get_chat_model(chat_type, My_handle.config)
+                    self.get_chat_model(chat_type, self.config)
                     # setattr(self, chat_type, GPT_MODEL.get(chat_type))
 
                 # 新增LLM需要在这里追加
@@ -1628,16 +1627,16 @@ class My_handle(metaclass=SingletonMeta):
                 tmp = ""
 
                 # 判断 回复模板 是否启用
-                if My_handle.config.get("reply_template", "enable"):
+                if self.config.get("reply_template", "enable"):
                     # 根据模板变量关系进行回复内容的替换
                     # 假设有多个未知变量，用户可以在此处定义动态变量
                     variables = {
                         "username": data["username"][: self.config.get("reply_template", "username_max_len")],
                         "data": "",
-                        "cur_time": My_handle.common.get_bj_time(5),
+                        "cur_time": self.common.get_bj_time(5),
                     }
 
-                    reply_template_copywriting = My_handle.common.get_list_random_or_default(
+                    reply_template_copywriting = self.common.get_list_random_or_default(
                         self.config.get("reply_template", "copywriting"), ""
                     )
                     # 使用字典进行字符串替换
@@ -1650,7 +1649,7 @@ class My_handle(metaclass=SingletonMeta):
                 cut_len = 0
 
                 # 智谱 智能体情况特殊处理
-                if chat_type == "zhipu" and My_handle.config.get("zhipu", "model") == "智能体":
+                if chat_type == "zhipu" and self.config.get("zhipu", "model") == "智能体":
                     resp = resp.iter_lines()
 
                 # 初始化过滤状态
@@ -1667,7 +1666,7 @@ class My_handle(metaclass=SingletonMeta):
 
                         if chat_type in ["chatgpt", "zhipu", "my_wenxinworkshop", "volcengine", "dify"]:
                             # 智谱 智能体情况特殊处理
-                            if chat_type == "zhipu" and My_handle.config.get("zhipu", "model") == "智能体":
+                            if chat_type == "zhipu" and self.config.get("zhipu", "model") == "智能体":
                                 # 记录 并追加切出的文本长度
                                 cut_len += len(tmp_content)
                             else:
@@ -1695,11 +1694,11 @@ class My_handle(metaclass=SingletonMeta):
                         # logger.info("tmp_content=" + tmp_content)
 
                         # 回复内容是否进行翻译
-                        if My_handle.config.get("translate", "enable") and (
-                            My_handle.config.get("translate", "trans_type") == "回复"
-                            or My_handle.config.get("translate", "trans_type") == "弹幕+回复"
+                        if self.config.get("translate", "enable") and (
+                            self.config.get("translate", "trans_type") == "回复"
+                            or self.config.get("translate", "trans_type") == "弹幕+回复"
                         ):
-                            tmp = My_handle.my_translate.trans(tmp_content)
+                            tmp = self.my_translate.trans(tmp_content)
                             if tmp:
                                 tmp_content = tmp
 
@@ -1707,8 +1706,8 @@ class My_handle(metaclass=SingletonMeta):
 
                         # 判断按键映射触发类型
                         if (
-                            My_handle.config.get("key_mapping", "type") == "回复"
-                            or My_handle.config.get("key_mapping", "type") == "弹幕+回复"
+                            self.config.get("key_mapping", "type") == "回复"
+                            or self.config.get("key_mapping", "type") == "弹幕+回复"
                         ):
                             # 替换内容
                             data["content"] = tmp_content
@@ -1718,8 +1717,8 @@ class My_handle(metaclass=SingletonMeta):
 
                         # 判断自定义命令触发类型
                         if (
-                            My_handle.config.get("custom_cmd", "type") == "回复"
-                            or My_handle.config.get("custom_cmd", "type") == "弹幕+回复"
+                            self.config.get("custom_cmd", "type") == "回复"
+                            or self.config.get("custom_cmd", "type") == "弹幕+回复"
                         ):
                             # 替换内容
                             data["content"] = tmp_content
@@ -1728,19 +1727,18 @@ class My_handle(metaclass=SingletonMeta):
                                 pass
 
                         # 音频合成时需要用到的重要数据
-                        message = build_message(My_handle.config, "comment", data["username"], tmp_content)
+                        message = build_message(self.config, "comment", data["username"], tmp_content)
 
                         # 洛曦 直播弹幕助手
                         if (
-                            My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
-                            and "comment_reply"
-                            in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "type")
+                            self.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
+                            and "comment_reply" in self.config.get("luoxi_project", "Live_Comment_Assistant", "type")
                             and "消息产生时"
-                            in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
+                            in self.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
                         ):
                             asyncio.run(
                                 send_msg_to_live_comment_assistant(
-                                    My_handle.config.get("luoxi_project", "Live_Comment_Assistant"), tmp_content
+                                    self.config.get("luoxi_project", "Live_Comment_Assistant"), tmp_content
                                 )
                             )
 
@@ -1757,7 +1755,7 @@ class My_handle(metaclass=SingletonMeta):
 
                     if chat_type in ["chatgpt", "zhipu"]:
                         # 智谱 智能体情况特殊处理
-                        if chat_type == "zhipu" and My_handle.config.get("zhipu", "model") == "智能体":
+                        if chat_type == "zhipu" and self.config.get("zhipu", "model") == "智能体":
                             decoded_line = chunk.decode("utf-8")
                             if decoded_line.startswith("data:"):
                                 data_dict = json.loads(decoded_line[5:])
@@ -1783,7 +1781,7 @@ class My_handle(metaclass=SingletonMeta):
                         else:
                             if chunk.choices[0].delta.content:
                                 # 过滤<></>标签内容 主要针对deepseek返回
-                                chunk.choices[0].delta.content = My_handle.common.llm_resp_content_filter_tags(
+                                chunk.choices[0].delta.content = self.common.llm_resp_content_filter_tags(
                                     chunk.choices[0].delta.content, filter_state
                                 )
 
@@ -1829,7 +1827,7 @@ class My_handle(metaclass=SingletonMeta):
                                             answer = data_chunk.get("answer", "")
 
                                             # 过滤<></>标签内容 主要针对deepseek返回
-                                            answer = My_handle.common.llm_resp_content_filter_tags(answer, filter_state)
+                                            answer = self.common.llm_resp_content_filter_tags(answer, filter_state)
 
                                             tmp += answer
                                             resp_content += answer
@@ -1866,7 +1864,7 @@ class My_handle(metaclass=SingletonMeta):
                     if chat_type in ["chatgpt", "zhipu"]:
                         # logger.info(chunk)
                         # 智谱 智能体情况特殊处理
-                        if chat_type == "zhipu" and My_handle.config.get("zhipu", "model") == "智能体":
+                        if chat_type == "zhipu" and self.config.get("zhipu", "model") == "智能体":
                             decoded_line = chunk.decode("utf-8")
                             if decoded_line.startswith("data:"):
                                 data_dict = json.loads(decoded_line[5:])
@@ -1976,7 +1974,7 @@ class My_handle(metaclass=SingletonMeta):
                 tmp = random.choice(key_mapping_config["copywriting"])
 
                 # 括号语法替换
-                tmp = My_handle.common.brackets_text_randomize(tmp)
+                tmp = self.common.brackets_text_randomize(tmp)
 
                 # 动态变量替换
                 data_json = {
@@ -1985,26 +1983,24 @@ class My_handle(metaclass=SingletonMeta):
                     "gift_num": data["num"],
                     "unit_price": data["unit_price"],
                     "total_price": data["total_price"],
-                    "cur_time": My_handle.common.get_bj_time(5),
+                    "cur_time": self.common.get_bj_time(5),
                 }
-                tmp = My_handle.common.dynamic_variable_replacement(tmp, data_json)
+                tmp = self.common.dynamic_variable_replacement(tmp, data_json)
 
                 # 音频合成时需要用到的重要数据
-                message = build_message(My_handle.config, "key_mapping", data["username"], tmp)
+                message = build_message(self.config, "key_mapping", data["username"], tmp)
 
                 logger.info(f"【触发按键映射】触发文案：{tmp}")
 
                 # 洛曦 直播弹幕助手
                 if (
-                    My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
-                    and "key_mapping_copywriting"
-                    in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "type")
-                    and "消息产生时"
-                    in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
+                    self.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
+                    and "key_mapping_copywriting" in self.config.get("luoxi_project", "Live_Comment_Assistant", "type")
+                    and "消息产生时" in self.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
                 ):
                     asyncio.run(
                         send_msg_to_live_comment_assistant(
-                            My_handle.config.get("luoxi_project", "Live_Comment_Assistant"), tmp
+                            self.config.get("luoxi_project", "Live_Comment_Assistant"), tmp
                         )
                     )
 
@@ -2023,7 +2019,7 @@ class My_handle(metaclass=SingletonMeta):
                 tmp = random.choice(key_mapping_config["local_audio"])
 
                 # 音频合成时需要用到的重要数据
-                message = build_message(My_handle.config, "key_mapping", data["username"], tmp, file_path=tmp)
+                message = build_message(self.config, "key_mapping", data["username"], tmp, file_path=tmp)
 
                 logger.info(f"【触发映射】播放本地音频：{tmp}")
 
@@ -2053,7 +2049,7 @@ class My_handle(metaclass=SingletonMeta):
                 tmp = random.choice(key_mapping_config["serial_send_data"])
 
                 # 括号语法替换
-                tmp = My_handle.common.brackets_text_randomize(tmp)
+                tmp = self.common.brackets_text_randomize(tmp)
 
                 # 动态变量替换
                 data_json = {
@@ -2062,13 +2058,13 @@ class My_handle(metaclass=SingletonMeta):
                     "gift_num": data.get("num", ""),
                     "unit_price": data.get("unit_price", ""),
                     "total_price": data.get("total_price", ""),
-                    "cur_time": My_handle.common.get_bj_time(5),
+                    "cur_time": self.common.get_bj_time(5),
                 }
-                tmp = My_handle.common.dynamic_variable_replacement(tmp, data_json)
+                tmp = self.common.dynamic_variable_replacement(tmp, data_json)
 
                 # 定义一个函数，通过 serial_name 获取 对应的config配置
                 def get_serial_config(serial_name: str):
-                    for config in My_handle.config.get("serial", "config"):
+                    for config in self.config.get("serial", "config"):
                         if config["serial_name"] == serial_name:
                             return config
                     return None  # 如果未找到匹配的 serial_name，返回 None
@@ -2111,7 +2107,7 @@ class My_handle(metaclass=SingletonMeta):
             # 关键词触发的内容统一到此函数进行处理
             def keyword_handle_trigger(trigger_type, keyword, key_mapping_config, data, flag):
                 try:
-                    if My_handle.config.get("key_mapping", trigger_type) in ["关键词", "关键词+礼物"]:
+                    if self.config.get("key_mapping", trigger_type) in ["关键词", "关键词+礼物"]:
                         if trigger_type == "key_trigger_type":
                             logger.info(f"【触发按键映射】关键词：{keyword} 按键：{key_mapping_config['keys']}")
                             for key in key_mapping_config["keys"]:
@@ -2133,7 +2129,7 @@ class My_handle(metaclass=SingletonMeta):
 
                         flag = True
 
-                    single_sentence_trigger_once_enable = My_handle.config.get(
+                    single_sentence_trigger_once_enable = self.config.get(
                         "key_mapping", f"{trigger_type.split('_')[0]}_single_sentence_trigger_once_enable"
                     )
                     return {"trigger_once_enable": single_sentence_trigger_once_enable, "flag": flag}
@@ -2144,7 +2140,7 @@ class My_handle(metaclass=SingletonMeta):
             # 礼物触发的内容统一到此函数进行处理
             def gift_handle_trigger(trigger_type, gift_name, key_mapping_config, data, flag):
                 try:
-                    if My_handle.config.get("key_mapping", trigger_type) in ["礼物", "关键词+礼物"]:
+                    if self.config.get("key_mapping", trigger_type) in ["礼物", "关键词+礼物"]:
                         if trigger_type == "key_trigger_type":
                             logger.info(f"【触发按键映射】礼物：{gift_name} 按键：{key_mapping_config['keys']}")
                             for key in key_mapping_config["keys"]:
@@ -2166,7 +2162,7 @@ class My_handle(metaclass=SingletonMeta):
 
                         flag = True
 
-                    single_sentence_trigger_once_enable = My_handle.config.get(
+                    single_sentence_trigger_once_enable = self.config.get(
                         "key_mapping", f"{trigger_type.split('_')[0]}_single_sentence_trigger_once_enable"
                     )
                     return {"trigger_once_enable": single_sentence_trigger_once_enable, "flag": flag}
@@ -2175,11 +2171,11 @@ class My_handle(metaclass=SingletonMeta):
                     return {"trigger_once_enable": False, "flag": False}
 
             # 官方文档：https://pyautogui.readthedocs.io/en/latest/keyboard.html#keyboard-keys
-            if My_handle.config.get("key_mapping", "enable"):
+            if self.config.get("key_mapping", "enable"):
                 # 判断传入的数据是否包含gift_name键值，有的话则是礼物数据
                 if "gift_name" in data:
                     # 获取key_mapping 所有 config数据
-                    key_mapping_configs = My_handle.config.get("key_mapping", "config")
+                    key_mapping_configs = self.config.get("key_mapping", "config")
 
                     # 遍历key_mapping_configs
                     for key_mapping_config in key_mapping_configs:
@@ -2203,12 +2199,12 @@ class My_handle(metaclass=SingletonMeta):
                 else:
                     content = data["content"]
                     # 判断命令头是否匹配
-                    start_cmd = My_handle.config.get("key_mapping", "start_cmd")
+                    start_cmd = self.config.get("key_mapping", "start_cmd")
                     if start_cmd != "" and content.startswith(start_cmd):
                         # 删除命令头部
                         content = content[len(start_cmd) :]
 
-                    key_mapping_configs = My_handle.config.get("key_mapping", "config")
+                    key_mapping_configs = self.config.get("key_mapping", "config")
 
                     for key_mapping_config in key_mapping_configs:
                         similarity = float(key_mapping_config["similarity"])
@@ -2269,14 +2265,14 @@ class My_handle(metaclass=SingletonMeta):
         flag = False
 
         try:
-            if My_handle.config.get("custom_cmd", "enable"):
+            if self.config.get("custom_cmd", "enable"):
                 # 判断传入的数据是否包含gift_name键值，有的话则是礼物数据
                 if "gift_name" in data:
                     pass
                 else:
                     username = data["username"]
                     content = data["content"]
-                    custom_cmd_configs = My_handle.config.get("custom_cmd", "config")
+                    custom_cmd_configs = self.config.get("custom_cmd", "config")
 
                     for custom_cmd_config in custom_cmd_configs:
                         similarity = float(custom_cmd_config["similarity"])
@@ -2285,7 +2281,7 @@ class My_handle(metaclass=SingletonMeta):
                                 # 判断相似度
                                 ratio = difflib.SequenceMatcher(None, content, keyword).ratio()
                                 if ratio >= similarity:
-                                    My_handle.common.send_request(
+                                    self.common.send_request(
                                         custom_cmd_config["api_url"],
                                         custom_cmd_config["api_type"],
                                         resp_data_type=custom_cmd_config["resp_data_type"],
@@ -2306,7 +2302,7 @@ class My_handle(metaclass=SingletonMeta):
 
                                     variables = {
                                         "keyword": keyword,
-                                        "cur_time": My_handle.common.get_bj_time(5),
+                                        "cur_time": self.common.get_bj_time(5),
                                         "username": username,
                                         "data": resp_content,
                                     }
@@ -2320,7 +2316,7 @@ class My_handle(metaclass=SingletonMeta):
                                         )
 
                                     # 音频合成时需要用到的重要数据
-                                    message = build_message(My_handle.config, "reread", username, resp_content)
+                                    message = build_message(self.config, "reread", username, resp_content)
 
                                     logger.debug(message)
 
@@ -2344,23 +2340,23 @@ class My_handle(metaclass=SingletonMeta):
         return filters.blacklist_handle(self, data)
 
     # 判断限定时间段内数据是否重复
-    def is_data_repeat_in_limited_time(self, type: str = None, data: dict = None):
+    def is_data_repeat_in_limited_time(self, type: str | None = None, data: dict | None = None):
         # 实现已拆分到 utils/filters.py，这里保留委托门面
         return filters.is_data_repeat_in_limited_time(self, type, data)
 
     # 判断是否进行联网搜索，返回处理后的结果
     def search_online_handle(self, content: str):
         try:
-            if My_handle.config.get("search_online", "enable"):
+            if self.config.get("search_online", "enable"):
                 # 是否启用了关键词命令
-                if My_handle.config.get("search_online", "keyword_enable"):
+                if self.config.get("search_online", "keyword_enable"):
                     # 没有命中关键词 直接返回
-                    if My_handle.config.get("search_online", "before_keyword") and not any(
-                        content.startswith(prefix) for prefix in My_handle.config.get("search_online", "before_keyword")
+                    if self.config.get("search_online", "before_keyword") and not any(
+                        content.startswith(prefix) for prefix in self.config.get("search_online", "before_keyword")
                     ):
                         return content
                     else:
-                        for prefix in My_handle.config.get("search_online", "before_keyword"):
+                        for prefix in self.config.get("search_online", "before_keyword"):
                             if content.startswith(prefix):
                                 content = content[len(prefix) :]  # 删除匹配的开头
                                 break
@@ -2368,20 +2364,20 @@ class My_handle(metaclass=SingletonMeta):
                 from .search_engine import search_online
 
                 if (
-                    My_handle.config.get("search_online", "http_proxy") == ""
-                    and My_handle.config.get("search_online", "https_proxy") == ""
+                    self.config.get("search_online", "http_proxy") == ""
+                    and self.config.get("search_online", "https_proxy") == ""
                 ):
                     proxies = None
                 else:
                     proxies = {
-                        "http": My_handle.config.get("search_online", "http_proxy"),
-                        "https": My_handle.config.get("search_online", "https_proxy"),
+                        "http": self.config.get("search_online", "http_proxy"),
+                        "https": self.config.get("search_online", "https_proxy"),
                     }
                 summaries = search_online(
                     content,
-                    engine=My_handle.config.get("search_online", "engine"),
-                    engine_id=int(My_handle.config.get("search_online", "engine_id")),
-                    count=int(My_handle.config.get("search_online", "count")),
+                    engine=self.config.get("search_online", "engine"),
+                    engine_id=int(self.config.get("search_online", "engine_id")),
+                    count=int(self.config.get("search_online", "count")),
                     proxies=proxies,
                 )
                 if summaries != []:
@@ -2393,11 +2389,11 @@ class My_handle(metaclass=SingletonMeta):
 
                     variables = {
                         "summary": cleaned_summaries,
-                        "cur_time": My_handle.common.get_bj_time(5),
+                        "cur_time": self.common.get_bj_time(5),
                         "data": content,
                     }
 
-                    tmp = My_handle.config.get("search_online", "resp_template")
+                    tmp = self.config.get("search_online", "resp_template")
 
                     # 使用字典进行字符串替换
                     if any(var in tmp for var in variables):
@@ -2469,18 +2465,18 @@ class My_handle(metaclass=SingletonMeta):
             # 洛曦 直播弹幕助手（消息产生时，仅弹幕）
             if (
                 is_comment
-                and My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
-                and "comment" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "type")
-                and "消息产生时" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
+                and self.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
+                and "comment" in self.config.get("luoxi_project", "Live_Comment_Assistant", "type")
+                and "消息产生时" in self.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
             ):
                 asyncio.run(
                     send_msg_to_live_comment_assistant(
-                        My_handle.config.get("luoxi_project", "Live_Comment_Assistant"), content
+                        self.config.get("luoxi_project", "Live_Comment_Assistant"), content
                     )
                 )
 
             # 返回给webui的聊天记录
-            if My_handle.config.get("talk", "show_chat_log"):
+            if self.config.get("talk", "show_chat_log"):
                 if "ori_username" not in data:
                     data["ori_username"] = data["username"]
                 if "ori_content" not in data:
@@ -2497,23 +2493,21 @@ class My_handle(metaclass=SingletonMeta):
                         "user_face": data["user_face"],
                         "content_type": "question",
                         "content": data["ori_content"],
-                        "timestamp": My_handle.common.get_bj_time(0),
+                        "timestamp": self.common.get_bj_time(0),
                     },
                 }
                 webui_ip = (
-                    "127.0.0.1"
-                    if My_handle.config.get("webui", "ip") == "0.0.0.0"
-                    else My_handle.config.get("webui", "ip")
+                    "127.0.0.1" if self.config.get("webui", "ip") == "0.0.0.0" else self.config.get("webui", "ip")
                 )
-                My_handle.common.send_request(
-                    f"http://{webui_ip}:{My_handle.config.get('webui', 'port')}/callback",
+                self.common.send_request(
+                    f"http://{webui_ip}:{self.config.get('webui', 'port')}/callback",
                     "POST",
                     return_webui_json,
                     timeout=10,
                 )
 
             # 记录数据库
-            if My_handle.config.get("database", "comment_enable"):
+            if self.config.get("database", "comment_enable"):
                 insert_data_sql = """
                 INSERT INTO danmu (username, content, ts) VALUES (?, ?, ?)
                 """
@@ -2521,7 +2515,7 @@ class My_handle(metaclass=SingletonMeta):
 
             # 合并字符串末尾连续的*  主要针对获取不到用户名的情况（仅弹幕）
             if is_comment:
-                username = My_handle.common.merge_consecutive_asterisks(username)
+                username = self.common.merge_consecutive_asterisks(username)
 
             # 0、积分机制运转
             if self.integral_handle("comment", data):
@@ -2547,24 +2541,21 @@ class My_handle(metaclass=SingletonMeta):
                 return
 
             # 判断字符串是否全为标点符号，是的话就过滤
-            if My_handle.common.is_punctuation_string(content):
+            if self.common.is_punctuation_string(content):
                 logger.debug(f"用户:{username}]，发送纯符号的弹幕，已过滤")
                 return
 
             # 判断按键映射触发类型
             if (
-                My_handle.config.get("key_mapping", "type") == "弹幕"
-                or My_handle.config.get("key_mapping", "type") == "弹幕+回复"
+                self.config.get("key_mapping", "type") == "弹幕"
+                or self.config.get("key_mapping", "type") == "弹幕+回复"
             ):
                 # 按键映射 触发后不执行后面的其他功能
                 if self.key_mapping_handle("弹幕", data):
                     return
 
             # 判断自定义命令触发类型
-            if (
-                My_handle.config.get("custom_cmd", "type") == "弹幕"
-                or My_handle.config.get("custom_cmd", "type") == "弹幕+回复"
-            ):
+            if self.config.get("custom_cmd", "type") == "弹幕" or self.config.get("custom_cmd", "type") == "弹幕+回复":
                 # 自定义命令 触发后不执行后面的其他功能
                 if self.custom_cmd_handle("弹幕", data):
                     return
@@ -2572,16 +2563,16 @@ class My_handle(metaclass=SingletonMeta):
             # 念弹幕（仅弹幕；talk 原实现此块被 and False 永久禁用）
             if is_comment:
                 try:
-                    if My_handle.config.get("read_comment", "enable"):
+                    if self.config.get("read_comment", "enable"):
                         logger.debug(f"念弹幕 content:{content}")
 
                         # 音频合成时需要用到的重要数据
-                        message = build_message(My_handle.config, "read_comment", username, content)
+                        message = build_message(self.config, "read_comment", username, content)
 
                         # 判断是否需要念用户名
-                        if My_handle.config.get("read_comment", "read_username_enable"):
+                        if self.config.get("read_comment", "read_username_enable"):
                             # 将用户名中特殊字符替换为空
-                            message["username"] = My_handle.common.replace_special_characters(
+                            message["username"] = self.common.replace_special_characters(
                                 message["username"], "！!@#￥$%^&*_-+/——=()（）【】}|{:;<>~`\\"
                             )
                             message["username"] = message["username"][
@@ -2589,8 +2580,8 @@ class My_handle(metaclass=SingletonMeta):
                             ]
 
                             # 将用户名字符串中的数字转换成中文
-                            if My_handle.config.get("filter", "username_convert_digits_to_chinese"):
-                                message["username"] = My_handle.common.convert_digits_to_chinese(message["username"])
+                            if self.config.get("filter", "username_convert_digits_to_chinese"):
+                                message["username"] = self.common.convert_digits_to_chinese(message["username"])
                                 logger.debug(f"用户名字符串中的数字转换成中文：{message['username']}")
 
                             if len(self.config.get("read_comment", "read_username_copywriting")) > 0:
@@ -2603,9 +2594,9 @@ class My_handle(metaclass=SingletonMeta):
                                     )
 
                         # 是否启用了周期性触发功能，启用此功能后，数据会被缓存，之后周期到了才会触发
-                        if My_handle.config.get("read_comment", "periodic_trigger", "enable"):
-                            with My_handle.state_lock:
-                                My_handle.task_data["read_comment"]["data"].append(message)
+                        if self.config.get("read_comment", "periodic_trigger", "enable"):
+                            with self.state_lock:
+                                self.task_data["read_comment"]["data"].append(message)
                         else:
                             self.audio_synthesis_handle(message)
                 except Exception:
@@ -2624,11 +2615,11 @@ class My_handle(metaclass=SingletonMeta):
                 return
 
             # 4、弹幕内容是否进行翻译
-            if My_handle.config.get("translate", "enable") and (
-                My_handle.config.get("translate", "trans_type") == "弹幕"
-                or My_handle.config.get("translate", "trans_type") == "弹幕+回复"
+            if self.config.get("translate", "enable") and (
+                self.config.get("translate", "trans_type") == "弹幕"
+                or self.config.get("translate", "trans_type") == "弹幕+回复"
             ):
-                tmp = My_handle.my_translate.trans(content)
+                tmp = self.my_translate.trans(content)
                 if tmp:
                     content = tmp
                     # logger.info(f"翻译后：{content}")
@@ -2646,16 +2637,16 @@ class My_handle(metaclass=SingletonMeta):
             """
             根据聊天类型执行不同逻辑
             """
-            chat_type = My_handle.config.get("chat_type")
+            chat_type = self.config.get("chat_type")
             if chat_type in self.chat_type_list:
-                data_json["content"] = My_handle.config.get("before_prompt")
+                data_json["content"] = self.config.get("before_prompt")
                 # 是否启用弹幕模板
                 if self.config.get("comment_template", "enable"):
                     # 假设有多个未知变量，用户可以在此处定义动态变量
                     variables = {
                         "username": username,
                         "comment": content,
-                        "cur_time": My_handle.common.get_bj_time(5),
+                        "cur_time": self.common.get_bj_time(5),
                     }
 
                     comment_template_copywriting = self.config.get("comment_template", "copywriting")
@@ -2665,7 +2656,7 @@ class My_handle(metaclass=SingletonMeta):
                             **{var: value for var, value in variables.items() if var in comment_template_copywriting}
                         )
 
-                data_json["content"] += content + My_handle.config.get("after_prompt")
+                data_json["content"] += content + self.config.get("after_prompt")
 
                 logger.debug(f"data_json={data_json}")
 
@@ -2682,7 +2673,7 @@ class My_handle(metaclass=SingletonMeta):
                         resp_content = ""
                         logger.warning(f"警告：{chat_type}无返回")
             elif chat_type == "game":
-                if My_handle.config.get("game", "enable"):
+                if self.config.get("game", "enable"):
                     self.game.parse_keys_and_simulate_keys_press(content.split(), 2)
                 return
             elif chat_type == "none":
@@ -2711,11 +2702,11 @@ class My_handle(metaclass=SingletonMeta):
             # logger.info("resp_content=" + resp_content)
 
             # 回复内容是否进行翻译
-            if My_handle.config.get("translate", "enable") and (
-                My_handle.config.get("translate", "trans_type") == "回复"
-                or My_handle.config.get("translate", "trans_type") == "弹幕+回复"
+            if self.config.get("translate", "enable") and (
+                self.config.get("translate", "trans_type") == "回复"
+                or self.config.get("translate", "trans_type") == "弹幕+回复"
             ):
-                tmp = My_handle.my_translate.trans(resp_content)
+                tmp = self.my_translate.trans(resp_content)
                 if tmp:
                     resp_content = tmp
 
@@ -2723,8 +2714,8 @@ class My_handle(metaclass=SingletonMeta):
 
             # 判断按键映射触发类型
             if (
-                My_handle.config.get("key_mapping", "type") == "回复"
-                or My_handle.config.get("key_mapping", "type") == "弹幕+回复"
+                self.config.get("key_mapping", "type") == "回复"
+                or self.config.get("key_mapping", "type") == "弹幕+回复"
             ):
                 # 替换内容
                 data["content"] = resp_content
@@ -2733,10 +2724,7 @@ class My_handle(metaclass=SingletonMeta):
                     pass
 
             # 判断自定义命令触发类型
-            if (
-                My_handle.config.get("custom_cmd", "type") == "回复"
-                or My_handle.config.get("custom_cmd", "type") == "弹幕+回复"
-            ):
+            if self.config.get("custom_cmd", "type") == "回复" or self.config.get("custom_cmd", "type") == "弹幕+回复":
                 # 替换内容
                 data["content"] = resp_content
                 # 自定义命令 触发后不执行后面的其他功能
@@ -2744,18 +2732,18 @@ class My_handle(metaclass=SingletonMeta):
                     pass
 
             # 音频合成时需要用到的重要数据（消息类型：弹幕用 comment，语音聊天用 talk）
-            message = build_message(My_handle.config, source, username, resp_content)
+            message = build_message(self.config, source, username, resp_content)
 
             # 洛曦 直播弹幕助手（回复，仅弹幕）
             if (
                 is_comment
-                and My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
-                and "comment_reply" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "type")
-                and "消息产生时" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
+                and self.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
+                and "comment_reply" in self.config.get("luoxi_project", "Live_Comment_Assistant", "type")
+                and "消息产生时" in self.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
             ):
                 asyncio.run(
                     send_msg_to_live_comment_assistant(
-                        My_handle.config.get("luoxi_project", "Live_Comment_Assistant"), resp_content
+                        self.config.get("luoxi_project", "Live_Comment_Assistant"), resp_content
                     )
                 )
 
@@ -2786,7 +2774,7 @@ class My_handle(metaclass=SingletonMeta):
                 return None
 
             # 记录数据库
-            if My_handle.config.get("database", "gift_enable"):
+            if self.config.get("database", "gift_enable"):
                 insert_data_sql = """
                 INSERT INTO gift (username, gift_name, gift_num, unit_price, total_price, ts) VALUES (?, ?, ?, ?, ?, ?)
                 """
@@ -2817,42 +2805,42 @@ class My_handle(metaclass=SingletonMeta):
                 return None
 
             # 合并字符串末尾连续的*  主要针对获取不到用户名的情况
-            data["username"] = My_handle.common.merge_consecutive_asterisks(data["username"])
+            data["username"] = self.common.merge_consecutive_asterisks(data["username"])
             # 删除用户名中的特殊字符
-            data["username"] = My_handle.common.replace_special_characters(
+            data["username"] = self.common.replace_special_characters(
                 data["username"], "！!@#￥$%^&*_-+/——=()（）【】}|{:;<>~`\\"
             )
 
             data["username"] = data["username"][: self.config.get("thanks", "username_max_len")]
 
             # 将用户名字符串中的数字转换成中文
-            if My_handle.config.get("filter", "username_convert_digits_to_chinese"):
-                data["username"] = My_handle.common.convert_digits_to_chinese(data["username"])
+            if self.config.get("filter", "username_convert_digits_to_chinese"):
+                data["username"] = self.common.convert_digits_to_chinese(data["username"])
 
             # logger.debug(f"[{data['username']}]: {data}")
 
-            if not My_handle.config.get("thanks")["gift_enable"]:
+            if not self.config.get("thanks")["gift_enable"]:
                 return None
 
             # 如果礼物总价低于设置的礼物感谢最低值
-            if data["total_price"] < My_handle.config.get("thanks")["lowest_price"]:
+            if data["total_price"] < self.config.get("thanks")["lowest_price"]:
                 return None
 
-            if My_handle.config.get("thanks", "gift_random"):
-                resp_content = random.choice(My_handle.config.get("thanks", "gift_copy"))
+            if self.config.get("thanks", "gift_random"):
+                resp_content = random.choice(self.config.get("thanks", "gift_copy"))
             else:
                 # 类变量list中是否有数据，没有就拷贝下数据再顺序取出首个数据
                 # 判空+拷贝+pop 是复合操作：/send 直调的礼物处理不走 handle_lock，与流水线并发时需要互斥
-                with My_handle.state_lock:
-                    if len(My_handle.thanks_gift_copy) == 0:
-                        if len(My_handle.config.get("thanks", "gift_copy")) == 0:
+                with self.state_lock:
+                    if len(self.thanks_gift_copy) == 0:
+                        if len(self.config.get("thanks", "gift_copy")) == 0:
                             logger.warning("你把礼物的文案删了，还触发个der礼物感谢？不用别启用不就得了，删了搞啥")
                             return None
-                        My_handle.thanks_gift_copy = copy.copy(My_handle.config.get("thanks", "gift_copy"))
-                    resp_content = My_handle.thanks_gift_copy.pop(0)
+                        self.thanks_gift_copy = copy.copy(self.config.get("thanks", "gift_copy"))
+                    resp_content = self.thanks_gift_copy.pop(0)
 
             # 括号语法替换
-            resp_content = My_handle.common.brackets_text_randomize(resp_content)
+            resp_content = self.common.brackets_text_randomize(resp_content)
 
             # 动态变量替换
             data_json = {
@@ -2861,27 +2849,27 @@ class My_handle(metaclass=SingletonMeta):
                 "gift_num": data["num"],
                 "unit_price": data["unit_price"],
                 "total_price": data["total_price"],
-                "cur_time": My_handle.common.get_bj_time(5),
+                "cur_time": self.common.get_bj_time(5),
             }
-            resp_content = My_handle.common.dynamic_variable_replacement(resp_content, data_json)
+            resp_content = self.common.dynamic_variable_replacement(resp_content, data_json)
 
-            message = build_message(My_handle.config, "gift", data["username"], resp_content, gift_info=data)
+            message = build_message(self.config, "gift", data["username"], resp_content, gift_info=data)
 
             # 洛曦 直播弹幕助手
             if (
-                My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
-                and "gift_reply" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "type")
-                and "消息产生时" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
+                self.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
+                and "gift_reply" in self.config.get("luoxi_project", "Live_Comment_Assistant", "type")
+                and "消息产生时" in self.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
             ):
                 asyncio.run(
                     send_msg_to_live_comment_assistant(
-                        My_handle.config.get("luoxi_project", "Live_Comment_Assistant"), resp_content
+                        self.config.get("luoxi_project", "Live_Comment_Assistant"), resp_content
                     )
                 )
 
             # 是否启用了周期性触发功能，启用此功能后，数据会被缓存，之后周期到了才会触发
-            if My_handle.config.get("thanks", "gift", "periodic_trigger", "enable"):
-                My_handle.task_data["thanks"]["gift"]["data"].append(message)
+            if self.config.get("thanks", "gift", "periodic_trigger", "enable"):
+                self.task_data["thanks"]["gift"]["data"].append(message)
             else:
                 self.audio_synthesis_handle(message)
 
@@ -2898,7 +2886,7 @@ class My_handle(metaclass=SingletonMeta):
                 return None
 
             # 记录数据库
-            if My_handle.config.get("database", "entrance_enable"):
+            if self.config.get("database", "entrance_enable"):
                 insert_data_sql = """
                 INSERT INTO entrance (username, ts) VALUES (?, ?)
                 """
@@ -2913,58 +2901,58 @@ class My_handle(metaclass=SingletonMeta):
                 return None
 
             # 合并字符串末尾连续的*  主要针对获取不到用户名的情况
-            data["username"] = My_handle.common.merge_consecutive_asterisks(data["username"])
+            data["username"] = self.common.merge_consecutive_asterisks(data["username"])
             # 删除用户名中的特殊字符
-            data["username"] = My_handle.common.replace_special_characters(
+            data["username"] = self.common.replace_special_characters(
                 data["username"], "！!@#￥$%^&*_-+/——=()（）【】}|{:;<>~`\\"
             )
 
             data["username"] = data["username"][: self.config.get("thanks", "username_max_len")]
 
             # 将用户名字符串中的数字转换成中文
-            if My_handle.config.get("filter", "username_convert_digits_to_chinese"):
-                data["username"] = My_handle.common.convert_digits_to_chinese(data["username"])
+            if self.config.get("filter", "username_convert_digits_to_chinese"):
+                data["username"] = self.common.convert_digits_to_chinese(data["username"])
 
             # logger.debug(f"[{data['username']}]: {data['content']}")
 
-            if not My_handle.config.get("thanks")["entrance_enable"]:
+            if not self.config.get("thanks")["entrance_enable"]:
                 return None
 
-            if My_handle.config.get("thanks", "entrance_random"):
-                resp_content = random.choice(My_handle.config.get("thanks", "entrance_copy")).format(
+            if self.config.get("thanks", "entrance_random"):
+                resp_content = random.choice(self.config.get("thanks", "entrance_copy")).format(
                     username=data["username"]
                 )
             else:
                 # 类变量list中是否有数据，没有就拷贝下数据再顺序取出首个数据
                 # 判空+拷贝+pop 是复合操作：/send 直调的入场处理不走 handle_lock，与流水线并发时需要互斥
-                with My_handle.state_lock:
-                    if len(My_handle.thanks_entrance_copy) == 0:
-                        if len(My_handle.config.get("thanks", "entrance_copy")) == 0:
+                with self.state_lock:
+                    if len(self.thanks_entrance_copy) == 0:
+                        if len(self.config.get("thanks", "entrance_copy")) == 0:
                             logger.warning("你把入场的文案删了，还触发个der入场感谢？不用别启用不就得了，删了搞啥")
                             return None
-                        My_handle.thanks_entrance_copy = copy.copy(My_handle.config.get("thanks", "entrance_copy"))
-                    resp_content = My_handle.thanks_entrance_copy.pop(0).format(username=data["username"])
+                        self.thanks_entrance_copy = copy.copy(self.config.get("thanks", "entrance_copy"))
+                    resp_content = self.thanks_entrance_copy.pop(0).format(username=data["username"])
 
             # 括号语法替换
-            resp_content = My_handle.common.brackets_text_randomize(resp_content)
+            resp_content = self.common.brackets_text_randomize(resp_content)
 
-            message = build_message(My_handle.config, "entrance", data["username"], resp_content)
+            message = build_message(self.config, "entrance", data["username"], resp_content)
 
             # 洛曦 直播弹幕助手
             if (
-                My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
-                and "entrance_reply" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "type")
-                and "消息产生时" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
+                self.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
+                and "entrance_reply" in self.config.get("luoxi_project", "Live_Comment_Assistant", "type")
+                and "消息产生时" in self.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
             ):
                 asyncio.run(
                     send_msg_to_live_comment_assistant(
-                        My_handle.config.get("luoxi_project", "Live_Comment_Assistant"), resp_content
+                        self.config.get("luoxi_project", "Live_Comment_Assistant"), resp_content
                     )
                 )
 
             # 是否启用了周期性触发功能，启用此功能后，数据会被缓存，之后周期到了才会触发
-            if My_handle.config.get("thanks", "entrance", "periodic_trigger", "enable"):
-                My_handle.task_data["thanks"]["entrance"]["data"].append(message)
+            if self.config.get("thanks", "entrance", "periodic_trigger", "enable"):
+                self.task_data["thanks"]["entrance"]["data"].append(message)
             else:
                 self.audio_synthesis_handle(message)
 
@@ -2977,9 +2965,9 @@ class My_handle(metaclass=SingletonMeta):
     def follow_handle(self, data):
         try:
             # 合并字符串末尾连续的*  主要针对获取不到用户名的情况
-            data["username"] = My_handle.common.merge_consecutive_asterisks(data["username"])
+            data["username"] = self.common.merge_consecutive_asterisks(data["username"])
             # 删除用户名中的特殊字符
-            data["username"] = My_handle.common.replace_special_characters(
+            data["username"] = self.common.replace_special_characters(
                 data["username"], "！!@#￥$%^&*_-+/——=()（）【】}|{:;<>~`\\"
             )
 
@@ -2991,49 +2979,47 @@ class My_handle(metaclass=SingletonMeta):
                 return None
 
             # 将用户名字符串中的数字转换成中文
-            if My_handle.config.get("filter", "username_convert_digits_to_chinese"):
-                data["username"] = My_handle.common.convert_digits_to_chinese(data["username"])
+            if self.config.get("filter", "username_convert_digits_to_chinese"):
+                data["username"] = self.common.convert_digits_to_chinese(data["username"])
 
             # logger.debug(f"[{data['username']}]: {data['content']}")
 
-            if not My_handle.config.get("thanks")["follow_enable"]:
+            if not self.config.get("thanks")["follow_enable"]:
                 return None
 
-            if My_handle.config.get("thanks", "follow_random"):
-                resp_content = random.choice(My_handle.config.get("thanks", "follow_copy")).format(
-                    username=data["username"]
-                )
+            if self.config.get("thanks", "follow_random"):
+                resp_content = random.choice(self.config.get("thanks", "follow_copy")).format(username=data["username"])
             else:
                 # 类变量list中是否有数据，没有就拷贝下数据再顺序取出首个数据
                 # 判空+拷贝+pop 是复合操作：/send 直调的关注处理不走 handle_lock，与流水线并发时需要互斥
-                with My_handle.state_lock:
-                    if len(My_handle.thanks_follow_copy) == 0:
-                        if len(My_handle.config.get("thanks", "follow_copy")) == 0:
+                with self.state_lock:
+                    if len(self.thanks_follow_copy) == 0:
+                        if len(self.config.get("thanks", "follow_copy")) == 0:
                             logger.warning("你把关注的文案删了，还触发个der关注感谢？不用别启用不就得了，删了搞啥")
                             return None
-                        My_handle.thanks_follow_copy = copy.copy(My_handle.config.get("thanks", "follow_copy"))
-                    resp_content = My_handle.thanks_follow_copy.pop(0).format(username=data["username"])
+                        self.thanks_follow_copy = copy.copy(self.config.get("thanks", "follow_copy"))
+                    resp_content = self.thanks_follow_copy.pop(0).format(username=data["username"])
 
             # 括号语法替换
-            resp_content = My_handle.common.brackets_text_randomize(resp_content)
+            resp_content = self.common.brackets_text_randomize(resp_content)
 
-            message = build_message(My_handle.config, "follow", data["username"], resp_content)
+            message = build_message(self.config, "follow", data["username"], resp_content)
 
             # 洛曦 直播弹幕助手
             if (
-                My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
-                and "follow_reply" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "type")
-                and "消息产生时" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
+                self.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
+                and "follow_reply" in self.config.get("luoxi_project", "Live_Comment_Assistant", "type")
+                and "消息产生时" in self.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
             ):
                 asyncio.run(
                     send_msg_to_live_comment_assistant(
-                        My_handle.config.get("luoxi_project", "Live_Comment_Assistant"), resp_content
+                        self.config.get("luoxi_project", "Live_Comment_Assistant"), resp_content
                     )
                 )
 
             # 是否启用了周期性触发功能，启用此功能后，数据会被缓存，之后周期到了才会触发
-            if My_handle.config.get("thanks", "follow", "periodic_trigger", "enable"):
-                My_handle.task_data["thanks"]["follow"]["data"].append(message)
+            if self.config.get("thanks", "follow", "periodic_trigger", "enable"):
+                self.task_data["thanks"]["follow"]["data"].append(message)
             else:
                 self.audio_synthesis_handle(message)
 
@@ -3047,17 +3033,17 @@ class My_handle(metaclass=SingletonMeta):
         try:
             content = data["content"]
 
-            message = build_message(My_handle.config, "schedule", data["username"], content)
+            message = build_message(self.config, "schedule", data["username"], content)
 
             # 洛曦 直播弹幕助手
             if (
-                My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
-                and "schedule" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "type")
-                and "消息产生时" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
+                self.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
+                and "schedule" in self.config.get("luoxi_project", "Live_Comment_Assistant", "type")
+                and "消息产生时" in self.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
             ):
                 asyncio.run(
                     send_msg_to_live_comment_assistant(
-                        My_handle.config.get("luoxi_project", "Live_Comment_Assistant"), content
+                        self.config.get("luoxi_project", "Live_Comment_Assistant"), content
                     )
                 )
 
@@ -3094,8 +3080,8 @@ class My_handle(metaclass=SingletonMeta):
             username = data["username"]
 
             # 将用户名字符串中的数字转换成中文
-            if My_handle.config.get("filter", "username_convert_digits_to_chinese"):
-                username = My_handle.common.convert_digits_to_chinese(username)
+            if self.config.get("filter", "username_convert_digits_to_chinese"):
+                username = self.common.convert_digits_to_chinese(username)
 
             if type == "reread":
                 # 输出当前用户发送的弹幕消息
@@ -3108,8 +3094,8 @@ class My_handle(metaclass=SingletonMeta):
 
                 # 判断按键映射触发类型
                 if (
-                    My_handle.config.get("key_mapping", "type") == "弹幕"
-                    or My_handle.config.get("key_mapping", "type") == "弹幕+回复"
+                    self.config.get("key_mapping", "type") == "弹幕"
+                    or self.config.get("key_mapping", "type") == "弹幕+回复"
                 ):
                     # 按键映射 触发后不执行后面的其他功能
                     if self.key_mapping_handle("弹幕", data):
@@ -3117,26 +3103,25 @@ class My_handle(metaclass=SingletonMeta):
 
                 # 判断自定义命令触发类型
                 if (
-                    My_handle.config.get("custom_cmd", "type") == "弹幕"
-                    or My_handle.config.get("custom_cmd", "type") == "弹幕+回复"
+                    self.config.get("custom_cmd", "type") == "弹幕"
+                    or self.config.get("custom_cmd", "type") == "弹幕+回复"
                 ):
                     # 自定义命令 触发后不执行后面的其他功能
                     if self.custom_cmd_handle("弹幕", data):
                         return None
 
                 # 音频合成时需要用到的重要数据
-                message = build_message(My_handle.config, "idle_time_task", username, content, content_type=type)
+                message = build_message(self.config, "idle_time_task", username, content, content_type=type)
 
                 # 洛曦 直播弹幕助手
                 if (
-                    My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
-                    and "idle_time_task" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "type")
-                    and "消息产生时"
-                    in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
+                    self.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
+                    and "idle_time_task" in self.config.get("luoxi_project", "Live_Comment_Assistant", "type")
+                    and "消息产生时" in self.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
                 ):
                     asyncio.run(
                         send_msg_to_live_comment_assistant(
-                            My_handle.config.get("luoxi_project", "Live_Comment_Assistant"), content
+                            self.config.get("luoxi_project", "Live_Comment_Assistant"), content
                         )
                     )
 
@@ -3145,7 +3130,7 @@ class My_handle(metaclass=SingletonMeta):
                 return message
             elif type == "comment":
                 # 记录数据库
-                if My_handle.config.get("database", "comment_enable"):
+                if self.config.get("database", "comment_enable"):
                     insert_data_sql = """
                     INSERT INTO danmu (username, content, ts) VALUES (?, ?, ?)
                     """
@@ -3161,8 +3146,8 @@ class My_handle(metaclass=SingletonMeta):
 
                 # 判断按键映射触发类型
                 if (
-                    My_handle.config.get("key_mapping", "type") == "弹幕"
-                    or My_handle.config.get("key_mapping", "type") == "弹幕+回复"
+                    self.config.get("key_mapping", "type") == "弹幕"
+                    or self.config.get("key_mapping", "type") == "弹幕+回复"
                 ):
                     # 按键映射 触发后不执行后面的其他功能
                     if self.key_mapping_handle("弹幕", data):
@@ -3170,8 +3155,8 @@ class My_handle(metaclass=SingletonMeta):
 
                 # 判断自定义命令触发类型
                 if (
-                    My_handle.config.get("custom_cmd", "type") == "弹幕"
-                    or My_handle.config.get("custom_cmd", "type") == "弹幕+回复"
+                    self.config.get("custom_cmd", "type") == "弹幕"
+                    or self.config.get("custom_cmd", "type") == "弹幕+回复"
                 ):
                     # 自定义命令 触发后不执行后面的其他功能
                     if self.custom_cmd_handle("弹幕", data):
@@ -3192,9 +3177,9 @@ class My_handle(metaclass=SingletonMeta):
                 """
                 根据聊天类型执行不同逻辑
                 """
-                chat_type = My_handle.config.get("chat_type")
+                chat_type = self.config.get("chat_type")
                 if chat_type == "game":
-                    if My_handle.config.get("game", "enable"):
+                    if self.config.get("game", "enable"):
                         self.game.parse_keys_and_simulate_keys_press(content.split(), 2)
                     return None
                 elif chat_type == "none":
@@ -3203,9 +3188,7 @@ class My_handle(metaclass=SingletonMeta):
                     # 通用的data_json构造
                     data_json = {
                         "username": username,
-                        "content": My_handle.config.get("before_prompt")
-                        + content
-                        + My_handle.config.get("after_prompt")
+                        "content": self.config.get("before_prompt") + content + self.config.get("after_prompt")
                         if chat_type != "reread"
                         else content,
                         "ori_username": data["username"],
@@ -3239,8 +3222,8 @@ class My_handle(metaclass=SingletonMeta):
 
                 # 判断按键映射触发类型
                 if (
-                    My_handle.config.get("key_mapping", "type") == "回复"
-                    or My_handle.config.get("key_mapping", "type") == "弹幕+回复"
+                    self.config.get("key_mapping", "type") == "回复"
+                    or self.config.get("key_mapping", "type") == "弹幕+回复"
                 ):
                     # 替换内容
                     data["content"] = resp_content
@@ -3250,8 +3233,8 @@ class My_handle(metaclass=SingletonMeta):
 
                 # 判断自定义命令射触发类型
                 if (
-                    My_handle.config.get("custom_cmd", "type") == "回复"
-                    or My_handle.config.get("custom_cmd", "type") == "弹幕+回复"
+                    self.config.get("custom_cmd", "type") == "回复"
+                    or self.config.get("custom_cmd", "type") == "弹幕+回复"
                 ):
                     # 替换内容
                     data["content"] = resp_content
@@ -3260,18 +3243,17 @@ class My_handle(metaclass=SingletonMeta):
                         pass
 
                 # 音频合成时需要用到的重要数据
-                message = build_message(My_handle.config, "idle_time_task", username, resp_content, content_type=type)
+                message = build_message(self.config, "idle_time_task", username, resp_content, content_type=type)
 
                 # 洛曦 直播弹幕助手
                 if (
-                    My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
-                    and "idle_time_task" in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "type")
-                    and "消息产生时"
-                    in My_handle.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
+                    self.config.get("luoxi_project", "Live_Comment_Assistant", "enable")
+                    and "idle_time_task" in self.config.get("luoxi_project", "Live_Comment_Assistant", "type")
+                    and "消息产生时" in self.config.get("luoxi_project", "Live_Comment_Assistant", "trigger_position")
                 ):
                     asyncio.run(
                         send_msg_to_live_comment_assistant(
-                            My_handle.config.get("luoxi_project", "Live_Comment_Assistant"), resp_content
+                            self.config.get("luoxi_project", "Live_Comment_Assistant"), resp_content
                         )
                     )
 
@@ -3282,7 +3264,7 @@ class My_handle(metaclass=SingletonMeta):
                 logger.info(f"[{username}]: {data['file_path']}")
 
                 message = build_message(
-                    My_handle.config,
+                    self.config,
                     "idle_time_task",
                     username,
                     content,
@@ -3301,25 +3283,25 @@ class My_handle(metaclass=SingletonMeta):
     def image_recognition_schedule_handle(self, data):
         try:
             username = data["username"]
-            content = My_handle.config.get("image_recognition", "prompt")
+            content = self.config.get("image_recognition", "prompt")
             # 区分图片源类型
             type = data["type"]
 
             # 将用户名字符串中的数字转换成中文
-            if My_handle.config.get("filter", "username_convert_digits_to_chinese"):
-                username = My_handle.common.convert_digits_to_chinese(username)
+            if self.config.get("filter", "username_convert_digits_to_chinese"):
+                username = self.common.convert_digits_to_chinese(username)
 
             if type == "窗口截图":
                 # 根据窗口名截图
-                screenshot_path = My_handle.common.capture_window_by_title(
-                    My_handle.config.get("image_recognition", "img_save_path"),
-                    My_handle.config.get("image_recognition", "screenshot_window_title"),
+                screenshot_path = self.common.capture_window_by_title(
+                    self.config.get("image_recognition", "img_save_path"),
+                    self.config.get("image_recognition", "screenshot_window_title"),
                 )
             elif type == "摄像头截图":
                 # 根据摄像头索引截图
-                screenshot_path = My_handle.common.capture_image(
-                    My_handle.config.get("image_recognition", "img_save_path"),
-                    int(My_handle.config.get("image_recognition", "cam_index")),
+                screenshot_path = self.common.capture_image(
+                    self.config.get("image_recognition", "img_save_path"),
+                    int(self.config.get("image_recognition", "cam_index")),
                 )
 
             # 通用的data_json构造
@@ -3332,12 +3314,12 @@ class My_handle(metaclass=SingletonMeta):
             }
 
             # 调用LLM统一接口，获取返回内容
-            resp_content = self.llm_handle(My_handle.config.get("image_recognition", "model"), data_json, type="vision")
+            resp_content = self.llm_handle(self.config.get("image_recognition", "model"), data_json, type="vision")
 
             if resp_content:
                 logger.info(f"[AI回复{username}]：{resp_content}")
             else:
-                logger.warning(f"警告：{My_handle.config.get('image_recognition', 'model')}无返回")
+                logger.warning(f"警告：{self.config.get('image_recognition', 'model')}无返回")
                 resp_content = ""
 
             """
@@ -3356,8 +3338,8 @@ class My_handle(metaclass=SingletonMeta):
 
             # 判断按键映射触发类型
             if (
-                My_handle.config.get("key_mapping", "type") == "回复"
-                or My_handle.config.get("key_mapping", "type") == "弹幕+回复"
+                self.config.get("key_mapping", "type") == "回复"
+                or self.config.get("key_mapping", "type") == "弹幕+回复"
             ):
                 # 替换内容
                 data["content"] = resp_content
@@ -3366,10 +3348,7 @@ class My_handle(metaclass=SingletonMeta):
                     pass
 
             # 判断自定义命令触发类型
-            if (
-                My_handle.config.get("custom_cmd", "type") == "回复"
-                or My_handle.config.get("custom_cmd", "type") == "弹幕+回复"
-            ):
+            if self.config.get("custom_cmd", "type") == "回复" or self.config.get("custom_cmd", "type") == "弹幕+回复":
                 # 替换内容
                 data["content"] = resp_content
                 # 自定义命令 触发后不执行后面的其他功能
@@ -3377,7 +3356,7 @@ class My_handle(metaclass=SingletonMeta):
                     pass
 
             # 音频合成时需要用到的重要数据
-            message = build_message(My_handle.config, "image_recognition_schedule", username, resp_content)
+            message = build_message(self.config, "image_recognition_schedule", username, resp_content)
 
             self.audio_synthesis_handle(message)
         except Exception:
@@ -3414,7 +3393,7 @@ class My_handle(metaclass=SingletonMeta):
                 # 这里需要注意配置命名!!!
                 # 保留数据数量
                 if len(self.timers[timer_flag].last_data) > int(
-                    My_handle.config.get("filter", timer_flag + "_forget_reserve_num")
+                    self.config.get("filter", timer_flag + "_forget_reserve_num")
                 ):
                     self.timers[timer_flag].last_data.pop(0)
             else:
@@ -3439,7 +3418,7 @@ class My_handle(metaclass=SingletonMeta):
         # task_data、感谢文案轮转、去重计数这些共享状态，以前是靠 data_lock 顺带
         # 串起来的，拆锁之后得显式保住，不然就是新引入的竞态。
         with self.handle_lock:
-            My_handle.is_handleing = 1
+            self.is_handleing = 1
             try:
                 if timer_flag == "comment":
                     for data in batch:
@@ -3473,19 +3452,19 @@ class My_handle(metaclass=SingletonMeta):
             finally:
                 # is_handleing 卡在 1 的话，main.py 的录音闸门永远认为「正在处理」，
                 # 语音输入再也开不了——这句必须在 finally
-                My_handle.is_handleing = 0
+                self.is_handleing = 0
 
     def get_interval(self, timer_flag):
         # 根据标志定义不同计时器的间隔
         intervals = {
-            "comment": My_handle.config.get("filter", "comment_forget_duration"),
-            "gift": My_handle.config.get("filter", "gift_forget_duration"),
-            "entrance": My_handle.config.get("filter", "entrance_forget_duration"),
-            "follow": My_handle.config.get("filter", "follow_forget_duration"),
-            "talk": My_handle.config.get("filter", "talk_forget_duration"),
-            "schedule": My_handle.config.get("filter", "schedule_forget_duration"),
-            "idle_time_task": My_handle.config.get("filter", "idle_time_task_forget_duration"),
-            "image_recognition_schedule": My_handle.config.get("filter", "image_recognition_schedule_forget_duration"),
+            "comment": self.config.get("filter", "comment_forget_duration"),
+            "gift": self.config.get("filter", "gift_forget_duration"),
+            "entrance": self.config.get("filter", "entrance_forget_duration"),
+            "follow": self.config.get("filter", "follow_forget_duration"),
+            "talk": self.config.get("filter", "talk_forget_duration"),
+            "schedule": self.config.get("filter", "schedule_forget_duration"),
+            "idle_time_task": self.config.get("filter", "idle_time_task_forget_duration"),
+            "image_recognition_schedule": self.config.get("filter", "image_recognition_schedule_forget_duration"),
             # 根据需要添加更多计时器及其间隔，记得添加config.json中的配置项
         }
 
@@ -3500,6 +3479,4 @@ class My_handle(metaclass=SingletonMeta):
     def abnormal_alarm_handle(self, type):
         """异常报警，判定与播报逻辑在 utils/alarm.py（与 Audio 共用）"""
 
-        return alarm.report_error(
-            My_handle.abnormal_alarm_data, type, My_handle.config, My_handle.common, self.audio_synthesis_handle
-        )
+        return alarm.report_error(self.abnormal_alarm_data, type, self.config, self.common, self.audio_synthesis_handle)
