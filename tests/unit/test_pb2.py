@@ -1,9 +1,10 @@
-"""三个 _pb2 生成文件的运行时兼容性守卫。
+"""kuaishou_pb2 生成文件的运行时兼容性守卫。
 
 protobuf 只在 platform 组里，core-only 环境（含 CI）会跳过这些用例。
 kuaishou_pb2.py 原本是 protoc<3.19 生成的，protobuf 4.25 起就会抛
 "Descriptors cannot be created directly"，快手弹幕因此一直是坏的；
 已用旧文件里残留的 serialized_pb 重新生成为现代 _builder 风格。
+（根目录历史遗留的 dy_pb2/ks_pb2 及其 .proto 已随仓库清理删除。）
 """
 
 import pathlib
@@ -15,7 +16,7 @@ pytest.importorskip("google.protobuf", reason="protobuf 只在 platform 组里")
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
-PB2_MODULES = ("dy_pb2", "ks_pb2", "kuaishou_pb2")
+PB2_MODULES = ("kuaishou_pb2",)
 
 
 @pytest.mark.parametrize("name", PB2_MODULES)

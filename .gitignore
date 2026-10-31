@@ -262,3 +262,6 @@ node_modules/
 # WebUI 重设计走查截图（verify 脚本可再生）
 docs/redesign/shots/
 docs/redesign/shots-v3/
+
+# ZCode 会话产物
+.zcode/
