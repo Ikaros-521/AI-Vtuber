@@ -1,7 +1,13 @@
 <div align="center">
   <a href="https://ikaros-521.github.io/Luna-Docs/site/">
-    <img src="https://raw.githubusercontent.com/Ikaros-521/AI-Vtuber/refs/heads/main/ui/icon.png" width="240" height="240" alt="点我跳转文档">
+    <img src="./docs/icon.png" width="240" height="240" alt="Luna AI">
   </a>
+</div>
+
+<div align="center">
+
+[简体中文](./README.md) | [English](./README_EN.md)
+
 </div>
 
 <div align="center">
@@ -57,7 +63,7 @@ https://lug.ustc.edu.cn/wiki/doc/smart-questions
 
 ## 🀅 开发&项目相关
 
-后端分层与关键设计决策见 [docs/backend-architecture.md](./docs/backend-architecture.md)（入口层 / app 服务层 / luna 六域包、配置单例、线程模型、如何新增 LLM/TTS provider）。
+后端分层与关键设计决策见 [docs/backend-architecture.md](./docs/backend-architecture.md)（入口层 / app 服务层 / luna 六域包、配置单例、线程模型、如何新增 LLM/TTS provider）；全部文档索引在 [docs/README.md](./docs/README.md)。
 
 可以使用 GitHub Codespaces 进行在线开发：
 
@@ -103,7 +109,7 @@ npm run dev                     # 开发模式：5173 端口，/api 自动代理
 | `visual.txt` | OpenCV、Pillow、虚拟摄像头、SD、pyautogui | 数字人/绘图/桌面自动化 |
 | `chat-with-file.txt` | 文档问答：OpenAI 向量化 + faiss 检索 | 启用 `chat_with_file` |
 
-B站弹幕库 `blivedm` 不走 pip：上游 1.1.2 把 `aiohttp`/`yarl` 钉死在 `~=3.9`/`~=1.9`，与 nicegui 3 要求的 `aiohttp>=3.14.3` 在依赖解析层面互斥，而它实际只用到多年未变的 aiohttp API，所以源码内置在 `vendor/blivedm/`（MIT，含原许可声明，代码未改动）。详见该目录下的 README。
+B站弹幕库 `blivedm` 不走 pip：上游 1.1.2 把 `aiohttp`/`yarl` 钉死在 `~=3.9`/`~=1.9`，与 core 组要求的 `aiohttp>=3.14` 在依赖解析层面互斥，而它实际只用到多年未变的 aiohttp API，所以源码内置在 `vendor/blivedm/`（MIT，含原许可声明，代码未改动）。详见该目录下的 README。
 
 `pyproject.toml` 只是把上述分组镜像成 Poetry 依赖组（`[tool.poetry.group.*]`），方便用 Poetry 工具链查看；实际安装仍以 `requirements/` 为准，两处不一致时同理。
 
@@ -152,9 +158,10 @@ uv pip install --python .venv/Scripts/python.exe -r requirements/dev.txt
 python -m pytest
 ```
 
-用例放在 `tests/unit/`，覆盖弹幕过滤与违禁词、本地问答库匹配、限时去重、队列委托、聊天回推、
-`utils/common.py` 的纯函数、webui 配置写回、LLM provider 注册表。`tests/` 下其余目录是各平台/模型的
-手工联调脚本（要真实 key 和外网），不会被 pytest 收集——`pyproject.toml` 里已把 `testpaths` 钉在 `tests/unit`。
+用例放在 `tests/unit/`，覆盖：交互流水线与过滤器、本地问答库、限时去重、共享状态锁并发、
+配置单例、HTTP 客户端代理规范化、音频队列/播放、LLM provider 注册表、内部 API 与 WebUI 后端
+（FastAPI TestClient）。`tests/manual/` 下是各平台/模型的手工联调脚本（要真实 key 和外网），
+不会被 pytest 收集——`pyproject.toml` 里已把 `testpaths` 钉在 `tests/unit`。
 
 GitHub Actions 每次 push 都会跑一遍 `pytest` + 冒烟测试，见 `.github/workflows/ci.yml`。
 
