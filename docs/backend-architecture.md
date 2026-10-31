@@ -1,6 +1,6 @@
 # 后端架构说明
 
-> 2026-10 企业级规范化重构后的后端架构。本次重构的入口提交：仓库清理 → ruff 基线 → 配置层 → `app/` 拆分 → webui_server 加固 → utils 治理。
+> 2026-10 企业级规范化重构后的后端架构。重构主线：仓库清理 → ruff 基线 → 配置层 → `app/` 拆分 → webui_server 加固 → God Object 治理 → **utils 域包重组为 `luna/`**。
 
 ## 分层总览
 
@@ -19,18 +19,17 @@
 │   idle_tasks.py  动态文案与闲时任务                          │
 │   static_server.py / greeting.py                          │
 ├─────────────────────────────────────────────────────────┤
-│ 核心层 utils/                                             │
-│   my_handle.py     My_handle 单例：交互处理流水线/积分/过滤    │
-│   audio.py         Audio：TTS 分发(_TTS_HANDLERS)/播放队列    │
-│   audio_handle/    MY_TTS 各 TTS 实现、播放器、混音流          │
-│   common.py        纯工具集 + 委托门面                       │
-│   http_client.py   网络出站集中地（send_request/OPENAI 探测） │
-│   screen.py        截屏/摄像头采集（visual 可选组）            │
-│   config.py        Config 按路径单例 + reload()              │
-│   my_log.py        loguru 日志（import 期容错）               │
-│   platforms/       直播平台监听器注册表                       │
-│   gpt_model/       LLM provider 注册表（PROVIDERS）          │
-│   db / message / models / my_global / alarm / ...          │
+│ 领域层 luna/（原 utils 按域重组，2026-10-31）                │
+│   core/     my_handle(编排门面) filters integral message     │
+│             alarm my_translate data_analysis search_engine   │
+│             sd serial_manager                              │
+│   audio/    service(Audio编排) my_tts audio_player           │
+│             playback_stream                                │
+│   llm/      gpt(PROVIDERS注册表) + 10 家 provider + history  │
+│   platforms/ 13 平台监听器 + luoxi/ + kuaishou_pb2 + protobuf│
+│   infra/    config(单例) my_log db my_global models logger   │
+│   common/   helpers http_client screen（纯工具）             │
+│   game/     按键小游戏插件（game.<module> 动态导入）          │
 ├─────────────────────────────────────────────────────────┤
 │ 契约                                                       │
 │   config.json      跨进程唯一配置契约（磁盘格式与 key 不变）    │
@@ -38,11 +37,11 @@
 └─────────────────────────────────────────────────────────┘
 ```
 
-**依赖方向（强制）**：`main → app → utils`；`webui_server → utils`；utils 内部不得 import app/main；app 模块之间只依赖 `state/greeting`。`test_platform_scoping` 的 AST 守卫会自动检查新增模块。
+**依赖方向（强制）**：`main → app → luna`；`webui_server → luna`；luna 内部不得 import app/main；luna.common 不依赖其他域，luna.core/audio/llm/platforms 只依赖 infra/common 与自身。`test_platform_scoping` 的 AST 守卫会自动检查 luna 全树新增模块。`test_platform_scoping` 的 AST 守卫会自动检查新增模块。
 
 ## 关键设计决策
 
-### 配置层（utils/config.py）
+### 配置层（luna/infra/config.py）
 - `Config` 按**解析后的路径**做进程内单例，显式 `reload()` 刷新磁盘变更；读取方拿到快照引用。
 - 任何一方 reload（如 main.py 语音循环、`/set_config` 后续处理），全进程视图同步更新——单一事实来源。
 - `webui_server/runtime.write_config_file()` 原子写（临时文件 + `os.replace` + fsync），与前端 sha256 乐观锁（409 拦截）配合。
@@ -54,9 +53,9 @@
 - **调度线程唯一化**：原先 4 个线程各自 `while True: schedule.run_pending()` 且 sleep 被注释成忙等（烧 CPU）且 schedule 库非线程安全；现为单线程注册全部任务、`time.sleep(1)` 循环。
 - dy 平台的监听器会 `join` 调度线程保持阻塞（历史行为保留）。
 
-### 交互流水线（utils/my_handle.py）
+### 交互流水线（luna/core/my_handle.py）
 - `comment_handle` / `talk_handle` 统一为 `_interaction_pipeline(data, source)`，差异全部 source 门控（去重/黑名单/洛曦转发/用户名处理/念弹幕仅弹幕；build_message 类型参数化）。
-- 积分系统拆分至 `utils/integral.py`、过滤器四件套拆分至 `utils/filters.py`，My_handle 同名方法保留一行委托门面；依赖经 `handle` 实例注入，模块不反向 import my_handle。
+- 积分系统拆分至 `luna/core/integral.py`、过滤器四件套拆分至 `luna/core/filters.py`，My_handle 同名方法保留一行委托门面；依赖经 `handle` 实例注入，模块不反向 import my_handle。
 - My_handle 仍是单例门面，13 个平台监听器以参数注入方式调用，接口不变。
 
 ### 共享状态与锁
@@ -66,8 +65,8 @@
 - `Audio` 队列自带 Condition 线程安全；`copywriting_play_flag` 为 GIL 原子的纯流程控制标志，刻意不加锁（见类属性注释）。
 
 ### TTS / LLM provider 注册表
-- LLM：`utils/gpt_model/gpt.py` 的 `PROVIDERS = {name: (module, class)}` + importlib 懒加载。
-- TTS：`utils/audio.py` 的 `_TTS_HANDLERS = {tts_type: _tts_<name>}`。新增 TTS = 写一个 `_tts_<name>(self, message) -> voice_tmp_path` 方法并登记一行。
+- LLM：`luna/llm/gpt.py` 的 `PROVIDERS = {name: (module, class)}` + importlib 懒加载。
+- TTS：`luna/audio/service.py` 的 `_TTS_HANDLERS = {tts_type: _tts_<name>}`。新增 TTS = 写一个 `_tts_<name>(self, message) -> voice_tmp_path` 方法并登记一行。
 - 特例：elevenlabs 直接播放，经 `_TTS_EARLY_EXIT` 哨兵提前返回（保持历史行为）。
 
 ### webui_server（v3 后端）
@@ -85,8 +84,8 @@
 | do-listen-and-comment | app/voice_chat | 单轮/连续录音+ASR |
 | scheduler | app/scheduler | 唯一的 schedule.run_pending() 调用点 |
 | trends-copywriting / idle-time-task | app/idle_tasks | asyncio.run 各自独立事件循环 |
-| message_queue / only_play_audio / copywriting | utils/audio | TTS 合成与播放流水线 |
-| 平台监听器线程 ×13 | utils/platforms | 各 SDK 自建 |
+| message_queue / only_play_audio / copywriting | luna/audio/service | TTS 合成与播放流水线 |
+| 平台监听器线程 ×13 | luna/platforms | 各 SDK 自建 |
 
 ## 测试与验证
 
@@ -99,4 +98,4 @@
 
 1. actions_api / compat_api 未声明 response_model（见 schemas.py 注释的取舍理由）。
 
-> 已完成（2026-10-31）：~~共享状态加锁~~（state_lock）、~~integral/filters 拆分~~（utils/integral.py + utils/filters.py）、~~v2 删除~~（webui.py/webui_app 及其单测/nicegui 依赖）、~~核心路由 response_model~~（webui_server/schemas.py）、~~Audio 实例属性化~~（多实例不再共享队列/标志位）、~~lock 再生成~~（7 个 lock 甩掉 nicegui 闭包，新环境 405 passed 验证）。
+> 已完成（2026-10-31）：~~utils 域包重组为 luna/~~（git mv 保留历史，429 passed），~~共享状态加锁~~（state_lock）、~~integral/filters 拆分~~（core/integral.py + core/filters.py）、~~v2 删除~~（webui.py/webui_app 及其单测/nicegui 依赖）、~~核心路由 response_model~~（webui_server/schemas.py）、~~Audio 实例属性化~~（多实例不再共享队列/标志位）、~~lock 再生成~~（7 个 lock 甩掉 nicegui 闭包，新环境 405 passed 验证）。

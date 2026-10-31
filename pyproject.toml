@@ -161,7 +161,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"] # 包导出视为合法再导出
-"utils/platforms/dy2.py" = ["F403", "F405"] # protobuf 生成模块按上游惯例 star import
+"luna/platforms/dy2.py" = ["F403", "F405"] # protobuf 生成模块按上游惯例 star import
 
 [tool.ruff.format]
 quote-style = "double"

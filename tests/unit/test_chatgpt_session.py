@@ -6,7 +6,7 @@ Chatgpt.sessions 是跨实例共享的类属性、按用户名累积。
 
 import pytest
 
-from utils.gpt_model.chatgpt import Chatgpt
+from luna.llm.chatgpt import Chatgpt
 
 OVERFLOW = "This model's maximum context length is 409 tokens is exceeded"
 

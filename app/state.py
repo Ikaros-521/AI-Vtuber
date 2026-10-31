@@ -1,7 +1,7 @@
 """进程级运行状态：拆分自 main.py 的模块级全局变量。"""
 
-from utils.common import Common
-from utils.config import Config
+from luna.common.helpers import Common
+from luna.infra.config import Config
 
 
 class AppState:

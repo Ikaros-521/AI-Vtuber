@@ -7,8 +7,8 @@
 
 import pytest
 
-from utils import my_handle as my_handle_module
-from utils.my_handle import My_handle
+from luna.core import my_handle as my_handle_module
+from luna.core.my_handle import My_handle
 
 
 class FakeTimer:

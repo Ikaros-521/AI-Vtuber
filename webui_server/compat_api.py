@@ -9,8 +9,8 @@ import traceback
 from fastapi import APIRouter, Request
 from starlette.responses import JSONResponse
 
-from utils.models import CommonResult, SendMessage, SetConfigMessage, SysCmdMessage
-from utils.my_log import logger
+from luna.infra.models import CommonResult, SendMessage, SetConfigMessage, SysCmdMessage
+from luna.infra.my_log import logger
 from webui_server.chat_log import chat_log
 from webui_server.runtime import runtime
 

@@ -8,8 +8,8 @@ import json
 
 import pytest
 
-from utils import my_global
-from utils.audio import Audio
+from luna.infra import my_global
+from luna.audio.service import Audio
 
 CONFIG = {
     "play_audio": {"out_path": "out", "player": "pygame", "enable": True},
@@ -208,6 +208,6 @@ def test_queue_state_is_per_instance(tmp_path):
     assert a.message_queue_lock is not b.message_queue_lock
     assert a.copywriting_play_flag == b.copywriting_play_flag == -1
     # 类上不再残留可变的共享队列定义
-    import utils.audio as audio_mod
+    import luna.audio.service as audio_mod
 
     assert not hasattr(audio_mod.Audio, "message_queue")

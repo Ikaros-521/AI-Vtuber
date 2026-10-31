@@ -3,7 +3,7 @@
 import pytest
 
 from fakes import FakeAudio
-from utils.my_handle import My_handle
+from luna.core.my_handle import My_handle
 
 
 def test_clear_queue_delegates_to_audio(configure):

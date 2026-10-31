@@ -11,7 +11,7 @@ import pytest
 
 @pytest.fixture
 def c():
-    from utils.common import Common
+    from luna.common.helpers import Common
 
     return Common()
 
@@ -219,7 +219,7 @@ def test_is_audio_file(c):
 def test_audio_extension_list_has_a_single_source(c):
     """Common.is_audio_file 与 Audio.get_dir_audios_filename 以前各有一份列表，
     纯 flac/m4a 曲库走随机点歌时一首都找不到。现在都指向同一个常量。"""
-    from utils.common import SUPPORTED_AUDIO_EXTENSIONS
+    from luna.common.helpers import SUPPORTED_AUDIO_EXTENSIONS
 
     for ext in SUPPORTED_AUDIO_EXTENSIONS:
         assert c.is_audio_file(f"song{ext}") is True
@@ -259,7 +259,7 @@ def test_get_bj_time_formats(c):
 def test_audio_device_enumeration_releases_the_portaudio_handle(c, monkeypatch):
     """PyAudio() 不 terminate 就一直占着 PortAudio 实例，
     聊天页每次打开都枚举一次设备，进几次之后枚举会开始失败。"""
-    import utils.common as common_module
+    import luna.common.helpers as common_module
 
     closed = {"terminated": 0}
 
@@ -282,7 +282,7 @@ def test_audio_device_enumeration_releases_the_portaudio_handle(c, monkeypatch):
 
 
 def test_audio_device_enumeration_releases_handle_even_on_error(c, monkeypatch):
-    import utils.common as common_module
+    import luna.common.helpers as common_module
 
     closed = {"terminated": 0}
 

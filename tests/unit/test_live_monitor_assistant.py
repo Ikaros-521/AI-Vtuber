@@ -13,14 +13,14 @@ import json
 import pytest
 
 from fakes import FakeConfig
-from utils.platforms import PLATFORM_LISTENERS
+from luna.platforms import PLATFORM_LISTENERS
 
-ASSISTANT_MODULE = "utils.platforms.lx_live_monitor_assistant"
+ASSISTANT_MODULE = "luna.platforms.lx_live_monitor_assistant"
 LEGACY_KEYS = ("ks2", "pdd", "douyu", "1688", "taobao")
 
 
 def _captured_addr(monkeypatch, config):
-    import utils.platforms.lx_live_monitor_assistant as lx
+    import luna.platforms.lx_live_monitor_assistant as lx
 
     captured = {}
 
@@ -125,8 +125,8 @@ class _Handle:
 
 def _feed(monkeypatch, *payloads, platform="live_monitor_assistant"):
     """把助手会发的 JSON 原样灌进监听器，返回它交给 my_handle 的东西。"""
-    import utils.my_global as my_global
-    import utils.platforms.lx_live_monitor_assistant as lx
+    import luna.infra.my_global as my_global
+    import luna.platforms.lx_live_monitor_assistant as lx
 
     captured = {}
 

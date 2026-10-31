@@ -12,7 +12,7 @@ from pathlib import Path
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from utils.my_log import logger
+from luna.infra.my_log import logger
 from webui_server.runtime import runtime, ROOT_DIR
 
 router = APIRouter(prefix="/api")
@@ -186,7 +186,7 @@ async def anythingllm_workspaces(req: AnythingllmRequest):
     try:
 
         def fetch():
-            from utils.gpt_model.anythingllm import AnythingLLM
+            from luna.llm.anythingllm import AnythingLLM
 
             anythingllm = AnythingLLM({"api_ip_port": req.api_ip_port, "api_key": req.api_key})
             return [w["slug"] for w in anythingllm.get_workspaces_list()]
@@ -202,7 +202,7 @@ async def anythingllm_workspaces(req: AnythingllmRequest):
 
 
 def _serial_manager():
-    from utils.serial_manager_instance import get_serial_manager
+    from luna.core.serial_manager_instance import get_serial_manager
 
     return get_serial_manager()
 
@@ -371,7 +371,7 @@ def audio_file(path: str):
 @router.get("/data-analysis")
 def data_analysis(top: int = 10):
     try:
-        from utils.data_analysis import Data_Analysis
+        from luna.core.data_analysis import Data_Analysis
 
         da = Data_Analysis(runtime.config_path)
         out = {}
@@ -454,7 +454,7 @@ async def img_screenshot(req: ImgScreenshotRequest):
             )
 
         if req.model == "zhipu":
-            from utils.gpt_model.zhipu import Zhipu
+            from luna.llm.zhipu import Zhipu
 
             zhipu = Zhipu(runtime.get("image_recognition", "zhipu") or {})
             content = zhipu.get_resp_with_img(req.prompt, screenshot_path)
@@ -463,7 +463,7 @@ async def img_screenshot(req: ImgScreenshotRequest):
                 "data": {"username": runtime.get("talk", "username") or "主播", "content": content, "insert_index": -1},
             }
         else:
-            from utils.gpt_model.gemini import Gemini
+            from luna.llm.gemini import Gemini
 
             gemini = Gemini(runtime.get("image_recognition", "gemini") or {})
             content = gemini.get_resp_with_img(req.prompt, screenshot_path)

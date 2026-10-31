@@ -2,7 +2,7 @@
 
 
 class FakeConfig:
-    """与 utils.config.Config 相同的嵌套取值语义，但不读磁盘。"""
+    """与 luna.infra.config.Config 相同的嵌套取值语义，但不读磁盘。"""
 
     def __init__(self, data):
         self.config = data

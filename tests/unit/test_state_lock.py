@@ -12,7 +12,7 @@ import pytest
 
 from tests.unit.conftest import PATCHED
 from tests.unit.fakes import FakeConfig
-from utils.my_handle import My_handle
+from luna.core.my_handle import My_handle
 
 
 @pytest.fixture()

@@ -38,7 +38,7 @@ def test_pb2_imports(name):
 
 
 def test_kuaishou_messages_round_trip():
-    from kuaishou_pb2 import PayloadType, SCWebFeedPush, SocketMessage
+    from luna.platforms.kuaishou_pb2 import PayloadType, SCWebFeedPush, SocketMessage
 
     msg = SocketMessage()
     msg.payloadType = PayloadType.Value("SC_FEED_PUSH")
@@ -64,7 +64,7 @@ def test_kuaishou_messages_round_trip():
 
 def test_kuaishou_descriptor_covers_every_symbol():
     """重新生成时若漏掉消息或枚举，这里会抓到。"""
-    import kuaishou_pb2 as ks
+    import luna.platforms.kuaishou_pb2 as ks
 
     names = {n for n in dir(ks) if not n.startswith("_") and n[0].isupper()}
 

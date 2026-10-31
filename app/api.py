@@ -8,8 +8,8 @@
 import threading
 import traceback
 
-from utils.my_log import logger
-import utils.my_global as my_global
+from luna.infra.my_log import logger
+import luna.infra.my_global as my_global
 
 
 def create_api_app(state):
@@ -18,7 +18,7 @@ def create_api_app(state):
     from fastapi.middleware.cors import CORSMiddleware
     from starlette.requests import Request
 
-    from utils.models import CallbackMessage, CommonResult, LLMMessage, SendMessage
+    from luna.infra.models import CallbackMessage, CommonResult, LLMMessage, SendMessage
 
     app = FastAPI()
 

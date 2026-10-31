@@ -5,7 +5,7 @@ import http.server
 import socketserver
 import threading
 
-from utils.my_log import logger
+from luna.infra.my_log import logger
 
 
 async def web_server_thread(web_server_port):

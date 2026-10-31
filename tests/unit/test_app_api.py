@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
-import utils.my_global as my_global
+import luna.infra.my_global as my_global
 from app.api import create_api_app
 from tests.unit.fakes import FakeConfig
 

@@ -24,8 +24,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
 def _production_files():
-    out = [str(p) for d in ("utils",) for p in (ROOT / d).rglob("*.py")]
-    out += [str(ROOT / "main.py")]  # v2 的 webui.py 已删除
+    out = [str(p) for d in ("luna",) for p in (ROOT / d).rglob("*.py")]
+    out += [str(ROOT / "main.py")]
     return sorted(f for f in out if "__pycache__" not in f)
 
 
@@ -246,7 +246,7 @@ def test_lx_handler_takes_the_single_connection_argument(monkeypatch):
     """websockets 14 起 serve 只把 connection 一个参数传给 handler。
     多写一个 path 会在每次客户端连上时抛 TypeError，而走这个助手的平台
     （统一项 + ks2/pdd/douyu/1688/taobao 五个旧别名）全靠它，一条弹幕都进不来。"""
-    import utils.platforms.lx_live_monitor_assistant as lx
+    import luna.platforms.lx_live_monitor_assistant as lx
 
     handler = _capture_served_handler(monkeypatch, lx)
     params = [

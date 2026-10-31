@@ -5,7 +5,7 @@
 """
 
 from fakes import FakeConfig
-from utils.message import build, build_playback
+from luna.core.message import build, build_playback
 
 
 CONFIG = FakeConfig(

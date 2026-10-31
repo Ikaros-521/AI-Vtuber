@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from utils.my_log import logger
+from luna.infra.my_log import logger
 from webui_server import actions_api, auth_api, compat_api, config_api, logs_api, ops_api
 from webui_server.auth_api import COOKIE_NAME, is_valid_session
 from webui_server.runtime import ROOT_DIR, runtime

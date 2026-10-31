@@ -9,8 +9,8 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fakes import FakeConfig  # noqa: E402
-from utils.common import Common  # noqa: E402
-from utils.my_handle import My_handle  # noqa: E402
+from luna.common.helpers import Common  # noqa: E402
+from luna.core.my_handle import My_handle  # noqa: E402
 
 # 这些是类属性（My_handle 用类当全局状态袋），测试期间会被改写，必须逐个还原
 PATCHED = (

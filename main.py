@@ -16,10 +16,10 @@ from app.scheduler import start_scheduler
 from app.static_server import start_static_server
 from app.state import AppState
 from app.voice_chat import VoiceChat
-from utils.my_handle import My_handle
-from utils.my_log import logger
-from utils.platforms import start_platform_listen
-import utils.my_global as my_global
+from luna.core.my_handle import My_handle
+from luna.infra.my_log import logger
+from luna.platforms import start_platform_listen
+import luna.infra.my_global as my_global
 
 # 配置文件路径：LUNA_CONFIG_PATH 供多实例与自动化测试覆盖（与 webui/webui_server 一致）
 config_path = os.environ.get("LUNA_CONFIG_PATH") or "config.json"

@@ -4,8 +4,8 @@ import sqlite3
 
 import pytest
 
-import utils.db as db_module
-from utils.db import SQLiteDB
+import luna.infra.db as db_module
+from luna.infra.db import SQLiteDB
 
 
 class ConnProxy:

@@ -1,7 +1,7 @@
 """回答回推给 webui 聊天面板的回调。"""
 
 from fakes import FakeSender
-from utils.my_handle import My_handle
+from luna.core.my_handle import My_handle
 
 
 def payload(**over):

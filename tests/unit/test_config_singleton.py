@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-from utils.config import Config
+from luna.infra.config import Config
 
 
 @pytest.fixture(autouse=True)

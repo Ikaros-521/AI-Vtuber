@@ -17,7 +17,7 @@ import socket
 import subprocess
 import time
 
-from utils.my_log import logger
+from luna.infra.my_log import logger
 
 _KILL_WAIT_SEC = 3.0
 

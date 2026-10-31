@@ -9,7 +9,7 @@
 import time
 import threading
 
-from utils.my_handle import My_handle
+from luna.core.my_handle import My_handle
 
 
 def _cfg(*flags):

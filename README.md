@@ -57,7 +57,7 @@ https://lug.ustc.edu.cn/wiki/doc/smart-questions
 
 ## 🀅 开发&项目相关
 
-后端分层与关键设计决策见 [docs/backend-architecture.md](./docs/backend-architecture.md)（入口层 / app 服务层 / utils 核心层、配置单例、线程模型、如何新增 LLM/TTS provider）。
+后端分层与关键设计决策见 [docs/backend-architecture.md](./docs/backend-architecture.md)（入口层 / app 服务层 / luna 六域包、配置单例、线程模型、如何新增 LLM/TTS provider）。
 
 可以使用 GitHub Codespaces 进行在线开发：
 

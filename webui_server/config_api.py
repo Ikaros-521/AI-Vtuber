@@ -8,7 +8,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from utils.my_log import logger
+from luna.infra.my_log import logger
 from webui_server.runtime import runtime
 from webui_server.schemas import ConfigGetResult, ConfigSaveResult
 

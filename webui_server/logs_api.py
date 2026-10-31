@@ -5,7 +5,7 @@ import os
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from utils.my_log import logger, file_path as log_file_path
+from luna.infra.my_log import logger, file_path as log_file_path
 from webui_server.chat_log import chat_log
 from webui_server.runtime import runtime
 from webui_server.schemas import ChatLogResult, Envelope, RunLogResult

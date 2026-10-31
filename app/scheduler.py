@@ -17,8 +17,8 @@ from functools import partial
 import schedule
 
 from app.greeting import time_period_text
-from utils.my_log import logger
-import utils.my_global as my_global
+from luna.infra.my_log import logger
+import luna.infra.my_global as my_global
 
 
 def schedule_task(state, index):

@@ -9,7 +9,7 @@ import os
 import pytest
 
 from fakes import FakeAlarmCommon, FakeConfig
-from utils import alarm
+from luna.core import alarm
 
 
 class Clock:

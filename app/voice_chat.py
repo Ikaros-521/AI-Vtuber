@@ -19,7 +19,7 @@ import pyaudio
 import speech_recognition as sr
 from aip import AipSpeech
 
-from utils.my_log import logger
+from luna.infra.my_log import logger
 
 
 class VoiceChat:

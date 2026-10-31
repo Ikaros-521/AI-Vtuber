@@ -4,7 +4,7 @@ import ast
 import pathlib
 
 
-from utils.history import total_chars
+from luna.llm.history import total_chars
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 CRLF, NL = chr(13) + chr(10), chr(10)

@@ -9,7 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
-from utils.common import Common
+from luna.common.helpers import Common
 
 OPENAI_SHAPE = {
     "object": "list",

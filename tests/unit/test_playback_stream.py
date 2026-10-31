@@ -18,8 +18,8 @@ os.environ["SDL_AUDIODRIVER"] = "dummy"
 
 pygame = pytest.importorskip("pygame")
 
-from utils.audio import Audio  # noqa: E402
-from utils.audio_handle.playback_stream import PlaybackStream  # noqa: E402
+from luna.audio.service import Audio  # noqa: E402
+from luna.audio.playback_stream import PlaybackStream  # noqa: E402
 
 
 def _tone(path, seconds, rate=8000):
@@ -75,7 +75,7 @@ def test_the_two_streams_are_different_objects(tmp_path, monkeypatch):
             pass
 
     # 只验证构造时的接线，别真把播放线程拉起来
-    monkeypatch.setattr("utils.audio.threading.Thread", _NoThread)
+    monkeypatch.setattr("luna.audio.service.threading.Thread", _NoThread)
     audio = Audio(str(path), type=1)
 
     assert audio.mixer_normal is not audio.mixer_copywriting

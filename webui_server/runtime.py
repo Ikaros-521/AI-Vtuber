@@ -14,8 +14,8 @@ import traceback
 from pathlib import Path
 from threading import Lock
 
-from utils.common import Common
-from utils.my_log import logger
+from luna.common.helpers import Common
+from luna.infra.my_log import logger
 
 # 项目根目录（webui_server/ 的上一级）
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -70,12 +70,12 @@ class Runtime:
                 return default
         return result
 
-    # ---------- 音频（懒加载：utils.audio 会拉起一串音频依赖，没用到就别 import） ----------
+    # ---------- 音频（懒加载：luna.audio.service 会拉起一串音频依赖，没用到就别 import） ----------
 
     @property
     def audio(self):
         if self._audio is None:
-            from utils.audio import Audio
+            from luna.audio.service import Audio
 
             self._audio = Audio(self.config_path, type=2)
         return self._audio

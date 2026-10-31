@@ -22,18 +22,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CORE_MODULES = [
-    "utils.config",
-    "utils.common",
-    "utils.my_log",
-    "utils.models",
-    "utils.audio",
-    "utils.audio_handle.audio_player",
-    "utils.audio_handle.my_tts",
-    "utils.gpt_model.gpt",
-    "utils.platforms",
-    "utils.db",
-    "utils.my_translate",
-    "utils.my_handle",
+    "luna.infra.config",
+    "luna.common.helpers",
+    "luna.infra.my_log",
+    "luna.infra.models",
+    "luna.audio.service",
+    "luna.audio.audio_player",
+    "luna.audio.my_tts",
+    "luna.llm.gpt",
+    "luna.platforms",
+    "luna.infra.db",
+    "luna.core.my_translate",
+    "luna.core.my_handle",
     # v2 NiceGUI 前端(webui_app)已删除，改为导入 v3 后端模块
     "webui_server.app",
     "webui_server.runtime",
@@ -80,7 +80,7 @@ def check_imports():
 
 def check_platform_registry():
     """平台注册表里的每个模块都要存在且暴露 start_listen（只做静态检查，不导入平台 SDK）。"""
-    from utils.platforms import PLATFORM_LISTENERS
+    from luna.platforms import PLATFORM_LISTENERS
 
     failures = []
     for platform, module_name in PLATFORM_LISTENERS.items():

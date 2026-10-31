@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from utils.gpt_model.gpt import PROVIDERS, GPT_MODEL, GPT_Model, load_model_class
+from luna.llm.gpt import PROVIDERS, GPT_MODEL, GPT_Model, load_model_class
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -65,8 +65,8 @@ def test_importing_the_registry_does_not_pull_in_any_provider():
     子进程里跑，避免被同一次测试会话中其它用例已导入的模块干扰。
     """
     code = (
-        "import sys; import utils.gpt_model.gpt;"
-        "print(','.join(m for m in sys.modules if m.startswith('utils.gpt_model.') and m != 'utils.gpt_model.gpt'))"
+        "import sys; import luna.llm.gpt;"
+        "print(','.join(m for m in sys.modules if m.startswith('luna.llm.') and m != 'luna.llm.gpt'))"
     )
     proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, cwd=REPO_ROOT)
 

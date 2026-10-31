@@ -14,7 +14,7 @@ import webbrowser
 
 import uvicorn
 
-from utils.my_log import logger
+from luna.infra.my_log import logger
 from webui_server.port_guard import ensure_port_free
 from webui_server.runtime import runtime
 
