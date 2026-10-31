@@ -1,18 +1,41 @@
 """FastAPI 应用装配：API 路由 + React 构建产物托管。"""
 
-from fastapi import FastAPI
+import traceback
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from utils.my_log import logger
 from webui_server import actions_api, auth_api, compat_api, config_api, logs_api, ops_api
-from webui_server.runtime import runtime, ROOT_DIR
+from webui_server.auth_api import COOKIE_NAME, is_valid_session
+from webui_server.runtime import ROOT_DIR, runtime
 
 DIST_DIR = ROOT_DIR / "webui_react" / "dist"
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info(f"webui_server 启动，配置文件：{runtime.config_path}")
+    yield
+    # 正常退出（Ctrl+C / 停止）时把运行中的 main.py 等子进程一并停掉，避免残留
+    try:
+        runtime.stop()
+    except Exception as e:
+        logger.warning(f"退出时清理子进程失败：{e}")
+
+
+def _login_enabled() -> bool:
+    try:
+        return bool(runtime.get("login", "enable"))
+    except Exception:
+        return False
+
+
 def create_app() -> FastAPI:
-    app = FastAPI(title="AI-Vtuber WebUI", version="3.0")
+    app = FastAPI(title="AI-Vtuber WebUI", version="3.0", lifespan=lifespan)
 
     # 开发期 Vite (5173) 直连后端时用；正式部署同源，不受影响
     app.add_middleware(
@@ -29,17 +52,24 @@ def create_app() -> FastAPI:
     app.include_router(auth_api.router)
     app.include_router(compat_api.router)
 
-    @app.on_event("startup")
-    async def on_startup():
-        logger.info(f"webui_server 启动，配置文件：{runtime.config_path}")
+    # 统一异常兜底：业务路由全部走 {code, message} 信封，
+    # 未捕获异常若漏成裸 500 会破坏前端信封约定
+    @app.exception_handler(Exception)
+    async def uncaught_exception_handler(request: Request, exc: Exception):
+        logger.error(f"未处理异常 {request.method} {request.url.path}:\n{traceback.format_exc()}")
+        return JSONResponse({"code": -1, "message": f"服务器内部错误：{exc}"})
 
-    @app.on_event("shutdown")
-    async def on_shutdown():
-        # 正常退出（Ctrl+C / 停止）时把运行中的 main.py 等子进程一并停掉，避免残留
-        try:
-            runtime.stop()
-        except Exception as e:
-            logger.warning(f"退出时清理子进程失败：{e}")
+    # 登录门禁：启用登录后，服务端强制校验 /api/* 的会话。
+    # v2 只挡 UI 不挡接口；v3 对人机接口（/api/*）做服务端强制，
+    # 机机接口（根路径 /set_config /sys_cmd /send 等，main.py 不带凭证调用）保持开放。
+    @app.middleware("http")
+    async def login_guard(request: Request, call_next):
+        path = request.url.path
+        if path.startswith("/api/") and not path.startswith("/api/auth/") and _login_enabled():
+            token = request.cookies.get(COOKIE_NAME, "")
+            if not is_valid_session(token):
+                return JSONResponse({"code": 401, "message": "未登录或会话已过期，请重新登录"}, status_code=401)
+        return await call_next(request)
 
     # v2 的「本地目录映射为 URL」能力保留
     try:
