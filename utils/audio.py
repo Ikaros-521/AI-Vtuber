@@ -27,6 +27,9 @@ _TTS_EARLY_EXIT = object()
 
 class Audio:
     # 文案播放标志 0手动暂停 1临时暂停  2循环播放
+    # 线程模型说明：int 的读/写在 CPython GIL 下原子，且该标志只作播放流程控制
+    # （早到/晚到一个周期最多影响一次播报节奏，不影响数据正确性），刻意不加锁；
+    # 队列类共享状态（message_queue / voice_tmp_path_queue）自带 Condition 线程安全。
     copywriting_play_flag = -1
 
     # pygame.mixer实例

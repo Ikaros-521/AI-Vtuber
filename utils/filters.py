@@ -149,6 +149,12 @@ def blacklist_handle(handle, data):
 
 
 def is_data_repeat_in_limited_time(handle, type=None, data=None):
+    # 遍历+append 是复合操作，且 clear_live_data 定时器会并发换新列表——上 state_lock
+    with handle.state_lock:
+        return _is_data_repeat_unlocked(handle, type, data)
+
+
+def _is_data_repeat_unlocked(handle, type=None, data=None):
     """判断限定时间段内数据是否重复
 
     Args:

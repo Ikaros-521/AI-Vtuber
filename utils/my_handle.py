@@ -83,6 +83,14 @@ class My_handle(metaclass=SingletonMeta):
     thanks_gift_copy = []
     thanks_follow_copy = []
 
+    # 共享状态锁：护住 live_data / task_data / thanks_*轮转表 这几份类级共享可变状态的
+    # 复合操作（遍历+append、切片+清空、判空+pop）。
+    # 访问路径不再全部经过 handle_lock 串行——周期触发定时器线程、/send 直调的
+    # gift/entrance/follow 都会绕开它——所以在状态自身上加锁；
+    # 锁序约定：handle_lock -> state_lock，不得反向嵌套。
+    # RLock：同线程路径内可能重复进入。
+    state_lock = threading.RLock()
+
     def __init__(self, config_path):
         logger.info("初始化My_handle...")
 
@@ -181,6 +189,12 @@ class My_handle(metaclass=SingletonMeta):
 
     # 周期性触发数据处理，每秒执行一次，进行计时
     def periodic_trigger_data_handle(self):
+        # 整体包 state_lock：task_data 的计时/切片/清空要与流水线线程的
+        # append（见 _interaction_pipeline）互斥；内部只做计时与入队，持锁窗口极短
+        with My_handle.state_lock:
+            return self._periodic_trigger_data_handle_unlocked()
+
+    def _periodic_trigger_data_handle_unlocked(self):
         try:
 
             def get_last_n_items(data_list: list, num: int):
@@ -369,7 +383,9 @@ class My_handle(metaclass=SingletonMeta):
     # 清空live_data直播数据
     def clear_live_data(self, type: str = ""):
         if type != "" and type is not None:
-            My_handle.live_data[type] = []
+            # 换新列表而非 .clear()：并发的去重遍历持有旧列表引用，可安全读完
+            with My_handle.state_lock:
+                My_handle.live_data[type] = []
 
         if type == "comment":
             self.comment_check_timer = threading.Timer(
@@ -2588,7 +2604,8 @@ class My_handle(metaclass=SingletonMeta):
 
                         # 是否启用了周期性触发功能，启用此功能后，数据会被缓存，之后周期到了才会触发
                         if My_handle.config.get("read_comment", "periodic_trigger", "enable"):
-                            My_handle.task_data["read_comment"]["data"].append(message)
+                            with My_handle.state_lock:
+                                My_handle.task_data["read_comment"]["data"].append(message)
                         else:
                             self.audio_synthesis_handle(message)
                 except Exception:
@@ -2825,12 +2842,14 @@ class My_handle(metaclass=SingletonMeta):
                 resp_content = random.choice(My_handle.config.get("thanks", "gift_copy"))
             else:
                 # 类变量list中是否有数据，没有就拷贝下数据再顺序取出首个数据
-                if len(My_handle.thanks_gift_copy) == 0:
-                    if len(My_handle.config.get("thanks", "gift_copy")) == 0:
-                        logger.warning("你把礼物的文案删了，还触发个der礼物感谢？不用别启用不就得了，删了搞啥")
-                        return None
-                    My_handle.thanks_gift_copy = copy.copy(My_handle.config.get("thanks", "gift_copy"))
-                resp_content = My_handle.thanks_gift_copy.pop(0)
+                # 判空+拷贝+pop 是复合操作：/send 直调的礼物处理不走 handle_lock，与流水线并发时需要互斥
+                with My_handle.state_lock:
+                    if len(My_handle.thanks_gift_copy) == 0:
+                        if len(My_handle.config.get("thanks", "gift_copy")) == 0:
+                            logger.warning("你把礼物的文案删了，还触发个der礼物感谢？不用别启用不就得了，删了搞啥")
+                            return None
+                        My_handle.thanks_gift_copy = copy.copy(My_handle.config.get("thanks", "gift_copy"))
+                    resp_content = My_handle.thanks_gift_copy.pop(0)
 
             # 括号语法替换
             resp_content = My_handle.common.brackets_text_randomize(resp_content)
@@ -2917,12 +2936,14 @@ class My_handle(metaclass=SingletonMeta):
                 )
             else:
                 # 类变量list中是否有数据，没有就拷贝下数据再顺序取出首个数据
-                if len(My_handle.thanks_entrance_copy) == 0:
-                    if len(My_handle.config.get("thanks", "entrance_copy")) == 0:
-                        logger.warning("你把入场的文案删了，还触发个der入场感谢？不用别启用不就得了，删了搞啥")
-                        return None
-                    My_handle.thanks_entrance_copy = copy.copy(My_handle.config.get("thanks", "entrance_copy"))
-                resp_content = My_handle.thanks_entrance_copy.pop(0).format(username=data["username"])
+                # 判空+拷贝+pop 是复合操作：/send 直调的入场处理不走 handle_lock，与流水线并发时需要互斥
+                with My_handle.state_lock:
+                    if len(My_handle.thanks_entrance_copy) == 0:
+                        if len(My_handle.config.get("thanks", "entrance_copy")) == 0:
+                            logger.warning("你把入场的文案删了，还触发个der入场感谢？不用别启用不就得了，删了搞啥")
+                            return None
+                        My_handle.thanks_entrance_copy = copy.copy(My_handle.config.get("thanks", "entrance_copy"))
+                    resp_content = My_handle.thanks_entrance_copy.pop(0).format(username=data["username"])
 
             # 括号语法替换
             resp_content = My_handle.common.brackets_text_randomize(resp_content)
@@ -2984,12 +3005,14 @@ class My_handle(metaclass=SingletonMeta):
                 )
             else:
                 # 类变量list中是否有数据，没有就拷贝下数据再顺序取出首个数据
-                if len(My_handle.thanks_follow_copy) == 0:
-                    if len(My_handle.config.get("thanks", "follow_copy")) == 0:
-                        logger.warning("你把关注的文案删了，还触发个der关注感谢？不用别启用不就得了，删了搞啥")
-                        return None
-                    My_handle.thanks_follow_copy = copy.copy(My_handle.config.get("thanks", "follow_copy"))
-                resp_content = My_handle.thanks_follow_copy.pop(0).format(username=data["username"])
+                # 判空+拷贝+pop 是复合操作：/send 直调的关注处理不走 handle_lock，与流水线并发时需要互斥
+                with My_handle.state_lock:
+                    if len(My_handle.thanks_follow_copy) == 0:
+                        if len(My_handle.config.get("thanks", "follow_copy")) == 0:
+                            logger.warning("你把关注的文案删了，还触发个der关注感谢？不用别启用不就得了，删了搞啥")
+                            return None
+                        My_handle.thanks_follow_copy = copy.copy(My_handle.config.get("thanks", "follow_copy"))
+                    resp_content = My_handle.thanks_follow_copy.pop(0).format(username=data["username"])
 
             # 括号语法替换
             resp_content = My_handle.common.brackets_text_randomize(resp_content)
