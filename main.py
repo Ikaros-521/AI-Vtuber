@@ -52,9 +52,7 @@ async def web_server_thread(web_server_port):
     Handler = http.server.SimpleHTTPRequestHandler
     with socketserver.TCPServer(("", web_server_port), Handler) as httpd:
         logger.info(f"Web运行在端口：{web_server_port}")
-        logger.info(
-            f"可以直接访问Live2D页， http://127.0.0.1:{web_server_port}/Live2D/"
-        )
+        logger.info(f"可以直接访问Live2D页， http://127.0.0.1:{web_server_port}/Live2D/")
         httpd.serve_forever()
 
 
@@ -85,11 +83,7 @@ r"""
 
 # 点火起飞
 def start_server():
-    global \
-        config, \
-        common, \
-        my_handle, \
-        config_path
+    global config, common, my_handle, config_path
     global do_listen_and_comment_thread, stop_do_listen_and_comment_thread_event
     global faster_whisper_model, sense_voice_model, is_recording, is_talk_awake
 
@@ -136,9 +130,7 @@ def start_server():
     try:
         if config.get("live2d", "enable"):
             web_server_port = int(config.get("live2d", "port"))
-            threading.Thread(
-                target=lambda: asyncio.run(web_server_thread(web_server_port))
-            ).start()
+            threading.Thread(target=lambda: asyncio.run(web_server_thread(web_server_port))).start()
     except Exception:
         logger.error(traceback.format_exc())
         os._exit(0)
@@ -160,7 +152,7 @@ def start_server():
           @@@@@@@^         =@@@@@@@. @@@@@@@^               =@@@@@@@   
 
         """
-        
+
         # HTTP API线程
         def http_api_thread():
             import uvicorn
@@ -221,20 +213,16 @@ def start_server():
                     data_json = msg.dict()
                     logger.info(f"API收到数据：{data_json}")
 
-                    resp_content = my_handle.llm_handle(
-                        data_json["type"], data_json, webui_show=False
-                    )
+                    resp_content = my_handle.llm_handle(data_json["type"], data_json, webui_show=False)
 
-                    return CommonResult(
-                        code=200, message="成功", data={"content": resp_content}
-                    )
+                    return CommonResult(code=200, message="成功", data={"content": resp_content})
                 except Exception as e:
                     logger.error(f"调用LLM失败！{e}")
                     return CommonResult(code=-1, message=f"调用LLM失败！{e}")
 
             from starlette.requests import Request
 
-            @app.post('/tts')
+            @app.post("/tts")
             async def tts(request: Request):
                 try:
                     data_json = await request.json()
@@ -246,7 +234,7 @@ def start_server():
                 except Exception as e:
                     logger.error(traceback.format_exc())
                     return CommonResult(code=-1, message=f"失败！{e}")
-                
+
             @app.post("/callback")
             async def callback(msg: CallbackMessage):
                 global my_handle, config
@@ -258,7 +246,9 @@ def start_server():
                     if data_json["type"] == "audio_playback_completed":
                         my_global.wait_play_audio_num = int(data_json["data"]["wait_play_audio_num"])
                         my_global.wait_synthesis_msg_num = int(data_json["data"]["wait_synthesis_msg_num"])
-                        logger.info(f"内部HTTP API callback接口 音频播放完成回调，待播放音频数量：{my_global.wait_play_audio_num}，待合成消息数量：{my_global.wait_synthesis_msg_num}")
+                        logger.info(
+                            f"内部HTTP API callback接口 音频播放完成回调，待播放音频数量：{my_global.wait_play_audio_num}，待合成消息数量：{my_global.wait_synthesis_msg_num}"
+                        )
                     else:
                         logger.info(f"内部HTTP API callback接口收到数据：{data_json}")
 
@@ -268,17 +258,13 @@ def start_server():
 
                         # 如果等待播放的音频数量大于10
                         if data_json["data"]["wait_play_audio_num"] > int(
-                            config.get(
-                                "idle_time_task", "wait_play_audio_num_threshold"
-                            )
+                            config.get("idle_time_task", "wait_play_audio_num_threshold")
                         ):
                             logger.info(
-                                f'等待播放的音频数量大于限定值，闲时任务的闲时计时由 {my_global.global_idle_time} -> {int(config.get("idle_time_task", "idle_time_reduce_to"))}秒'
+                                f"等待播放的音频数量大于限定值，闲时任务的闲时计时由 {my_global.global_idle_time} -> {int(config.get('idle_time_task', 'idle_time_reduce_to'))}秒"
                             )
                             # 闲时任务的闲时计时 清零
-                            my_global.global_idle_time = int(
-                                config.get("idle_time_task", "idle_time_reduce_to")
-                            )
+                            my_global.global_idle_time = int(config.get("idle_time_task", "idle_time_reduce_to"))
 
                     return CommonResult(code=200, message="callback处理成功！")
                 except Exception as e:
@@ -296,7 +282,7 @@ def start_server():
                         "metahuman-stream": {
                             "wait_play_audio_num": my_global.wait_play_audio_num,
                             "wait_synthesis_msg_num": my_global.wait_synthesis_msg_num,
-                        }
+                        },
                     }
 
                     return CommonResult(code=200, data=data, message="get_sys_info处理成功！")
@@ -304,24 +290,21 @@ def start_server():
                     logger.error(f"get_sys_info处理失败！{e}")
                     return CommonResult(code=-1, message=f"get_sys_info处理失败！{e}")
 
-            
-
             logger.info("HTTP API线程已启动！")
 
             # 将本地目录中的静态文件（如 CSS、JavaScript、图片等）暴露给 web 服务器，以便用户可以通过特定的 URL 访问这些文件。
             if config.get("webui", "local_dir_to_endpoint", "enable"):
                 for tmp in config.get("webui", "local_dir_to_endpoint", "config"):
                     from fastapi.staticfiles import StaticFiles
-                    app.mount(tmp['url_path'], StaticFiles(directory=tmp['local_dir']), name=tmp['local_dir'])
-                    
+
+                    app.mount(tmp["url_path"], StaticFiles(directory=tmp["local_dir"]), name=tmp["local_dir"])
+
             uvicorn.run(app, host="0.0.0.0", port=config.get("api_port"))
-            #uvicorn.run(app, host="0.0.0.0", port=config.get("api_port"), ssl_certfile="F:\\FunASR_WS\\cert.pem", ssl_keyfile="F:\\FunASR_WS\\key.pem")
+            # uvicorn.run(app, host="0.0.0.0", port=config.get("api_port"), ssl_certfile="F:\\FunASR_WS\\cert.pem", ssl_keyfile="F:\\FunASR_WS\\key.pem")
 
         # HTTP API线程并启动
         inside_http_api_thread = threading.Thread(target=http_api_thread)
         inside_http_api_thread.start()
-
-    
 
     """
     按键监听板块
@@ -358,17 +341,8 @@ def start_server():
             # 播放中不录音
             if config.get("talk", "no_recording_during_playback"):
                 # 存在待合成音频 或 已合成音频还未播放 或 正在播放 或 在数据处理中
-                if (
-                    my_handle.is_playback_busy()
-                    or my_handle.is_handle_empty() == 1
-                ):
-                    time.sleep(
-                        float(
-                            config.get(
-                                "talk", "no_recording_during_playback_sleep_interval"
-                            )
-                        )
-                    )
+                if my_handle.is_playback_busy() or my_handle.is_handle_empty() == 1:
+                    time.sleep(float(config.get("talk", "no_recording_during_playback_sleep_interval")))
                     continue
 
             # 读取音频数据
@@ -405,7 +379,9 @@ def start_server():
     def talk_handle(content: str):
         global is_talk_awake
 
-        def clear_queue_and_stop_audio_play(message_queue: bool=True, voice_tmp_path_queue: bool=True, stop_audio_play: bool=True):
+        def clear_queue_and_stop_audio_play(
+            message_queue: bool = True, voice_tmp_path_queue: bool = True, stop_audio_play: bool = True
+        ):
             """
             清空队列 或 停止播放音频
             """
@@ -504,7 +480,6 @@ def start_server():
                             "first": False,
                         }
 
-
                 return {"ret": 0, "is_talk_awake": True, "trigger_word": "", "first": False}
 
             # 输出识别结果
@@ -517,7 +492,7 @@ def start_server():
             username = config.get("talk", "username")
 
             data = {"platform": "本地聊天", "username": username, "content": content}
-            
+
             # 检查并切换聊天唤醒状态
             check_resp = check_talk_awake(content)
             if check_resp["ret"] == 0:
@@ -533,17 +508,15 @@ def start_server():
                     # 因为唤醒可能会有仅唤醒词的情况，所以可能出现首次唤醒，唤醒词被过滤，content为空清空，导致不播放唤醒提示语，需要处理
                     if content == "" and not check_resp["first"]:
                         return
-                    
+
                     # 赋值给data
                     data["content"] = content
-                    
+
                     # 首次触发切换模式 播放唤醒文案
                     if check_resp["first"]:
                         # 随机获取文案 TODO: 如果此功能测试成功，所有的类似功能都将使用此函数简化代码
                         resp_json = common.get_random_str_in_list_and_format(
-                            ori_list=config.get(
-                                "talk", "wakeup_sleep", "wakeup_copywriting"
-                            )
+                            ori_list=config.get("talk", "wakeup_sleep", "wakeup_copywriting")
                         )
                         if resp_json["ret"] == 0:
                             data["content"] = resp_json["content"]
@@ -564,7 +537,7 @@ def start_server():
                                 message_queue = "message_queue" in clean_type
                                 voice_tmp_path_queue = "voice_tmp_path_queue" in clean_type
                                 stop_audio_play = "stop_audio_play" in clean_type
-                                
+
                                 clear_queue_and_stop_audio_play(message_queue, voice_tmp_path_queue, stop_audio_play)
                                 return False
 
@@ -579,9 +552,7 @@ def start_server():
                     # 首次进入睡眠 播放睡眠文案
                     if check_resp["first"]:
                         resp_json = common.get_random_str_in_list_and_format(
-                            ori_list=config.get(
-                                "talk", "wakeup_sleep", "sleep_copywriting"
-                            )
+                            ori_list=config.get("talk", "wakeup_sleep", "sleep_copywriting")
                         )
                         if resp_json["ret"] == 0:
                             data["content"] = resp_json["content"]
@@ -616,16 +587,10 @@ def start_server():
                     logger.info("faster_whisper 模型加载中，请稍后...")
                     # Run on GPU with FP16
                     faster_whisper_model = WhisperModel(
-                        model_size_or_path=config.get(
-                            "talk", "faster_whisper", "model_size"
-                        ),
+                        model_size_or_path=config.get("talk", "faster_whisper", "model_size"),
                         device=config.get("talk", "faster_whisper", "device"),
-                        compute_type=config.get(
-                            "talk", "faster_whisper", "compute_type"
-                        ),
-                        download_root=config.get(
-                            "talk", "faster_whisper", "download_root"
-                        ),
+                        compute_type=config.get("talk", "faster_whisper", "compute_type"),
+                        download_root=config.get("talk", "faster_whisper", "download_root"),
                     )
                     logger.info("faster_whisper 模型加载完毕，可以开始说话了喵~")
             elif "sensevoice" == config.get("talk", "type"):
@@ -640,9 +605,7 @@ def start_server():
                         vad_model=vad_model_path,
                         vad_kwargs={
                             "max_single_segment_time": int(
-                                config.get(
-                                    "talk", "sensevoice", "vad_max_single_segment_time"
-                                )
+                                config.get("talk", "sensevoice", "vad_max_single_segment_time")
                             )
                         },
                         trust_remote_code=True,
@@ -679,9 +642,7 @@ def start_server():
                             if not audio_out_path.startswith("./"):
                                 audio_out_path = "./" + audio_out_path
                         file_name = "asr_" + common.get_bj_time(4) + ".wav"
-                        WAVE_OUTPUT_FILENAME = common.get_new_audio_path(
-                            audio_out_path, file_name
-                        )
+                        WAVE_OUTPUT_FILENAME = common.get_new_audio_path(audio_out_path, file_name)
                         # WAVE_OUTPUT_FILENAME = './out/asr_' + common.get_bj_time(4) + '.wav'
 
                         frames = audio_listen(
@@ -733,22 +694,14 @@ def start_server():
                             segments, info = faster_whisper_model.transcribe(
                                 WAVE_OUTPUT_FILENAME,
                                 language=language,
-                                beam_size=config.get(
-                                    "talk", "faster_whisper", "beam_size"
-                                ),
+                                beam_size=config.get("talk", "faster_whisper", "beam_size"),
                             )
 
-                            logger.debug(
-                                "识别语言为：'%s'，概率：%f"
-                                % (info.language, info.language_probability)
-                            )
+                            logger.debug("识别语言为：'%s'，概率：%f" % (info.language, info.language_probability))
 
                             content = ""
                             for segment in segments:
-                                logger.info(
-                                    "[%.2fs -> %.2fs] %s"
-                                    % (segment.start, segment.end, segment.text)
-                                )
+                                logger.info("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
                                 content += segment.text + "。"
 
                             if content == "":
@@ -763,12 +716,8 @@ def start_server():
                                 cache={},
                                 language=config.get("talk", "sensevoice", "language"),
                                 text_norm=config.get("talk", "sensevoice", "text_norm"),
-                                batch_size_s=int(
-                                    config.get("talk", "sensevoice", "batch_size_s")
-                                ),
-                                batch_size=int(
-                                    config.get("talk", "sensevoice", "batch_size")
-                                ),
+                                batch_size_s=int(config.get("talk", "sensevoice", "batch_size_s")),
+                                batch_size=int(config.get("talk", "sensevoice", "batch_size")),
                             )
 
                             def remove_angle_brackets_content(input_string: str):
@@ -816,10 +765,7 @@ def start_server():
             return
 
     def on_key_press(event):
-        global \
-            do_listen_and_comment_thread, \
-            stop_do_listen_and_comment_thread_event, \
-            is_recording
+        global do_listen_and_comment_thread, stop_do_listen_and_comment_thread_event, is_recording
 
         # 是否启用按键监听，不启用的话就不用执行了
         if not config.get("talk", "key_listener_enable"):
@@ -872,15 +818,11 @@ def start_server():
             # 是否启用连续对话模式
             if config.get("talk", "continuous_talk"):
                 stop_do_listen_and_comment_thread_event.clear()
-                do_listen_and_comment_thread = threading.Thread(
-                    target=do_listen_and_comment, args=(True,)
-                )
+                do_listen_and_comment_thread = threading.Thread(target=do_listen_and_comment, args=(True,))
                 do_listen_and_comment_thread.start()
             else:
                 stop_do_listen_and_comment_thread_event.clear()
-                do_listen_and_comment_thread = threading.Thread(
-                    target=do_listen_and_comment, args=(False,)
-                )
+                do_listen_and_comment_thread = threading.Thread(target=do_listen_and_comment, args=(False,))
                 do_listen_and_comment_thread.start()
         else:
             logger.warning("正在录音中...请勿重复点击录音捏！")
@@ -898,24 +840,17 @@ def start_server():
 
     # 直接运行语音对话
     def direct_run_talk():
-        global \
-            do_listen_and_comment_thread, \
-            stop_do_listen_and_comment_thread_event, \
-            is_recording
+        global do_listen_and_comment_thread, stop_do_listen_and_comment_thread_event, is_recording
 
         if not is_recording:
             # 是否启用连续对话模式
             if config.get("talk", "continuous_talk"):
                 stop_do_listen_and_comment_thread_event.clear()
-                do_listen_and_comment_thread = threading.Thread(
-                    target=do_listen_and_comment, args=(True,)
-                )
+                do_listen_and_comment_thread = threading.Thread(target=do_listen_and_comment, args=(True,))
                 do_listen_and_comment_thread.start()
             else:
                 stop_do_listen_and_comment_thread_event.clear()
-                do_listen_and_comment_thread = threading.Thread(
-                    target=do_listen_and_comment, args=(False,)
-                )
+                do_listen_and_comment_thread = threading.Thread(target=do_listen_and_comment, args=(False,))
                 do_listen_and_comment_thread.start()
 
     # 从配置文件中读取触发键的字符串配置
@@ -930,7 +865,9 @@ def start_server():
 
     # 是否启用了直接运行对话，如果启用了，将在首次运行时直接进行语音识别，而不需手动点击开始按键。针对有些系统按键无法触发的情况下，配合连续对话和唤醒词使用
     if config.get("talk", "direct_run_talk"):
-        logger.info("直接运行对话模式，首次运行时将直接进行语音识别，而不需手动点击开始按键（如果使用本地ASR，请等待模型加载完成后使用）")
+        logger.info(
+            "直接运行对话模式，首次运行时将直接进行语音识别，而不需手动点击开始按键（如果使用本地ASR，请等待模型加载完成后使用）"
+        )
         direct_run_talk()
 
     # 创建并启动按键监听线程，放着也是在聊天模式下，让程序一直阻塞用的
@@ -978,9 +915,7 @@ def start_server():
 
         # 使用字典进行字符串替换
         if any(var in random_copy for var in variables):
-            content = random_copy.format(
-                **{var: value for var, value in variables.items() if var in random_copy}
-            )
+            content = random_copy.format(**{var: value for var, value in variables.items() if var in random_copy})
         else:
             content = random_copy
 
@@ -1013,9 +948,9 @@ def start_server():
 
                         schedule_task(index)
 
-                        schedule.every(next_time).seconds.do(
-                            schedule_random_task, index, min_seconds, max_seconds
-                        ).tag(index)
+                        schedule.every(next_time).seconds.do(schedule_random_task, index, min_seconds, max_seconds).tag(
+                            index
+                        )
 
                     schedule_random_task(index, min_seconds, max_seconds)
         except Exception:
@@ -1056,22 +991,17 @@ def start_server():
                     if config.get("trends_copywriting", "random_play"):
                         random.shuffle(copywriting_file_path_list)
 
-                    logger.debug(
-                        f"copywriting_file_path_list={copywriting_file_path_list}"
-                    )
+                    logger.debug(f"copywriting_file_path_list={copywriting_file_path_list}")
 
                     # 遍历文案文件路径列表
                     for copywriting_file_path in copywriting_file_path_list:
                         # 获取文案文件内容
-                        copywriting_file_content = common.read_file_return_content(
-                            copywriting_file_path
-                        )
+                        copywriting_file_content = common.read_file_return_content(copywriting_file_path)
                         # 是否启用提示词对文案内容进行转换
                         if copywriting["prompt_change_enable"]:
                             data_json = {
                                 "username": "trends_copywriting",
-                                "content": copywriting["prompt_change_content"]
-                                + copywriting_file_content,
+                                "content": copywriting["prompt_change_content"] + copywriting_file_content,
                             }
 
                             # 调用函数进行LLM处理，以及生成回复内容，进行音频合成，需要好好考虑考虑实现
@@ -1079,9 +1009,7 @@ def start_server():
                                 config.get("trends_copywriting", "llm_type"), data_json
                             )
                         else:
-                            copywriting_file_content = common.brackets_text_randomize(
-                                copywriting_file_content
-                            )
+                            copywriting_file_content = common.brackets_text_randomize(copywriting_file_content)
 
                             data_json = {
                                 "username": "trends_copywriting",
@@ -1089,22 +1017,15 @@ def start_server():
                             }
 
                         logger.debug(
-                            f'copywriting_file_content={copywriting_file_content},content={data_json["content"]}'
+                            f"copywriting_file_content={copywriting_file_content},content={data_json['content']}"
                         )
 
                         # 空数据判断
-                        if (
-                            data_json["content"] is not None
-                            and data_json["content"] != ""
-                        ):
+                        if data_json["content"] is not None and data_json["content"] != "":
                             # 发给直接复读进行处理
-                            my_handle.reread_handle(
-                                data_json, filter=True, type="trends_copywriting"
-                            )
+                            my_handle.reread_handle(data_json, filter=True, type="trends_copywriting")
 
-                            await asyncio.sleep(
-                                config.get("trends_copywriting", "play_interval")
-                            )
+                            await asyncio.sleep(config.get("trends_copywriting", "play_interval"))
         except Exception:
             logger.error(traceback.format_exc())
 
@@ -1232,24 +1153,16 @@ def start_server():
 
                         # 有用户数据情况的平台特殊处理
                         if platform in ["dy", "tiktok"]:
-                            variables["user_num"] = my_global.last_liveroom_data[
-                                "OnlineUserCount"
-                            ]
+                            variables["user_num"] = my_global.last_liveroom_data["OnlineUserCount"]
 
                         # 使用字典进行字符串替换
                         if any(var in copywriting_copy for var in variables):
                             copywriting_copy = copywriting_copy.format(
-                                **{
-                                    var: value
-                                    for var, value in variables.items()
-                                    if var in copywriting_copy
-                                }
+                                **{var: value for var, value in variables.items() if var in copywriting_copy}
                             )
 
                         # [1|2]括号语法随机获取一个值，返回取值完成后的字符串
-                        copywriting_copy = common.brackets_text_randomize(
-                            copywriting_copy
-                        )
+                        copywriting_copy = common.brackets_text_randomize(copywriting_copy)
 
                         # 发送给处理函数
                         data = {
@@ -1264,9 +1177,7 @@ def start_server():
                         # 模式切换
                         last_mode = 1
 
-                        overflow_time = random.randint(
-                            overflow_time_min, overflow_time_max
-                        )
+                        overflow_time = random.randint(overflow_time_min, overflow_time_max)
                         logger.info(f"下一个闲时任务将在{overflow_time}秒后执行")
 
                         return (
@@ -1328,18 +1239,12 @@ def start_server():
 
                         # 有用户数据情况的平台特殊处理
                         if platform in ["dy", "tiktok"]:
-                            variables["user_num"] = my_global.last_liveroom_data[
-                                "OnlineUserCount"
-                            ]
+                            variables["user_num"] = my_global.last_liveroom_data["OnlineUserCount"]
 
                         # 使用字典进行字符串替换
                         if any(var in comment_copy for var in variables):
                             comment_copy = comment_copy.format(
-                                **{
-                                    var: value
-                                    for var, value in variables.items()
-                                    if var in comment_copy
-                                }
+                                **{var: value for var, value in variables.items() if var in comment_copy}
                             )
 
                         # [1|2]括号语法随机获取一个值，返回取值完成后的字符串
@@ -1358,9 +1263,7 @@ def start_server():
                         # 模式切换
                         last_mode = 2
 
-                        overflow_time = random.randint(
-                            overflow_time_min, overflow_time_max
-                        )
+                        overflow_time = random.randint(overflow_time_min, overflow_time_max)
                         logger.info(f"下一个闲时任务将在{overflow_time}秒后执行")
 
                         return (
@@ -1397,9 +1300,7 @@ def start_server():
                                 local_audio_path = local_audio_path_list.pop(0)
 
                         # [1|2]括号语法随机获取一个值，返回取值完成后的字符串
-                        local_audio_path = common.brackets_text_randomize(
-                            local_audio_path
-                        )
+                        local_audio_path = common.brackets_text_randomize(local_audio_path)
 
                         logger.debug(f"local_audio_path={local_audio_path}")
 
@@ -1417,9 +1318,7 @@ def start_server():
                         # 模式切换
                         last_mode = 0
 
-                        overflow_time = random.randint(
-                            overflow_time_min, overflow_time_max
-                        )
+                        overflow_time = random.randint(overflow_time_min, overflow_time_max)
                         logger.info(f"下一个闲时任务将在{overflow_time}秒后执行")
 
                         return (
@@ -1464,9 +1363,7 @@ def start_server():
                 elif config.get("idle_time_task", "type") == "待合成消息队列更新闲时":
                     if my_handle.is_queue_less_or_greater_than(
                         type="message_queue",
-                        less=int(
-                            config.get("idle_time_task", "min_msg_queue_len_to_trigger")
-                        ),
+                        less=int(config.get("idle_time_task", "min_msg_queue_len_to_trigger")),
                     ):
                         (
                             last_mode,
@@ -1483,7 +1380,9 @@ def start_server():
                     logger.debug(f"待播放音频数：{my_global.wait_play_audio_num}")
                     # 特殊处理：metahuman_stream平台，判断wait_play_audio_num
                     if config.get("visual_body") == "metahuman_stream":
-                        if my_global.wait_play_audio_num < config.get("idle_time_task", "min_audio_queue_len_to_trigger"):
+                        if my_global.wait_play_audio_num < config.get(
+                            "idle_time_task", "min_audio_queue_len_to_trigger"
+                        ):
                             (
                                 last_mode,
                                 copywriting_copy_list,
@@ -1498,11 +1397,7 @@ def start_server():
                     else:
                         if my_handle.is_queue_less_or_greater_than(
                             type="voice_tmp_path_queue",
-                            less=int(
-                                config.get(
-                                    "idle_time_task", "min_audio_queue_len_to_trigger"
-                                )
-                            ),
+                            less=int(config.get("idle_time_task", "min_audio_queue_len_to_trigger")),
                         ):
                             (
                                 last_mode,
@@ -1523,8 +1418,6 @@ def start_server():
         # 创建闲时任务子线程并启动
         threading.Thread(target=lambda: asyncio.run(idle_time_task())).start()
 
-    
-
     # 图像识别 定时任务
     def image_recognition_schedule_task(type: str):
         global config, common, my_handle
@@ -1542,9 +1435,7 @@ def start_server():
         global config
 
         try:
-            schedule.every(interval).seconds.do(
-                partial(image_recognition_schedule_task, type)
-            )
+            schedule.every(interval).seconds.do(partial(image_recognition_schedule_task, type))
         except Exception:
             logger.error(traceback.format_exc())
 
@@ -1573,14 +1464,14 @@ def start_server():
 
     # 针对对接LiveTalking(metahuman-stream)特殊处理
     if config.get("visual_body") == "metahuman_stream":
+
         def metahuman_stream_is_speaking():
 
             try:
                 from urllib.parse import urljoin
-                url = urljoin(
-                    config.get("metahuman_stream", "api_ip_port"), "is_speaking"
-                )
-                resp_json = common.send_request(url, 'POST', {"sessionid": 0}, timeout=5)
+
+                url = urljoin(config.get("metahuman_stream", "api_ip_port"), "is_speaking")
+                resp_json = common.send_request(url, "POST", {"sessionid": 0}, timeout=5)
                 if resp_json and resp_json["code"] == 0:
                     if resp_json["data"]:
                         logger.debug("LiveTalking有音频在播放")
@@ -1588,7 +1479,7 @@ def start_server():
                     else:
                         logger.debug("LiveTalking没有音频在播放")
                         my_global.wait_play_audio_num = 0
-                        
+
             except Exception:
                 logger.error(traceback.format_exc())
                 logger.error("请求LiveTalking is_speaking接口失败")
@@ -1597,20 +1488,18 @@ def start_server():
         def run_metahuman_stream_is_speaking_schedule():
             interval = 3
             try:
-                schedule.every(interval).seconds.do(
-                    partial(metahuman_stream_is_speaking)
-                )
+                schedule.every(interval).seconds.do(partial(metahuman_stream_is_speaking))
             except Exception:
                 logger.error(traceback.format_exc())
 
             while True:
-                schedule.run_pending()    
+                schedule.run_pending()
 
         run_metahuman_stream_is_speaking_schedule_thread = threading.Thread(
             target=lambda: run_metahuman_stream_is_speaking_schedule()
         )
         run_metahuman_stream_is_speaking_schedule_thread.start()
-    
+
     logger.info(f"当前平台：{platform}")
 
     # 聊天模式下靠按键监听线程阻塞主线程
@@ -1619,9 +1508,7 @@ def start_server():
         return
 
     # 平台监听模块按需导入（注册表见 utils/platforms/__init__.py）
-    started, message = start_platform_listen(
-        platform, config, common, my_handle, schedule_thread
-    )
+    started, message = start_platform_listen(platform, config, common, my_handle, schedule_thread)
     if not started:
         logger.error(message)
 
@@ -1640,7 +1527,6 @@ if __name__ == "__main__":
 
     platform = config.get("platform")
 
-
     # 按键监听相关
     do_listen_and_comment_thread = None
     stop_do_listen_and_comment_thread_event = None
@@ -1651,7 +1537,6 @@ if __name__ == "__main__":
     is_recording = False
     # 聊天是否唤醒
     is_talk_awake = False
-
 
     # 信号特殊处理
     signal.signal(signal.SIGINT, exit_handler)

@@ -4,6 +4,7 @@ NiceGUI 3.18 不给普通元素渲染 DOM id，Quasar 的 tab 面板又只挂当
 所以服务端只能把「控件叫什么、同名第几个」交给浏览器去 DOM 里找。
 搜索、总览的「去配置」、未保存清单三处共用这套定位，别再各写一份。
 """
+
 import json
 
 from nicegui import context
@@ -75,40 +76,40 @@ def field_name(element):
 
     这两个不是同一个属性（Switch 压根没有 label 属性），只读 label 会静默漏掉全部开关。
     """
-    for attr in ('label', 'text'):
+    for attr in ("label", "text"):
         value = getattr(element, attr, None)
         if isinstance(value, str) and value.strip():
             return value.strip()
-    return ''
+    return ""
 
 
 def locate(element):
     """这个控件在哪个 tab、哪个分区、哪个折叠区里。"""
-    tab = section = ''
+    tab = section = ""
     expansion = None
     for a in element.ancestors():
         if isinstance(a, TabPanel):
             if not tab:
-                tab = str(a._props.get('name') or '')
+                tab = str(a._props.get("name") or "")
             continue
         if expansion is None and isinstance(a, Expansion):
             expansion = a
-            section = str(a._props.get('label') or '')
+            section = str(a._props.get("label") or "")
         elif not section and isinstance(a, Card):
             for child in a:
-                if isinstance(child, Label) and (child.text or '').strip():
+                if isinstance(child, Label) and (child.text or "").strip():
                     section = child.text.strip()
                     break
     return tab, section, expansion
 
 
 # 校验失败时描的圈：不用 Quasar 的语义名（negative），这段是拼进 outline 的裸 CSS
-INVALID_RING = '#dc2626'
+INVALID_RING = "#dc2626"
 
 
 def hidden(element):
     """自己或被收起来的祖先不可见：删除中的那一组就是这种状态。"""
-    return any(getattr(a, 'visible', True) is False for a in element.ancestors())
+    return any(getattr(a, "visible", True) is False for a in element.ancestors())
 
 
 # 跳转前一刻要做的收尾，目前只有「只看已启用」要注册：被 CSS 藏起来的框还在 DOM 里，
@@ -134,9 +135,8 @@ def jump_to(label, ordinal, accent, select_tab=None, tab=None, expansion=None, c
         expansion.open()
     # 主题色是从 config 里一路传下来的，末尾可能带分号；拼进 '2px solid x' 会写成非法值，
     # 结果是描边静默不出现。这里是唯一把它拼进 CSS 的地方，在这一层收口。
-    highlight = (color or accent or '').rstrip(';')
-    context.client.run_javascript(
-        JS_LOCATE % (json.dumps(label, ensure_ascii=False), ordinal, highlight))
+    highlight = (color or accent or "").rstrip(";")
+    context.client.run_javascript(JS_LOCATE % (json.dumps(label, ensure_ascii=False), ordinal, highlight))
 
 
 def ordinal_of(element):
@@ -146,9 +146,15 @@ def ordinal_of(element):
     """
     label = field_name(element)
     tab = locate(element)[0]
-    return sum(1 for other in context.client.elements.values()
-               if other.id < element.id and isinstance(other, INPUT_TYPES)
-               and not hidden(other) and field_name(other) == label and locate(other)[0] == tab)
+    return sum(
+        1
+        for other in context.client.elements.values()
+        if other.id < element.id
+        and isinstance(other, INPUT_TYPES)
+        and not hidden(other)
+        and field_name(other) == label
+        and locate(other)[0] == tab
+    )
 
 
 def jump_to_element(element, accent, select_tab=None, color=None):
@@ -167,7 +173,7 @@ def build_index():
     for element in context.client.elements.values():
         if not isinstance(element, INPUT_TYPES):
             continue
-        if getattr(element, 'is_config_field', True) is False:
+        if getattr(element, "is_config_field", True) is False:
             continue
         if hidden(element):
             continue
@@ -184,11 +190,11 @@ def build_index():
 
 def value_text(element):
     """控件当前值的一行显示，未保存清单要用。"""
-    value = getattr(element, 'value', None)
+    value = getattr(element, "value", None)
     if isinstance(value, bool):
-        return '开' if value else '关'
-    if value is None or value == '' or value == []:
-        return '（空）'
+        return "开" if value else "关"
+    if value is None or value == "" or value == []:
+        return "（空）"
     if isinstance(value, list):
-        return f'{len(value)} 行'
+        return f"{len(value)} 行"
     return str(value)[:40]

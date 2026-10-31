@@ -1,6 +1,7 @@
 """
 tiktok
 """
+
 import time
 import traceback
 import json
@@ -19,6 +20,7 @@ from TikTokLive.events import (
 from utils.my_log import logger
 import utils.my_global as my_global
 
+
 def start_listen(config, common, my_handle, platform: str):
     # 比如直播间是 https://www.tiktok.com/@username/live 那么room_id就是 username，其实就是用户唯一ID
     room_id = my_handle.get_room_id()
@@ -31,9 +33,7 @@ def start_listen(config, common, my_handle, platform: str):
     proxys = None
 
     # 代理软件开启TUN模式进行代理，由于库的ws不走传入的代理参数，只能靠代理软件全代理了
-    client: TikTokLiveClient = TikTokLiveClient(
-        unique_id=f"@{room_id}", web_proxy=proxys, ws_proxy=proxys
-    )
+    client: TikTokLiveClient = TikTokLiveClient(unique_id=f"@{room_id}", web_proxy=proxys, ws_proxy=proxys)
 
     def register_events():
         # Define how you want to handle specific events via decorator
@@ -127,9 +127,7 @@ def start_listen(config, common, my_handle, platform: str):
                     # 单个礼物金额 需要自己维护礼物价值表
                     discount_price = data_json[gift_name]
                 else:
-                    logger.warning(
-                        f"数据文件：{data_path} 中，没有 {gift_name} 对应的价值，请手动补充数据"
-                    )
+                    logger.warning(f"数据文件：{data_path} 中，没有 {gift_name} 对应的价值，请手动补充数据")
                     discount_price = 1
             except Exception:
                 logger.error(traceback.format_exc())

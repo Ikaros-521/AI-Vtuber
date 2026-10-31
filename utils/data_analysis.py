@@ -19,7 +19,6 @@ class Data_Analysis:
         # # 设置 jieba 日志记录器的级别为 WARNING
         # jieba_logger.setLevel(logger.WARNING)
 
-
     # 重载config
     def reload_config(self, config_path):
         self.config = Config(config_path)
@@ -60,12 +59,11 @@ class Data_Analysis:
         most_common_words = word_counts.most_common(top_num)  # 获取前10个最常见的词
 
         # 使用列表推导式和字典推导式进行转换
-        dict_list = [{'name': name, 'value': value} for name, value in most_common_words]
+        dict_list = [{"name": name, "value": value} for name, value in most_common_words]
 
         logger.debug(dict_list)
 
         return dict_list
-    
 
     def get_comment_word_cloud_option(self, top_num=10):
         """获取弹幕词云的图表option（用于给nicegui绘制图表）
@@ -77,16 +75,18 @@ class Data_Analysis:
             dict: nicegui绘制图表的option
         """
         try:
-            if not os.path.exists(self.config.get('database', 'path')):
-                logger.warning(f"数据库：{self.config.get('database', 'path')} 不存在，如果您是第一次启动项目，且没有 运行的情况下，那么请忽略此报错信息，正常运行后，会自动创建数据库，无须担心")
+            if not os.path.exists(self.config.get("database", "path")):
+                logger.warning(
+                    f"数据库：{self.config.get('database', 'path')} 不存在，如果您是第一次启动项目，且没有 运行的情况下，那么请忽略此报错信息，正常运行后，会自动创建数据库，无须担心"
+                )
                 return None
 
-            db = SQLiteDB(self.config.get('database', 'path'))
+            db = SQLiteDB(self.config.get("database", "path"))
 
             # 查询数据
-            select_data_sql = '''
+            select_data_sql = """
             SELECT content FROM danmu
-            '''
+            """
             data_list = db.fetch_all(select_data_sql)
             text_list = [data[0] for data in data_list]
 
@@ -94,45 +94,34 @@ class Data_Analysis:
 
             # 可滚动的图例
             option = {
-                'title': {
-                    'text': '弹幕关键词统计',
-                    'left': 'center'
+                "title": {"text": "弹幕关键词统计", "left": "center"},
+                "tooltip": {"trigger": "item", "formatter": "{a} <br/>{b} : {c} ({d}%)"},
+                "legend": {
+                    "type": "scroll",
+                    "orient": "vertical",
+                    "right": 10,
+                    "top": 20,
+                    "bottom": 20,
+                    "data": [d["name"] for d in data_json],  # 使用列表推导式提取所有'name'的值
                 },
-                'tooltip': {
-                    'trigger': 'item',
-                    'formatter': '{a} <br/>{b} : {c} ({d}%)'
-                },
-                'legend': {
-                    'type': 'scroll',
-                    'orient': 'vertical',
-                    'right': 10,
-                    'top': 20,
-                    'bottom': 20,
-                    'data': [d['name'] for d in data_json] # 使用列表推导式提取所有'name'的值
-                },
-                'series': [
+                "series": [
                     {
-                        'name': '关键词',
-                        'type': 'pie',
-                        'radius': '55%',
-                        'center': ['50%', '60%'],
-                        'data': data_json,
-                        'emphasis': {
-                            'itemStyle': {
-                                'shadowBlur': 10,
-                                'shadowOffsetX': 0,
-                                'shadowColor': 'rgba(0, 0, 0, 0.5)'
-                            }
-                        }
+                        "name": "关键词",
+                        "type": "pie",
+                        "radius": "55%",
+                        "center": ["50%", "60%"],
+                        "data": data_json,
+                        "emphasis": {
+                            "itemStyle": {"shadowBlur": 10, "shadowOffsetX": 0, "shadowColor": "rgba(0, 0, 0, 0.5)"}
+                        },
                     }
-                ]
+                ],
             }
 
             return option
         except Exception:
             logger.error(traceback.format_exc())
             return None
-
 
     def get_integral_option(self, type="integral", top_num=10):
         """获取积分表的图表option（用于给nicegui绘制图表）
@@ -145,21 +134,22 @@ class Data_Analysis:
             dict: nicegui绘制图表的option
         """
         try:
-            if not os.path.exists(self.config.get('database', 'path')):
-                logger.warning(f"数据库：{self.config.get('database', 'path')} 不存在，如果您是第一次启动项目，且没有 运行的情况下，那么请忽略此报错信息，正常运行后，会自动创建数据库，无须担心")
+            if not os.path.exists(self.config.get("database", "path")):
+                logger.warning(
+                    f"数据库：{self.config.get('database', 'path')} 不存在，如果您是第一次启动项目，且没有 运行的情况下，那么请忽略此报错信息，正常运行后，会自动创建数据库，无须担心"
+                )
                 return None
-            
-            db = SQLiteDB(self.config.get('database', 'path'))
+
+            db = SQLiteDB(self.config.get("database", "path"))
 
             # 查询数据
-            select_data_sql = f'''
+            select_data_sql = f"""
             SELECT * FROM integral
             ORDER BY {type} DESC
             LIMIT {top_num};
-            '''
+            """
             data_list = db.fetch_all(select_data_sql)
 
-            
             # 使用列表推导式将每个元组转换为列表
             list_list = [list(t) for t in data_list]
             username_list = [t[1] for t in data_list]
@@ -167,137 +157,86 @@ class Data_Analysis:
             logger.debug(f"list_list={list_list}")
 
             option = {
-                'title': {
-                    'text': '积分表数据统计',
-                    'left': 'center'
-                },
-                'legend': {
-                    'data': ['总积分', '观看数', '签到数', '总金额'],
-                    'top': 30,
-                    'bottom': 30
-                },
-                'dataset': [
+                "title": {"text": "积分表数据统计", "left": "center"},
+                "legend": {"data": ["总积分", "观看数", "签到数", "总金额"], "top": 30, "bottom": 30},
+                "dataset": [
                     {
-                        'dimensions': ['platform', 'username', 'uid', 'integral', 'view_num', 'sign_num', 'last_sign_ts', 'total_price', 'last_ts'],
-                        'source': list_list
+                        "dimensions": [
+                            "platform",
+                            "username",
+                            "uid",
+                            "integral",
+                            "view_num",
+                            "sign_num",
+                            "last_sign_ts",
+                            "total_price",
+                            "last_ts",
+                        ],
+                        "source": list_list,
                     },
-                    {
-                        'transform': {
-                            'type': 'sort',
-                            'config': { 'dimension': 'integral', 'order': 'desc' }
-                        }
-                    }
+                    {"transform": {"type": "sort", "config": {"dimension": "integral", "order": "desc"}}},
                 ],
-                'tooltip': {
-                    'trigger': 'axis',
-                    'axisPointer': {
-                        'type': 'cross',
-                        'crossStyle': {
-                            'color': '#999'
-                        }
+                "tooltip": {"trigger": "axis", "axisPointer": {"type": "cross", "crossStyle": {"color": "#999"}}},
+                "toolbox": {
+                    "feature": {
+                        "dataView": {"show": True, "readOnly": False},
+                        "magicType": {"show": True, "type": ["line", "bar"]},
+                        "restore": {"show": True},
+                        "saveAsImage": {"show": True},
                     }
                 },
-                'toolbox': {
-                    'feature': {
-                        'dataView': { 'show': True, 'readOnly': False },
-                        'magicType': { 'show': True, 'type': ['line', 'bar'] },
-                        'restore': { 'show': True },
-                        'saveAsImage': { 'show': True }
-                    }
-                },
-                'xAxis': [
+                "xAxis": [{"type": "category", "axisTick": {"alignWithLabel": True}, "data": username_list}],
+                "yAxis": [
                     {
-                        'type': 'category',
-                        'axisTick': {
-                            'alignWithLabel': True
-                        },
-                        'data': username_list
-                    }
+                        "type": "value",
+                        "name": "总积分",
+                        "alignTicks": True,
+                        "position": "left",
+                        "axisLine": {"show": True},
+                        "axisLabel": {"formatter": "{value}"},
+                    },
+                    {
+                        "type": "value",
+                        "name": "观看数",
+                        "yAxisIndex": 1,
+                        "alignTicks": True,
+                        "position": "left",
+                        "offset": -80,
+                        "axisLine": {"show": True},
+                        "axisLabel": {"formatter": "{value}"},
+                    },
+                    {
+                        "type": "value",
+                        "name": "签到数",
+                        "yAxisIndex": 2,
+                        "alignTicks": True,
+                        "position": "right",
+                        "offset": -80,
+                        "axisLine": {"show": True},
+                        "axisLabel": {"formatter": "{value}"},
+                    },
+                    {
+                        "type": "value",
+                        "name": "总金额",
+                        "yAxisIndex": 3,
+                        "alignTicks": True,
+                        "position": "right",
+                        "axisLine": {"show": True},
+                        "axisLabel": {"formatter": "{value}"},
+                    },
                 ],
-                'yAxis': [
-                    {
-                        'type': 'value',
-                        'name': '总积分',
-                        'alignTicks': True,
-                        'position': 'left',
-                        'axisLine': {
-                            'show': True
-                        },
-                        'axisLabel': {
-                            'formatter': '{value}'
-                        }
-                    },
-                    {
-                        'type': 'value',
-                        'name': '观看数',
-                        'yAxisIndex': 1,
-                        'alignTicks': True,
-                        'position': 'left',
-                        'offset': -80,
-                        'axisLine': {
-                            'show': True
-                        },
-                        'axisLabel': {
-                            'formatter': '{value}'
-                        }
-                    },
-                    {
-                        'type': 'value',
-                        'name': '签到数',
-                        'yAxisIndex': 2,
-                        'alignTicks': True,
-                        'position': 'right',
-                        'offset': -80,
-                        'axisLine': {
-                            'show': True
-                        },
-                        'axisLabel': {
-                            'formatter': '{value}'
-                        }
-                    },
-                    {
-                        'type': 'value',
-                        'name': '总金额',
-                        'yAxisIndex': 3,
-                        'alignTicks': True,
-                        'position': 'right',
-                        'axisLine': {
-                            'show': True
-                        },
-                        'axisLabel': {
-                            'formatter': '{value}'
-                        }
-                    }
+                "series": [
+                    {"name": "总积分", "type": "bar", "encode": {"x": "username", "y": "integral"}},
+                    {"name": "观看数", "type": "bar", "encode": {"x": "username", "y": "view_num"}},
+                    {"name": "签到数", "type": "bar", "encode": {"x": "username", "y": "sign_num"}},
+                    {"name": "总金额", "type": "bar", "encode": {"x": "username", "y": "total_price"}},
                 ],
-                'series': [
-                    {
-                        'name': '总积分',
-                        'type': 'bar',
-                        'encode': { 'x': 'username', 'y': 'integral' }
-                    },
-                    {
-                        'name': '观看数',
-                        'type': 'bar',
-                        'encode': { 'x': 'username', 'y': 'view_num' }
-                    },
-                    {
-                        'name': '签到数',
-                        'type': 'bar',
-                        'encode': { 'x': 'username', 'y': 'sign_num' }
-                    },
-                    {
-                        'name': '总金额',
-                        'type': 'bar',
-                        'encode': { 'x': 'username', 'y': 'total_price' }
-                    },
-                ]
             }
 
             return option
         except Exception:
             logger.error(traceback.format_exc())
             return None
-        
 
     def get_gift_option(self, top_num=10):
         """获取礼物表的图表option（用于给nicegui绘制图表）
@@ -309,18 +248,20 @@ class Data_Analysis:
             dict: nicegui绘制图表的option
         """
         try:
-            if not os.path.exists(self.config.get('database', 'path')):
-                logger.warning(f"数据库：{self.config.get('database', 'path')} 不存在，如果您是第一次启动项目，且没有 运行的情况下，那么请忽略此报错信息，正常运行后，会自动创建数据库，无须担心")
+            if not os.path.exists(self.config.get("database", "path")):
+                logger.warning(
+                    f"数据库：{self.config.get('database', 'path')} 不存在，如果您是第一次启动项目，且没有 运行的情况下，那么请忽略此报错信息，正常运行后，会自动创建数据库，无须担心"
+                )
                 return None
-            
-            db = SQLiteDB(self.config.get('database', 'path'))
+
+            db = SQLiteDB(self.config.get("database", "path"))
 
             # 查询数据
-            select_data_sql = f'''
+            select_data_sql = f"""
             SELECT * FROM gift
             ORDER BY total_price DESC
             LIMIT {top_num};
-            '''
+            """
             data_list = db.fetch_all(select_data_sql)
 
             # 使用列表推导式将每个元组转换为列表
@@ -331,50 +272,33 @@ class Data_Analysis:
             logger.debug(f"total_price_list={total_price_list}")
 
             option = {
-                'title': {
-                    'text': '礼物榜单',
-                    'left': 'center'
-                },
-                'tooltip': {
-                    'trigger': 'axis',
-                    'axisPointer': {
-                        'type': 'cross',
-                        'crossStyle': {
-                            'color': '#999'
-                        }
+                "title": {"text": "礼物榜单", "left": "center"},
+                "tooltip": {"trigger": "axis", "axisPointer": {"type": "cross", "crossStyle": {"color": "#999"}}},
+                "toolbox": {
+                    "feature": {
+                        "dataView": {"show": True, "readOnly": False},
+                        "magicType": {"show": True, "type": ["line", "bar"]},
+                        "restore": {"show": True},
+                        "saveAsImage": {"show": True},
                     }
                 },
-                'toolbox': {
-                    'feature': {
-                        'dataView': { 'show': True, 'readOnly': False },
-                        'magicType': { 'show': True, 'type': ['line', 'bar'] },
-                        'restore': { 'show': True },
-                        'saveAsImage': { 'show': True }
-                    }
+                "xAxis": {"max": "dataMax"},
+                "yAxis": {
+                    "type": "category",
+                    "data": username_list,
+                    "inverse": True,
+                    "animationDuration": 300,
+                    "animationDurationUpdate": 3003,
                 },
-                'xAxis': {
-                    'max': 'dataMax'
-                },
-                'yAxis': {
-                    'type': 'category',
-                    'data': username_list,
-                    'inverse': True,
-                    'animationDuration': 300,
-                    'animationDurationUpdate': 3003
-                },
-                'series': [
+                "series": [
                     {
-                        'realtimeSort': True,
-                        'name': 'X',
-                        'type': 'bar',
-                        'data': total_price_list,
-                        'label': {
-                            'show': True,
-                            'position': 'right',
-                            'valueAnimation': True
-                        }
+                        "realtimeSort": True,
+                        "name": "X",
+                        "type": "bar",
+                        "data": total_price_list,
+                        "label": {"show": True, "position": "right", "valueAnimation": True},
                     }
-                ]
+                ],
             }
 
             return option

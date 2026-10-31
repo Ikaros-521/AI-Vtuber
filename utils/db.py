@@ -45,27 +45,27 @@ class SQLiteDB:
 
 
 if __name__ == "__main__":
-    db = SQLiteDB('data/test.db')
+    db = SQLiteDB("data/test.db")
 
     # 创建表
-    create_table_sql = '''
+    create_table_sql = """
     CREATE TABLE IF NOT EXISTS danmu (
         username TEXT,
         content TEXT,
         ts DATETIME
     )
-    '''
+    """
     db.execute(create_table_sql)
 
     # 插入数据
-    insert_data_sql = '''
+    insert_data_sql = """
     INSERT INTO danmu (username, content, ts) VALUES (?, ?, ?)
-    '''
-    db.execute(insert_data_sql, ('user1', 'test1', datetime.now()))
+    """
+    db.execute(insert_data_sql, ("user1", "test1", datetime.now()))
 
     # 查询数据
-    select_data_sql = '''
+    select_data_sql = """
     SELECT * FROM danmu
-    '''
+    """
     data = db.fetch_all(select_data_sql)
     print(data)

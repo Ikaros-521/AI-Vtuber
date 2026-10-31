@@ -83,7 +83,7 @@ class FakeSender:
         self.requests = []
         self.reply = reply if reply is not None else {"code": 200}
 
-    def send_request(self, url, method='GET', json_data=None, resp_data_type='json', timeout=60, proxy=None):
+    def send_request(self, url, method="GET", json_data=None, resp_data_type="json", timeout=60, proxy=None):
         self.requests.append((url, method, json_data))
         return self.reply
 

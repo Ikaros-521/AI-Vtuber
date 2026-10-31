@@ -8,6 +8,7 @@ import traceback
 from utils.my_log import logger
 import utils.my_global as my_global
 
+
 def start_listen(config, common, my_handle, platform: str):
     # 定义FastAPI应用
     app = FastAPI()
@@ -116,13 +117,9 @@ def start_listen(config, common, my_handle, platform: str):
             data_json = msg.dict()
             logger.info(f"API收到数据：{data_json}")
 
-            resp_content = my_handle.llm_handle(
-                data_json["type"], data_json, webui_show=False
-            )
+            resp_content = my_handle.llm_handle(data_json["type"], data_json, webui_show=False)
 
-            return CommonResult(
-                code=200, message="成功", data={"content": resp_content}
-            )
+            return CommonResult(code=200, message="成功", data={"content": resp_content})
         except Exception as e:
             logger.error(f"调用LLM失败！{e}")
             return CommonResult(code=-1, message=f"调用LLM失败！{e}")
@@ -140,12 +137,10 @@ def start_listen(config, common, my_handle, platform: str):
                     config.get("idle_time_task", "wait_play_audio_num_threshold")
                 ):
                     logger.info(
-                        f'等待播放的音频数量大于限定值，闲时任务的闲时计时由 {my_global.global_idle_time} -> {int(config.get("idle_time_task", "idle_time_reduce_to"))}秒'
+                        f"等待播放的音频数量大于限定值，闲时任务的闲时计时由 {my_global.global_idle_time} -> {int(config.get('idle_time_task', 'idle_time_reduce_to'))}秒"
                     )
                     # 闲时任务的闲时计时 清零
-                    my_global.global_idle_time = int(
-                        config.get("idle_time_task", "idle_time_reduce_to")
-                    )
+                    my_global.global_idle_time = int(config.get("idle_time_task", "idle_time_reduce_to"))
 
             return CommonResult(code=200, message="callback处理成功！")
         except Exception as e:

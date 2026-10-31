@@ -3,6 +3,7 @@
 对应 v2 各页面里混在字段旁边的 ui.button。参数由前端从草稿里取值传过来；
 密钥类参数不落日志。
 """
+
 import asyncio
 import json
 import traceback
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/api")
 
 
 # ---------- 本地文件读写（本地问答 JSON 等外部文件） ----------
+
 
 class FileWriteRequest(BaseModel):
     path: str
@@ -48,6 +50,7 @@ def write_file(req: FileWriteRequest):
 
 # ---------- LLM：OpenAI 兼容接口测试与模型搜索 ----------
 
+
 def _to_dict(model) -> dict:
     """pydantic v1/v2 通用的模型转 dict（启动环境里两者都可能出现：.venv 是 v2、
     仓库自带 Miniconda 是 v1，v1 没有 model_dump）。"""
@@ -75,8 +78,7 @@ async def llm_test(req: LlmTestRequest):
         # config 里的 openai.api_key 是列表；v2 语义：common.test_openai_key 要多行字符串（内部自行 split）
         if isinstance(payload.get("api_keys"), list):
             payload["api_keys"] = "\n".join(str(k) for k in payload["api_keys"])
-        resp = await asyncio.to_thread(
-            runtime.common.test_openai_key, payload, 2)
+        resp = await asyncio.to_thread(runtime.common.test_openai_key, payload, 2)
         return resp
     except Exception as e:
         logger.error(traceback.format_exc())
@@ -91,8 +93,7 @@ class LlmModelsRequest(BaseModel):
 @router.post("/actions/llm-models")
 async def llm_models(req: LlmModelsRequest):
     try:
-        resp = await asyncio.to_thread(
-            runtime.common.get_openai_models, req.base_url, "\n".join(req.api_keys))
+        resp = await asyncio.to_thread(runtime.common.get_openai_models, req.base_url, "\n".join(req.api_keys))
         if resp.get("code") == 200:
             return {"code": 200, "models": resp.get("models", [])}
         return {"code": -1, "message": resp.get("msg", "获取模型列表失败")}
@@ -102,6 +103,7 @@ async def llm_models(req: LlmModelsRequest):
 
 
 # ---------- 枚举：窗口标题 / 摄像头 / 配置模板 / Live2D 模型 ----------
+
 
 @router.get("/actions/window-titles")
 def window_titles():
@@ -138,6 +140,7 @@ def config_templates():
 
 # ---------- 配置模板：保存当前配置文件 / 读取模板覆盖配置文件 ----------
 
+
 class TemplateRequest(BaseModel):
     path: str
 
@@ -172,6 +175,7 @@ def config_template_load(req: TemplateRequest):
 
 # ---------- AnythingLLM 工作区列表 ----------
 
+
 class AnythingllmRequest(BaseModel):
     api_ip_port: str = ""
     api_key: str = ""
@@ -180,6 +184,7 @@ class AnythingllmRequest(BaseModel):
 @router.post("/actions/anythingllm-workspaces")
 async def anythingllm_workspaces(req: AnythingllmRequest):
     try:
+
         def fetch():
             from utils.gpt_model.anythingllm import AnythingLLM
 
@@ -194,6 +199,7 @@ async def anythingllm_workspaces(req: AnythingllmRequest):
 
 
 # ---------- 串口：列表 / 连接 / 断开 / 发送 ----------
+
 
 def _serial_manager():
     from utils.serial_manager_instance import get_serial_manager
@@ -258,6 +264,7 @@ async def serial_send(req: SerialSendRequest):
 
 # ---------- 声卡输入设备 / vits 说话人（结果以 toast 呈现，值仍手填） ----------
 
+
 @router.get("/actions/audio-devices")
 def audio_devices():
     try:
@@ -279,7 +286,8 @@ async def vits_speakers(req: VitsSpeakersRequest):
         from urllib.parse import urljoin
 
         resp_data = await runtime.common.send_async_request(
-            urljoin(req.api_ip_port, "/voice/speakers"), "GET", resp_data_type="json")
+            urljoin(req.api_ip_port, "/voice/speakers"), "GET", resp_data_type="json"
+        )
         speakers = []
         if isinstance(resp_data, list):
             for s in resp_data:
@@ -295,6 +303,7 @@ async def vits_speakers(req: VitsSpeakersRequest):
 
 
 # ---------- TTS 试听：用已保存的配置合成一段音频 ----------
+
 
 class TtsTestRequest(BaseModel):
     content: str
@@ -337,8 +346,12 @@ async def tts_test(req: TtsTestRequest):
 
 
 AUDIO_MEDIA_TYPES = {
-    ".wav": "audio/wav", ".mp3": "audio/mpeg", ".ogg": "audio/ogg",
-    ".flac": "audio/flac", ".silk": "audio/silk", ".m4a": "audio/mp4",
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".ogg": "audio/ogg",
+    ".flac": "audio/flac",
+    ".silk": "audio/silk",
+    ".m4a": "audio/mp4",
 }
 
 
@@ -353,6 +366,7 @@ def audio_file(path: str):
 
 
 # ---------- 数据分析：词云 / 榜单原始数据（前端画条形图） ----------
+
 
 @router.get("/data-analysis")
 def data_analysis(top: int = 10):
@@ -399,10 +413,7 @@ def data_analysis(top: int = 10):
                 if isinstance(yAxis, list):
                     yAxis = yAxis[0] if yAxis else {}
                 users = yAxis.get("data", []) if isinstance(yAxis, dict) else []
-            series = [
-                {"name": s.get("name"), "data": s.get("data", [])}
-                for s in option.get("series", [])
-            ]
+            series = [{"name": s.get("name"), "data": s.get("data", [])} for s in option.get("series", [])]
             return {"users": users, "series": series}
 
         out["integral"] = extract_bar(da.get_integral_option("integral", top), "integral")
@@ -417,6 +428,7 @@ def data_analysis(top: int = 10):
 
 
 # ---------- 图像识别：截图并发送（一次性） ----------
+
 
 class ImgScreenshotRequest(BaseModel):
     source: str = "window"  # window / camera
@@ -434,32 +446,37 @@ async def img_screenshot(req: ImgScreenshotRequest):
     try:
         if req.source == "window":
             screenshot_path = await asyncio.to_thread(
-                runtime.common.capture_window_by_title, req.img_save_path, req.title_or_index)
+                runtime.common.capture_window_by_title, req.img_save_path, req.title_or_index
+            )
         else:
             screenshot_path = await asyncio.to_thread(
-                runtime.common.capture_image, req.img_save_path, int(req.title_or_index or 0))
+                runtime.common.capture_image, req.img_save_path, int(req.title_or_index or 0)
+            )
 
         if req.model == "zhipu":
             from utils.gpt_model.zhipu import Zhipu
 
             zhipu = Zhipu(runtime.get("image_recognition", "zhipu") or {})
             content = zhipu.get_resp_with_img(req.prompt, screenshot_path)
-            data = {"type": "reread", "data": {
-                "username": runtime.get("talk", "username") or "主播",
-                "content": content, "insert_index": -1}}
+            data = {
+                "type": "reread",
+                "data": {"username": runtime.get("talk", "username") or "主播", "content": content, "insert_index": -1},
+            }
         else:
             from utils.gpt_model.gemini import Gemini
 
             gemini = Gemini(runtime.get("image_recognition", "gemini") or {})
             content = gemini.get_resp_with_img(req.prompt, screenshot_path)
-            data = {"type": "reread",
-                    "username": runtime.get("talk", "username") or "主播",
-                    "content": content, "insert_index": -1}
+            data = {
+                "type": "reread",
+                "username": runtime.get("talk", "username") or "主播",
+                "content": content,
+                "insert_index": -1,
+            }
 
         config = runtime.read_config()
         main_api_ip = "127.0.0.1" if config.get("api_ip") == "0.0.0.0" else config.get("api_ip")
-        await runtime.common.send_async_request(
-            f"http://{main_api_ip}:{config.get('api_port')}/send", "POST", data)
+        await runtime.common.send_async_request(f"http://{main_api_ip}:{config.get('api_port')}/send", "POST", data)
         return {"code": 200, "message": "截图识别完成，结果已发送"}
     except Exception as e:
         logger.error(traceback.format_exc())

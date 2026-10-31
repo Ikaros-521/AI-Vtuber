@@ -23,8 +23,8 @@ from utils.my_log import logger
 import utils.my_global as my_global
 
 
-
 session: Optional[aiohttp.ClientSession] = None
+
 
 def start_listen(config, common, my_handle, platform: str):
     # 直播间ID的取值看直播间URL
@@ -40,15 +40,11 @@ def start_listen(config, common, my_handle, platform: str):
         elif config.get("bilibili", "login_type") == "open_live":
             # 在开放平台申请的开发者密钥 https://open-live.bilibili.com/open-manage
             ACCESS_KEY_ID = config.get("bilibili", "open_live", "ACCESS_KEY_ID")
-            ACCESS_KEY_SECRET = config.get(
-                "bilibili", "open_live", "ACCESS_KEY_SECRET"
-            )
+            ACCESS_KEY_SECRET = config.get("bilibili", "open_live", "ACCESS_KEY_SECRET")
             # 在开放平台创建的项目ID
             APP_ID = config.get("bilibili", "open_live", "APP_ID")
             # 主播身份码 直播中心获取
-            ROOM_OWNER_AUTH_CODE = config.get(
-                "bilibili", "open_live", "ROOM_OWNER_AUTH_CODE"
-            )
+            ROOM_OWNER_AUTH_CODE = config.get("bilibili", "open_live", "ROOM_OWNER_AUTH_CODE")
 
     except Exception:
         logger.error(traceback.format_exc())
@@ -56,7 +52,7 @@ def start_listen(config, common, my_handle, platform: str):
 
     async def main_func():
         global session
-        
+
         if config.get("bilibili", "login_type") == "open_live":
             await run_single_client2()
         else:
@@ -88,7 +84,7 @@ def start_listen(config, common, my_handle, platform: str):
         演示监听一个直播间
         """
         global session
-        
+
         room_id = random.choice(TEST_ROOM_IDS)
         client = blivedm.BLiveClient(room_id, session=session)
         handler = MyHandler()
@@ -132,11 +128,8 @@ def start_listen(config, common, my_handle, platform: str):
         演示同时监听多个直播间
         """
         global session
-        
-        clients = [
-            blivedm.BLiveClient(room_id, session=session)
-            for room_id in TEST_ROOM_IDS
-        ]
+
+        clients = [blivedm.BLiveClient(room_id, session=session) for room_id in TEST_ROOM_IDS]
         handler = MyHandler()
         for client in clients:
             client.set_handler(handler)
@@ -152,12 +145,9 @@ def start_listen(config, common, my_handle, platform: str):
         _CMD_CALLBACK_DICT = blivedm.BaseHandler._CMD_CALLBACK_DICT.copy()
 
         # 入场消息回调
-        def __interact_word_callback(
-            self, client: blivedm.BLiveClient, command: dict
-        ):
+        def __interact_word_callback(self, client: blivedm.BLiveClient, command: dict):
             # logger.info(f"[{client.room_id}] INTERACT_WORD: self_type={type(self).__name__}, room_id={client.room_id},"
             #     f" uname={command['data']['uname']}")
-
 
             my_global.idle_time_auto_clear(config, "entrance")
 
@@ -178,14 +168,10 @@ def start_listen(config, common, my_handle, platform: str):
 
         _CMD_CALLBACK_DICT["INTERACT_WORD"] = __interact_word_callback  # noqa
 
-        def _on_heartbeat(
-            self, client: blivedm.BLiveClient, message: web_models.HeartbeatMessage
-        ):
+        def _on_heartbeat(self, client: blivedm.BLiveClient, message: web_models.HeartbeatMessage):
             logger.debug(f"[{client.room_id}] 心跳")
 
-        def _on_danmaku(
-            self, client: blivedm.BLiveClient, message: web_models.DanmakuMessage
-        ):
+        def _on_danmaku(self, client: blivedm.BLiveClient, message: web_models.DanmakuMessage):
             # 闲时计数清零
             my_global.idle_time_auto_clear(config, "comment")
 
@@ -206,9 +192,7 @@ def start_listen(config, common, my_handle, platform: str):
 
             my_handle.process_data(data, "comment")
 
-        def _on_gift(
-            self, client: blivedm.BLiveClient, message: web_models.GiftMessage
-        ):
+        def _on_gift(self, client: blivedm.BLiveClient, message: web_models.GiftMessage):
             # logger.info(f'[{client.room_id}] {message.uname} 赠送{message.gift_name}x{message.num}'
             #     f' （{message.coin_type}瓜子x{message.total_coin}）')
             my_global.idle_time_auto_clear(config, "gift")
@@ -223,9 +207,7 @@ def start_listen(config, common, my_handle, platform: str):
             # 总金额
             combo_total_coin = message.total_coin
 
-            logger.info(
-                f"用户：{username} 赠送 {combo_num} 个 {gift_name}，总计 {combo_total_coin}电池"
-            )
+            logger.info(f"用户：{username} 赠送 {combo_num} 个 {gift_name}，总计 {combo_total_coin}电池")
 
             data = {
                 "platform": platform,
@@ -239,16 +221,10 @@ def start_listen(config, common, my_handle, platform: str):
 
             my_handle.process_data(data, "gift")
 
-        def _on_buy_guard(
-            self, client: blivedm.BLiveClient, message: web_models.GuardBuyMessage
-        ):
-            logger.info(
-                f"[{client.room_id}] {message.username} 购买{message.gift_name}"
-            )
+        def _on_buy_guard(self, client: blivedm.BLiveClient, message: web_models.GuardBuyMessage):
+            logger.info(f"[{client.room_id}] {message.username} 购买{message.gift_name}")
 
-        def _on_super_chat(
-            self, client: blivedm.BLiveClient, message: web_models.SuperChatMessage
-        ):
+        def _on_super_chat(self, client: blivedm.BLiveClient, message: web_models.SuperChatMessage):
             # logger.info(f'[{client.room_id}] 醒目留言 ¥{message.price} {message.uname}：{message.message}')
             my_global.idle_time_auto_clear(config, "gift")
 
@@ -276,9 +252,7 @@ def start_listen(config, common, my_handle, platform: str):
             my_handle.process_data(data, "comment")
 
     class MyHandler2(blivedm.BaseHandler):
-        def _on_heartbeat(
-            self, client: blivedm.BLiveClient, message: web_models.HeartbeatMessage
-        ):
+        def _on_heartbeat(self, client: blivedm.BLiveClient, message: web_models.HeartbeatMessage):
             logger.debug(f"[{client.room_id}] 心跳")
 
         def _on_open_live_danmaku(
@@ -308,9 +282,7 @@ def start_listen(config, common, my_handle, platform: str):
 
             my_handle.process_data(data, "comment")
 
-        def _on_open_live_gift(
-            self, client: blivedm.OpenLiveClient, message: open_models.GiftMessage
-        ):
+        def _on_open_live_gift(self, client: blivedm.OpenLiveClient, message: open_models.GiftMessage):
             my_global.idle_time_auto_clear(config, "gift")
 
             gift_name = message.gift_name
@@ -322,9 +294,7 @@ def start_listen(config, common, my_handle, platform: str):
             # 总金额
             combo_total_coin = message.price * message.gift_num
 
-            logger.info(
-                f"用户：{username} 赠送 {combo_num} 个 {gift_name}，总计 {combo_total_coin}电池"
-            )
+            logger.info(f"用户：{username} 赠送 {combo_num} 个 {gift_name}，总计 {combo_total_coin}电池")
 
             data = {
                 "platform": platform,
@@ -343,9 +313,7 @@ def start_listen(config, common, my_handle, platform: str):
             client: blivedm.OpenLiveClient,
             message: open_models.GuardBuyMessage,
         ):
-            logger.info(
-                f"[{client.room_id}] {message.user_info.uname} 购买 大航海等级={message.guard_level}"
-            )
+            logger.info(f"[{client.room_id}] {message.user_info.uname} 购买 大航海等级={message.guard_level}")
 
         def _on_open_live_super_chat(
             self,
@@ -354,9 +322,7 @@ def start_listen(config, common, my_handle, platform: str):
         ):
             my_global.idle_time_auto_clear(config, "gift")
 
-            logger.info(
-                f"[{message.room_id}] 醒目留言 ¥{message.rmb} {message.uname}：{message.message}"
-            )
+            logger.info(f"[{message.room_id}] 醒目留言 ¥{message.rmb} {message.uname}：{message.message}")
 
             content = message.message
             uname = message.uname
@@ -386,13 +352,9 @@ def start_listen(config, common, my_handle, platform: str):
             client: blivedm.OpenLiveClient,
             message: open_models.SuperChatDeleteMessage,
         ):
-            logger.info(
-                f"[直播间 {message.room_id}] 删除醒目留言 message_ids={message.message_ids}"
-            )
+            logger.info(f"[直播间 {message.room_id}] 删除醒目留言 message_ids={message.message_ids}")
 
-        def _on_open_live_like(
-            self, client: blivedm.OpenLiveClient, message: open_models.LikeMessage
-        ):
+        def _on_open_live_like(self, client: blivedm.OpenLiveClient, message: open_models.LikeMessage):
             logger.info(f"用户：{message.uname} 点了个赞")
 
     asyncio.run(main_func())

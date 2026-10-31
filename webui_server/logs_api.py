@@ -1,4 +1,5 @@
 """日志类 API：运行日志尾部、聊天记录拉取、聊天测试发送。"""
+
 import os
 
 from fastapi import APIRouter
@@ -47,12 +48,14 @@ def run_log():
 
 # ---------- 聊天记录 ----------
 
+
 @router.get("/chat-log")
 def chat_log_view(after: int = 0):
     return {"code": 200, "messages": chat_log.since(after)}
 
 
 # ---------- 聊天测试发送（对应 v2 pages/chat.py 的 do_send/do_reread/do_tuning） ----------
+
 
 class ChatSendRequest(BaseModel):
     mode: str = "comment"  # comment / reread / tuning
@@ -83,22 +86,25 @@ async def chat_send(req: ChatSendRequest):
     main_api_ip = "127.0.0.1" if config.get("api_ip") == "0.0.0.0" else config.get("api_ip")
     try:
         resp = await runtime.common.send_async_request(
-            f"http://{main_api_ip}:{config.get('api_port')}/send", "POST", data)
+            f"http://{main_api_ip}:{config.get('api_port')}/send", "POST", data
+        )
     except Exception as e:
         logger.error(f"聊天发送失败: {e}")
         return {"code": -1, "message": f"发送失败：{e}"}
 
     # 同步弹幕开了的话，自己的发言也进聊天窗（v2 do_reread 的行为）
     if config.get("talk", "show_chat_log") and req.mode == "reread":
-        chat_log.add({
-            "type": "llm",
-            "data": {
-                "type": req.mode,
-                "username": data["data"]["username"],
-                "content_type": "question",
-                "content": content,
-                "timestamp": runtime.common.get_bj_time(0),
-            },
-        })
+        chat_log.add(
+            {
+                "type": "llm",
+                "data": {
+                    "type": req.mode,
+                    "username": data["data"]["username"],
+                    "content_type": "question",
+                    "content": content,
+                    "timestamp": runtime.common.get_bj_time(0),
+                },
+            }
+        )
 
     return resp or {"code": 200, "message": "已发送"}

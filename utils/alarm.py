@@ -55,16 +55,10 @@ def report_error(state, type, config, common, synthesize):
         # 是否错误数大于 自动重启错误数
         if error_count >= config.get("abnormal_alarm", type, "auto_restart_error_num"):
             logger.warning(f"【异常报警-{type}】 出错数超过自动重启错误数，即将自动重启")
-            data = {
-                "type": "restart",
-                "api_type": "api",
-                "data": {
-                    "config_path": "config.json"
-                }
-            }
+            data = {"type": "restart", "api_type": "api", "data": {"config_path": "config.json"}}
 
             webui_ip = "127.0.0.1" if config.get("webui", "ip") == "0.0.0.0" else config.get("webui", "ip")
-            common.send_request(f'http://{webui_ip}:{config.get("webui", "port")}/sys_cmd', "POST", data)
+            common.send_request(f"http://{webui_ip}:{config.get('webui', 'port')}/sys_cmd", "POST", data)
 
         # 是否错误数小于 开始报警错误数，是则不触发报警
         if error_count < config.get("abnormal_alarm", type, "start_alarm_error_num"):
@@ -80,7 +74,9 @@ def report_error(state, type, config, common, synthesize):
         audio_path = random.choice(path_list)
 
         message = build(
-            config, "abnormal_alarm", "系统",
+            config,
+            "abnormal_alarm",
+            "系统",
             os.path.join(local_audio_path, common.extract_filename(audio_path, True)),
         )
 

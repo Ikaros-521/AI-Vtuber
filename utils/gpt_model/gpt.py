@@ -1,12 +1,13 @@
 # -*- coding: UTF-8 -*-
 """
-@Project : AI-Vtuber 
+@Project : AI-Vtuber
 @File    : gpt.py
 @Author  : HildaM
 @Email   : Hilda_quan@163.com
-@Date    : 2023/06/23 下午 7:47 
+@Date    : 2023/06/23 下午 7:47
 @Description :  统一模型层抽象
 """
+
 import importlib
 
 from utils.my_log import logger
@@ -42,7 +43,7 @@ def load_model_class(model_name):
 
 class GPT_Model:
     openai = None
-    
+
     def set_model_config(self, model_name, config):
         if model_name == "openai":
             self.openai = config

@@ -8,6 +8,7 @@
    「不存在」，全局搜索与未保存清单就索引不到被藏的项了。
 2. 藏是可见的：开关旁边实时写「已藏 N 处 · M 个配置项」，跳过去前自动取消过滤。
 """
+
 from nicegui import context, ui
 from nicegui.elements.card import Card
 from nicegui.elements.expansion import Expansion
@@ -17,9 +18,9 @@ from webui_app.fields import INPUT_TYPES, field_name
 from webui_app.theme import INK_MUT
 
 CONTAINERS = (Card, Expansion)
-OFF_CLASS = 'luna-off-card'      # 标在当前「启用开关全关」的容器上
-FILTER_CLASS = 'luna-only-on'    # 标在 tab_panels 上，样式表只在这类存在时才藏
-EMPTY_CLASS = 'luna-panel-empty'  # 标在「一页全被藏光」的面板上，样式表给它补一句解释
+OFF_CLASS = "luna-off-card"  # 标在当前「启用开关全关」的容器上
+FILTER_CLASS = "luna-only-on"  # 标在 tab_panels 上，样式表只在这类存在时才藏
+EMPTY_CLASS = "luna-panel-empty"  # 标在「一页全被藏光」的面板上，样式表给它补一句解释
 
 
 def _owner_container(switch):
@@ -34,10 +35,13 @@ def _owner_container(switch):
 
 
 def _direct_switches(container):
-    return [s for s in container.descendants()
-            if isinstance(s, (ui.switch, ui.checkbox))
-            and field_name(s).startswith('启用')
-            and _owner_container(s) is container]
+    return [
+        s
+        for s in container.descendants()
+        if isinstance(s, (ui.switch, ui.checkbox))
+        and field_name(s).startswith("启用")
+        and _owner_container(s) is container
+    ]
 
 
 def disabled_containers():
@@ -49,8 +53,7 @@ def disabled_containers():
         switches = _direct_switches(element)
         if switches and all(bool(s.value) is False for s in switches):
             picked.append(element)
-    return [el for el in picked
-            if not any(isinstance(a, CONTAINERS) and a in picked for a in el.ancestors())]
+    return [el for el in picked if not any(isinstance(a, CONTAINERS) and a in picked for a in el.ancestors())]
 
 
 def config_field_count(containers):
@@ -58,10 +61,11 @@ def config_field_count(containers):
     inside = set()
     for container in containers:
         inside.update(e.id for e in container.descendants())
-    return sum(1 for el in context.client.elements.values()
-               if isinstance(el, INPUT_TYPES)
-               and getattr(el, 'is_config_field', True) is not False
-               and el.id in inside)
+    return sum(
+        1
+        for el in context.client.elements.values()
+        if isinstance(el, INPUT_TYPES) and getattr(el, "is_config_field", True) is not False and el.id in inside
+    )
 
 
 class EnabledFilter:
@@ -77,12 +81,14 @@ class EnabledFilter:
 
     def build_switch(self):
         """由 build_nav_chips 在搜索按钮后面调用，所以这里建在导航条那一行里。"""
-        self._switch = ui.switch('只看已启用', on_change=self._toggled).props(
-            'dense size=sm').tooltip('只藏起「启用…」开关关着的卡片和折叠区；'
-                                     '配置不会丢，搜索或点未保存清单跳过去时会自动取消过滤')
+        self._switch = (
+            ui.switch("只看已启用", on_change=self._toggled)
+            .props("dense size=sm")
+            .tooltip("只藏起「启用…」开关关着的卡片和折叠区；配置不会丢，搜索或点未保存清单跳过去时会自动取消过滤")
+        )
         # 视图过滤开关不是配置项：不打这个标，DirtyGuard 会把切换记成「1 项未保存」
         self._switch.is_config_field = False
-        self._tip = ui.label('').style(f'font-size:12px;color:{INK_MUT};')
+        self._tip = ui.label("").style(f"font-size:12px;color:{INK_MUT};")
         # 运行期点「增加配置组」会现造带启用开关的行，开关开着时得跟得上
         self._timer = ui.timer(2.0, self.resweep, active=False)
 
@@ -118,9 +124,11 @@ class EnabledFilter:
         for e in off:
             hidden.update(id(d) for d in e.descendants())
         for panel in (p for p in context.client.elements.values() if isinstance(p, TabPanel)):
-            tops = [c for c in panel.descendants()
-                    if isinstance(c, CONTAINERS)
-                    and not any(isinstance(a, CONTAINERS) for a in c.ancestors())]
+            tops = [
+                c
+                for c in panel.descendants()
+                if isinstance(c, CONTAINERS) and not any(isinstance(a, CONTAINERS) for a in c.ancestors())
+            ]
             if tops and all(id(c) in hidden for c in tops):
                 panel.classes(EMPTY_CLASS)
             else:
@@ -130,11 +138,10 @@ class EnabledFilter:
         if self._tip is None:
             return
         if not self._on:
-            self._tip.set_text('')
+            self._tip.set_text("")
             return
         fields = config_field_count(off)
-        self._tip.set_text(f'已藏 {len(off)} 处 · {fields} 个配置项'
-                           if off else '全部卡片都已启用')
+        self._tip.set_text(f"已藏 {len(off)} 处 · {fields} 个配置项" if off else "全部卡片都已启用")
 
     def turn_off(self) -> None:
         """跳转前先取消过滤：藏起来的框 scrollIntoView 是滚不到的。"""

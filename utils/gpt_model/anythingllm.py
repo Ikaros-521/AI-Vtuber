@@ -12,17 +12,13 @@ class AnythingLLM:
         self.common = Common()
 
         self.config_data = data
-        self.headers = {
-            "Accept": "application/json",
-            "Authorization": f"Bearer {self.config_data['api_key']}"
-        }
+        self.headers = {"Accept": "application/json", "Authorization": f"Bearer {self.config_data['api_key']}"}
         self.workspaces_list = []
 
     # 验证密钥
     def verify_auth(self):
         try:
             url = urljoin(self.config_data["api_ip_port"], "/api/v1/auth")
-        
 
             response = requests.get(url, headers=self.headers, timeout=(10, 300))
             response.raise_for_status()  # 检查响应的状态码
@@ -44,7 +40,6 @@ class AnythingLLM:
     def get_workspaces_list(self):
         try:
             url = urljoin(self.config_data["api_ip_port"], "/api/v1/workspaces")
-        
 
             response = requests.get(url, headers=self.headers, timeout=(10, 300))
             response.raise_for_status()  # 检查响应的状态码
@@ -73,17 +68,16 @@ class AnythingLLM:
             str: 返回的文本回答
         """
         try:
-            url = urljoin(self.config_data["api_ip_port"], f"/api/v1/workspace/{self.config_data['workspace_slug']}/chat")
+            url = urljoin(
+                self.config_data["api_ip_port"], f"/api/v1/workspace/{self.config_data['workspace_slug']}/chat"
+            )
 
             if "mode" in data:
                 mode = data["mode"]
             else:
                 mode = self.config_data["mode"]
 
-            data_json = {
-                "message": data["prompt"],
-                "mode": mode
-            }
+            data_json = {"message": data["prompt"], "mode": mode}
 
             response = requests.post(url=url, json=data_json, headers=self.headers, timeout=(10, 300))
             response.raise_for_status()  # 检查响应的状态码
@@ -103,7 +97,7 @@ class AnythingLLM:
             return None
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 配置日志输出格式
     logger.basicConfig(
         level=logger.DEBUG,  # 设置日志级别，可以根据需求调整
@@ -115,18 +109,18 @@ if __name__ == '__main__':
         "api_ip_port": "http://127.0.0.1:3001",
         "api_key": "S1PPG9B-YP2M8NX-Q64ZBF1-Y4K5DCS",
         "mode": "chat",
-        "workspace_slug": "test"
+        "workspace_slug": "test",
     }
     anythingllm = AnythingLLM(data)
 
     # 验证密钥
     if anythingllm.verify_auth():
         # 获取返回值
-        
+
         anythingllm.get_workspaces_list()
 
         logger.info(anythingllm.get_resp({"prompt": "你可以扮演猫娘吗，每句话后面加个喵"}))
         logger.info(anythingllm.get_resp({"prompt": "早上好"}))
-    
+
         logger.info(anythingllm.get_resp({"prompt": "伊卡洛斯和妮姆芙的关系", "mode": "chat"}))
-        #logger.info(anythingllm.get_resp({"prompt": "伊卡洛斯的英文名", "mode": "chat"}))
+        # logger.info(anythingllm.get_resp({"prompt": "伊卡洛斯的英文名", "mode": "chat"}))

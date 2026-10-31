@@ -6,13 +6,14 @@ import re
 
 from utils.my_log import logger
 
+
 def extract_and_parse_json(data_string):
     # 如果 data_string 是 bytes 或 bytearray，将其解码为字符串
     if isinstance(data_string, (bytes, bytearray)):
-        data_string = data_string.decode('utf-8')
+        data_string = data_string.decode("utf-8")
 
     # 使用正则表达式匹配 JSON 部分
-    match = re.search(r'{.*}', data_string)
+    match = re.search(r"{.*}", data_string)
     if match:
         json_string = match.group(0)
         try:
@@ -20,7 +21,8 @@ def extract_and_parse_json(data_string):
         except json.JSONDecodeError:
             logger.error("Invalid JSON string: %s", json_string)
             return None
-    
+
+
 # from utils.common import Common
 # from utils.logger import Configure_logger
 
@@ -37,7 +39,6 @@ class Langchain_ChatChat:
         self.config_data = data
 
         self.history = []
-
 
     # 获取知识库列表
     def get_list_knowledge_base(self):
@@ -58,11 +59,10 @@ class Langchain_ChatChat:
             logger.debug(ret)
             logger.info(f"本地知识库列表：{ret['data']}")
 
-            return ret['data']
+            return ret["data"]
         except Exception as e:
             logger.error(e)
             return None
-
 
     def get_resp(self, prompt):
         """请求对应接口，获取返回值
@@ -78,7 +78,7 @@ class Langchain_ChatChat:
                 # 拷一份再填请求字段（浅拷贝）。
                 # 不拷的话 query/history 会留在已加载的配置字典里，把整段对话一起带活
                 data_json = dict(self.config_data["llm"])
-                
+
                 url = self.api_ip_port + "/chat/chat"
             elif self.chat_type == "知识库":
                 data_json = dict(self.config_data["knowledge_base"])
@@ -135,7 +135,7 @@ class Langchain_ChatChat:
             return None
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 配置日志输出格式
     logger.basicConfig(
         level=logger.DEBUG,  # 设置日志级别，可以根据需求调整
@@ -152,7 +152,7 @@ if __name__ == '__main__':
             "model_name": "openai-api",
             "temperature": 0.7,
             "max_tokens": 4096,
-            "prompt_name": "default"
+            "prompt_name": "default",
         },
         "search_engine": {
             "search_engine_name": "metaphor",
@@ -162,9 +162,9 @@ if __name__ == '__main__':
             "temperature": 0.7,
             "max_tokens": 4096,
             "prompt_name": "default",
-            "split_result": False
+            "split_result": False,
         },
-        "knowledge_base" : {
+        "knowledge_base": {
             "knowledge_base_name": "astro",
             "top_k": 3,
             "score_threshold": 1,
@@ -172,23 +172,21 @@ if __name__ == '__main__':
             "model_name": "openai-api",
             "temperature": 0.7,
             "max_tokens": 4096,
-            "prompt_name": "default"
+            "prompt_name": "default",
         },
         "history_enable": True,
-        "history_max_len": 300
+        "history_max_len": 300,
     }
     langchain_chatchat = Langchain_ChatChat(data)
-
 
     if data["chat_type"] == "模型":
         logger.info(langchain_chatchat.get_resp("什么是黑洞"))
         logger.info(langchain_chatchat.get_resp("什么是原初黑洞"))
-    elif data["chat_type"] == "知识库":  
+    elif data["chat_type"] == "知识库":
         langchain_chatchat.get_list_knowledge_base()
         logger.info(langchain_chatchat.get_resp("什么是黑洞"))
         logger.info(langchain_chatchat.get_resp("什么是原初黑洞"))
     # please set BING_SUBSCRIPTION_KEY and BING_SEARCH_URL in os ENV
-    elif data["chat_type"] == "搜索引擎":  
+    elif data["chat_type"] == "搜索引擎":
         logger.info(langchain_chatchat.get_resp("伊卡洛斯是谁"))
         logger.info(langchain_chatchat.get_resp("伊卡洛斯的英文名"))
-    

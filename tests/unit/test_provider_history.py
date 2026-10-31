@@ -11,8 +11,7 @@ CRLF, NL = chr(13) + chr(10), chr(10)
 
 
 def test_dict_history_counts_the_content_not_the_key_names():
-    history = [{"role": "user", "content": "今天天气怎么样"},
-               {"role": "assistant", "content": "晴"}]
+    history = [{"role": "user", "content": "今天天气怎么样"}, {"role": "assistant", "content": "晴"}]
 
     # 以前那句 for string in sublist 遍历的是字典的键，恒等于 11 字符/条
     assert total_chars(history) == 8
@@ -41,19 +40,18 @@ def _no_variable_replacement_templates():
     违禁词、用户名、弹幕内容都可能带反斜杠，所以只允许字面量或函数形式的替换串。
     """
     offenders = []
-    for path in sorted((ROOT / 'utils').rglob('*.py')):
-        if '__pycache__' in str(path):
+    for path in sorted((ROOT / "utils").rglob("*.py")):
+        if "__pycache__" in str(path):
             continue
-        tree = ast.parse(open(path, encoding='utf-8', newline='').read().replace(CRLF, NL))
+        tree = ast.parse(open(path, encoding="utf-8", newline="").read().replace(CRLF, NL))
         for node in ast.walk(tree):
-            if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-                    and node.func.attr == 'sub'):
+            if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "sub"):
                 continue
             if len(node.args) < 2:
                 continue
             repl = node.args[1]
-            if isinstance(repl, ast.Name):        # 直接拿一个变量当模板
-                offenders.append('%s:%s re.sub(..., %s, ...)' % (path.name, node.lineno, repl.id))
+            if isinstance(repl, ast.Name):  # 直接拿一个变量当模板
+                offenders.append("%s:%s re.sub(..., %s, ...)" % (path.name, node.lineno, repl.id))
     return offenders
 
 

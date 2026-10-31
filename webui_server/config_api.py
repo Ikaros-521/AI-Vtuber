@@ -46,11 +46,16 @@ def validate_config(config_data):
             return "B站登录方式选的是 cookie，但 cookie 还空着", ["bilibili", "cookie"]
         if login_type == "open_live":
             open_live = bilibili.get("open_live") or {}
-            missing = [k for k in ("ACCESS_KEY_ID", "ACCESS_KEY_SECRET", "APP_ID", "ROOM_OWNER_AUTH_CODE")
-                       if not str(open_live.get(k) or "").strip()]
+            missing = [
+                k
+                for k in ("ACCESS_KEY_ID", "ACCESS_KEY_SECRET", "APP_ID", "ROOM_OWNER_AUTH_CODE")
+                if not str(open_live.get(k) or "").strip()
+            ]
             if missing:
-                return ("B站开放平台四项（ACCESS_KEY_ID / ACCESS_KEY_SECRET / 项目ID / 身份码）还没填全",
-                        ["bilibili", "open_live", missing[0]])
+                return (
+                    "B站开放平台四项（ACCESS_KEY_ID / ACCESS_KEY_SECRET / 项目ID / 身份码）还没填全",
+                    ["bilibili", "open_live", missing[0]],
+                )
     return None
 
 
@@ -58,8 +63,7 @@ def validate_config(config_data):
 def get_config():
     try:
         config_data = runtime.read_config()
-        return {"code": 200, "config": config_data, "sha256": runtime.file_sha256(),
-                "path": runtime.config_path}
+        return {"code": 200, "config": config_data, "sha256": runtime.file_sha256(), "path": runtime.config_path}
     except Exception as e:
         logger.error(f"读取配置失败: {e}")
         return {"code": -1, "message": f"读取配置失败：{e}"}

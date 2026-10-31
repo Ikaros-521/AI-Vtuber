@@ -11,7 +11,7 @@ from nicegui.page import page
 
 from webui_app.chat_log import MAX_MESSAGES, ChatLog
 
-TEST_PAGE = page('/chat-log-unit-test')
+TEST_PAGE = page("/chat-log-unit-test")
 
 
 @pytest.fixture
@@ -35,24 +35,38 @@ def boxes():
 
 
 def question(text):
-    return {"type": "llm", "data": {"type": "弹幕信息", "username": "观众",
-                                    "content_type": "question", "content": text,
-                                    "timestamp": "2026-10-22 21:40:50"}}
+    return {
+        "type": "llm",
+        "data": {
+            "type": "弹幕信息",
+            "username": "观众",
+            "content_type": "question",
+            "content": text,
+            "timestamp": "2026-10-22 21:40:50",
+        },
+    }
 
 
 def answer(text):
-    return {"type": "llm", "data": {"type": "chatgpt", "username": "观众",
-                                    "content_type": "answer", "content": text,
-                                    "timestamp": "2026-10-22 21:40:57"}}
+    return {
+        "type": "llm",
+        "data": {
+            "type": "chatgpt",
+            "username": "观众",
+            "content_type": "answer",
+            "content": text,
+            "timestamp": "2026-10-22 21:40:57",
+        },
+    }
 
 
 def rendered(scroll_area):
     # 面板里除了消息还可能有「还没有聊天记录」占位，只数消息
-    return [m._original_text[0] for m in scroll_area if hasattr(m, '_original_text')]
+    return [m._original_text[0] for m in scroll_area if hasattr(m, "_original_text")]
 
 
 def placeholders(scroll_area):
-    return [c for c in scroll_area if not hasattr(c, '_original_text')]
+    return [c for c in scroll_area if not hasattr(c, "_original_text")]
 
 
 def test_every_open_page_gets_the_message(boxes):

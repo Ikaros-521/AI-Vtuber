@@ -144,8 +144,12 @@ print('@@FINGERPRINT@@' + json.dumps(
     # 严格 utf-8 解码会让读取线程崩掉、把 proc.stdout/stderr 变成 None。
     proc = subprocess.run(
         [sys.executable, str(helper)],
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        cwd=str(ROOT), timeout=180,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        cwd=str(ROOT),
+        timeout=180,
     )
     marker = "@@FINGERPRINT@@"
     line = next((ln for ln in (proc.stdout or "").splitlines() if marker in ln), None)
@@ -186,7 +190,9 @@ def test_webui_builds_and_matches_structure(ui_root, request):
     baseline = json.loads(BASELINE.read_text(encoding="utf-8"))
     delta = _diff(baseline, ui_root)
     if ui_root.get("mixed_grid_columns"):
-        delta.append(f"  有 {ui_root['mixed_grid_columns']} 张卡里的栅格列数不一致（相邻两行的字段对不齐，走查 audit-12）")
+        delta.append(
+            f"  有 {ui_root['mixed_grid_columns']} 张卡里的栅格列数不一致（相邻两行的字段对不齐，走查 audit-12）"
+        )
 
     assert not delta, "UI 结构相对基线发生变化：\n" + "\n".join(delta[:60])
 

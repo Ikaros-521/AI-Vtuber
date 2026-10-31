@@ -6,6 +6,7 @@ import traceback
 from utils.my_log import logger
 import utils.my_global as my_global
 
+
 def start_listen(config, common, my_handle, platform: str):
     def get_video_id():
         try:

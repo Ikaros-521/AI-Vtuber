@@ -46,15 +46,21 @@ def create_app() -> FastAPI:
         config = runtime.read_config()
         for entry in (config.get("webui", {}).get("local_dir_to_endpoint", {}) or {}).get("config", []) or []:
             if entry.get("enable", True) and entry.get("url_path") and entry.get("local_dir"):
-                app.mount(entry["url_path"], StaticFiles(directory=entry["local_dir"]), name=entry["url_path"].strip("/"))
+                app.mount(
+                    entry["url_path"], StaticFiles(directory=entry["local_dir"]), name=entry["url_path"].strip("/")
+                )
     except Exception as e:
         logger.warning(f"本地目录映射未生效：{e}")
 
     if DIST_DIR.exists():
         app.mount("/", StaticFiles(directory=str(DIST_DIR), html=True), name="webui")
     else:
+
         @app.get("/")
         async def index():
-            return {"code": 200, "message": "AI-Vtuber WebUI v3 API 正在运行。前端未构建：请到 webui_react/ 执行 npm run build，或使用 npm run dev。"}
+            return {
+                "code": 200,
+                "message": "AI-Vtuber WebUI v3 API 正在运行。前端未构建：请到 webui_react/ 执行 npm run build，或使用 npm run dev。",
+            }
 
     return app

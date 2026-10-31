@@ -2,6 +2,7 @@
 
 /set_config、/sys_cmd、/send、/callback、/tts、/llm、/get_sys_info。
 """
+
 import json
 import traceback
 
@@ -76,7 +77,8 @@ async def send(msg: SendMessage):
         config = runtime.read_config()
         main_api_ip = "127.0.0.1" if config.get("api_ip") == "0.0.0.0" else config.get("api_ip")
         return await runtime.common.send_async_request(
-            f"http://{main_api_ip}:{config.get('api_port')}/send", "POST", msg.dict())
+            f"http://{main_api_ip}:{config.get('api_port')}/send", "POST", msg.dict()
+        )
     except Exception as e:
         logger.error(traceback.format_exc())
         return CommonResult(code=-1, message=f"发送数据失败！{e}")
@@ -114,7 +116,8 @@ async def llm(request: Request):
         config = runtime.read_config()
         main_api_ip = "127.0.0.1" if config.get("api_ip") == "0.0.0.0" else config.get("api_ip")
         resp_json = await runtime.common.send_async_request(
-            f"http://{main_api_ip}:{config.get('api_port')}/llm", "POST", data_json, "json", timeout=60)
+            f"http://{main_api_ip}:{config.get('api_port')}/llm", "POST", data_json, "json", timeout=60
+        )
         if resp_json:
             return JSONResponse(resp_json)
         return CommonResult(code=-1, message="失败！")
@@ -130,7 +133,8 @@ async def get_sys_info():
         config = runtime.read_config()
         main_api_ip = "127.0.0.1" if config.get("api_ip") == "0.0.0.0" else config.get("api_ip")
         resp_json = await runtime.common.send_async_request(
-            f"http://{main_api_ip}:{config.get('api_port')}/get_sys_info", "GET", None, "json", timeout=60)
+            f"http://{main_api_ip}:{config.get('api_port')}/get_sys_info", "GET", None, "json", timeout=60
+        )
         if resp_json:
             return JSONResponse(resp_json)
         return CommonResult(code=-1, message="失败！")

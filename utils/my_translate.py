@@ -18,7 +18,6 @@ class My_Translate:
         self.baidu_config = self.config.get("translate", "baidu")
         self.google_config = self.config.get("translate", "google")
 
-
     # 重载config
     def reload_config(self, config_path):
         self.config = Config(config_path)
@@ -47,7 +46,6 @@ class My_Translate:
             return self.google_trans(text)
         else:
             return self.google_trans(text)
-        
 
     def baidu_trans(self, text):
         """百度翻译
@@ -65,22 +63,22 @@ class My_Translate:
 
         # For list of language codes, please refer to `https://api.fanyi.baidu.com/doc/21`
         from_lang = self.baidu_config["from_lang"]
-        to_lang =  self.baidu_config["to_lang"]
+        to_lang = self.baidu_config["to_lang"]
 
-        endpoint = 'http://api.fanyi.baidu.com'
-        path = '/api/trans/vip/translate'
+        endpoint = "http://api.fanyi.baidu.com"
+        path = "/api/trans/vip/translate"
         url = endpoint + path
 
         # Generate salt and sign
-        def make_md5(s, encoding='utf-8'):
+        def make_md5(s, encoding="utf-8"):
             return md5(s.encode(encoding)).hexdigest()
 
         salt = random.randint(32768, 65536)
         sign = make_md5(appid + text + str(salt) + appkey)
 
         # Build request
-        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-        payload = {'appid': appid, 'q': text, 'from': from_lang, 'to': to_lang, 'salt': salt, 'sign': sign}
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        payload = {"appid": appid, "q": text, "from": from_lang, "to": to_lang, "salt": salt, "sign": sign}
 
         try:
             # Send request
@@ -109,7 +107,6 @@ class My_Translate:
 
             return None
 
-
     def google_trans(self, text):
         """谷歌翻译
 
@@ -120,19 +117,19 @@ class My_Translate:
             (str)：翻译后的文本
         """
         try:
-            if self.config_data['google']['proxy'] != "":
-                proxies = {'https': self.config_data['google']['proxy']}
+            if self.config_data["google"]["proxy"] != "":
+                proxies = {"https": self.config_data["google"]["proxy"]}
             else:
                 proxies = None
 
             client = Translate(proxies=proxies)
 
-            src_lang = self.config_data['google']['src_lang']
+            src_lang = self.config_data["google"]["src_lang"]
             if src_lang == "auto":
                 src_lang = None
 
             # 翻译句子
-            ret = client.translate(text, target=self.config_data['google']['tgt_lang'], source=src_lang)
+            ret = client.translate(text, target=self.config_data["google"]["tgt_lang"], source=src_lang)
             logger.debug(ret)
 
             return ret.translatedText

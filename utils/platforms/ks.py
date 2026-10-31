@@ -10,6 +10,7 @@ import time
 from utils.my_log import logger
 import utils.my_global as my_global
 
+
 def start_listen(config, common, my_handle, platform: str):
     class kslive:
         def __init__(self):
@@ -75,17 +76,11 @@ def start_listen(config, common, my_handle, platform: str):
                     live_url = self.uri + lid
 
                     if not os.path.exists(cookie_path):
-                        self.context = self.browser.new_context(
-                            storage_state=None, user_agent=self.ua
-                        )
+                        self.context = self.browser.new_context(storage_state=None, user_agent=self.ua)
                     else:
-                        self.context = self.browser.new_context(
-                            storage_state=cookie_list[0], user_agent=self.ua
-                        )
+                        self.context = self.browser.new_context(storage_state=cookie_list[0], user_agent=self.ua)
                     self.page = self.context.new_page()
-                    self.page.add_init_script(
-                        "Object.defineProperties(navigator, {webdriver:{get:()=>undefined}});"
-                    )
+                    self.page.add_init_script("Object.defineProperties(navigator, {webdriver:{get:()=>undefined}});")
                     self.page.goto("https://live.kuaishou.com/")
                     # self.page.goto(live_url)
                     element = self.page.get_attribute(".no-login", "style")
@@ -93,9 +88,7 @@ def start_listen(config, common, my_handle, platform: str):
                     if not element:
                         logger.info("未登录，请先登录~")
                         self.page.locator(".login").click()
-                        self.page.locator(
-                            "li.tab-panel:nth-child(2) > h4:nth-child(1)"
-                        ).click()
+                        self.page.locator("li.tab-panel:nth-child(2) > h4:nth-child(1)").click()
                         self.page.locator(
                             "div.normal-login-item:nth-child(1) > div:nth-child(1) > input:nth-child(1)"
                         ).fill(self.phone)
@@ -116,9 +109,7 @@ def start_listen(config, common, my_handle, platform: str):
                             "div.no-live-detail div.desc p.tip"
                         )  # 检测正在直播时下播的选择器
                         try:
-                            msg = self.page.locator(selector).text_content(
-                                timeout=3000
-                            )
+                            msg = self.page.locator(selector).text_content(timeout=3000)
                             logger.info("当前%s" % thread_name + "，" + msg)
                             self.context.close()
                             self.browser.close()
@@ -135,9 +126,7 @@ def start_listen(config, common, my_handle, platform: str):
                             # 等待一段时间检查是否有验证码弹窗
                             try:
                                 captcha_selector = "html body div.container"  # 假设这是验证码弹窗的选择器
-                                self.page.wait_for_selector(
-                                    captcha_selector, timeout=5000
-                                )  # 等待5秒看是否出现验证码
+                                self.page.wait_for_selector(captcha_selector, timeout=5000)  # 等待5秒看是否出现验证码
                                 logger.info("检测到验证码，处理验证码...")
                                 # 等待验证码弹窗从DOM中被完全移除
                                 self.page.wait_for_selector(
@@ -160,9 +149,7 @@ def start_listen(config, common, my_handle, platform: str):
                             self.page.on("websocket", self.web_sockets)
                             logger.info("24h监听直播间等待下播...")
                             self.page.wait_for_selector(selector, timeout=86400000)
-                            logger.error(
-                                "当前%s，[%s]的直播结束了" % (thread_name, lid)
-                            )
+                            logger.error("当前%s，[%s]的直播结束了" % (thread_name, lid))
                             self.context.close()
                             self.browser.close()
 
@@ -220,9 +207,7 @@ def start_listen(config, common, my_handle, platform: str):
                         # pid = i['user']['principalId']
                         giftId = i["giftId"]
                         comboCount = i["comboCount"]
-                        logger.info(
-                            f"[🎁直播间礼物消息] 用户：{username} 赠送礼物Id={giftId} 连击数={comboCount}"
-                        )
+                        logger.info(f"[🎁直播间礼物消息] 用户：{username} 赠送礼物Id={giftId} 连击数={comboCount}")
                 if obj.get("likeFeeds", ""):
                     msg_list = obj.get("likeFeeds", "")
                     for i in msg_list:
@@ -256,9 +241,7 @@ def start_listen(config, common, my_handle, platform: str):
 
             for i in self.ids_list:
                 n += 1
-                t = threading.Thread(
-                    target=kslive().main, args=(i, semaphore), name=f"线程：{n}-{i}"
-                )
+                t = threading.Thread(target=kslive().main, args=(i, semaphore), name=f"线程：{n}-{i}")
                 t.start()
                 t_list.append(t)
             for i in t_list:

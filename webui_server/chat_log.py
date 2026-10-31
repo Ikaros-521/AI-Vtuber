@@ -3,6 +3,7 @@
 v2 版（webui_app/chat_log.py）要管 NiceGUI 每个连接的组件树，v3 只存数据，
 前端自己轮询拉取。
 """
+
 from collections import deque
 
 MAX_MESSAGES = 100
@@ -20,13 +21,15 @@ class ChatLog:
         data = data_json["data"]
         is_question = data["content_type"] == "question"
         self._seq += 1
-        self.messages.append({
-            "seq": self._seq,
-            "content": data["content"],
-            "name": data["username"] if is_question else data["type"],
-            "stamp": data["timestamp"],
-            "mine": is_question,
-        })
+        self.messages.append(
+            {
+                "seq": self._seq,
+                "content": data["content"],
+                "name": data["username"] if is_question else data["type"],
+                "stamp": data["timestamp"],
+                "mine": is_question,
+            }
+        )
 
     def since(self, after=0):
         return [m for m in self.messages if m["seq"] > after]

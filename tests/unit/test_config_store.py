@@ -22,11 +22,13 @@ def test_float_handler_rounds_to_two_decimals():
 
 
 def test_str_and_bool_handlers():
-    mapping = {"a": {
-        "s": (FakeWidget(8420), "str"),
-        "on": (FakeWidget(True), "bool"),
-        "off": (FakeWidget(0), "bool"),
-    }}
+    mapping = {
+        "a": {
+            "s": (FakeWidget(8420), "str"),
+            "on": (FakeWidget(True), "bool"),
+            "off": (FakeWidget(0), "bool"),
+        }
+    }
 
     out = process_config_mapping({}, mapping)
 

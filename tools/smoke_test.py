@@ -5,6 +5,7 @@
     python tools/smoke_test.py            # 全部检查
     python tools/smoke_test.py --skip-webui
 """
+
 import argparse
 import ast
 import importlib
@@ -100,10 +101,7 @@ def check_platform_registry():
             failures.append(f"{platform} -> {module_name}：文件不存在")
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
-        if not any(
-            isinstance(node, ast.FunctionDef) and node.name == "start_listen"
-            for node in tree.body
-        ):
+        if not any(isinstance(node, ast.FunctionDef) and node.name == "start_listen" for node in tree.body):
             failures.append(f"{platform} -> {module_name}：没有定义 start_listen")
     print(f"  已登记平台：{', '.join(sorted(PLATFORM_LISTENERS))}")
     if failures:

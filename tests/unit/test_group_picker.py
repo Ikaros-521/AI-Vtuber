@@ -3,6 +3,7 @@
 替代原先的「配置索引」输入框：那个要用户自己数第几组，而且删过一次之后位置与 #N 标号就会
 错位。见走查 audit-10 与 audit-7 后半。
 """
+
 import pytest
 from nicegui import Client, ui
 from nicegui.page import page
@@ -12,7 +13,7 @@ from webui_app.confirm import ConfirmBox
 from webui_app.groups import GroupPicker, refresh_pickers
 from webui_app.undo import undo
 
-TEST_PAGE = page('/webui-group-picker-test')
+TEST_PAGE = page("/webui-group-picker-test")
 
 
 @pytest.fixture
@@ -45,12 +46,12 @@ def card_with_rows(count):
     for i in range(count):
         with card:
             with ui.row():
-                var[str(i)] = ui.input(label=f'文案存储路径#{i + 1}', value=f'data/copywriting{i + 1}/')
+                var[str(i)] = ui.input(label=f"文案存储路径#{i + 1}", value=f"data/copywriting{i + 1}/")
     return card, var
 
 
 def make_picker(card, var, action):
-    return GroupPicker(lambda: card, '文案', action, lambda: var).build()
+    return GroupPicker(lambda: card, "文案", action, lambda: var).build()
 
 
 def shift_out(var, pos):
@@ -69,7 +70,7 @@ def test_picker_lists_every_visible_row_with_a_summary(in_client, box):
         picker = make_picker(card, var, lambda pos: None)
     picker.refresh()
     assert list(picker.select.options) == [0, 1, 2]
-    assert picker.select.options[1] == '文案存储路径#2 · data/copywriting2/'
+    assert picker.select.options[1] == "文案存储路径#2 · data/copywriting2/"
 
 
 def test_nothing_selected_never_reaches_the_delete_action(in_client, box, monkeypatch):
@@ -79,10 +80,10 @@ def test_nothing_selected_never_reaches_the_delete_action(in_client, box, monkey
         picker = make_picker(card, var, ran.append)
     picker.refresh()
     notified = []
-    monkeypatch.setattr(ui, 'notify', lambda **kw: notified.append(kw.get('message')))
+    monkeypatch.setattr(ui, "notify", lambda **kw: notified.append(kw.get("message")))
     picker.ask_delete()
     assert ran == [] and box.dialog.value is not True
-    assert any('请先选' in str(m) for m in notified)
+    assert any("请先选" in str(m) for m in notified)
 
 
 def test_confirm_names_the_row_and_passes_its_position(in_client, box):
@@ -93,10 +94,10 @@ def test_confirm_names_the_row_and_passes_its_position(in_client, box):
     picker.refresh()
     picker.select.value = 1
     picker.ask_delete()
-    assert 'data/copywriting2/' in box._title.text      # 确认框里写的就是选中的那一行
-    assert '页面底部撤销' in box._detail.text
+    assert "data/copywriting2/" in box._title.text  # 确认框里写的就是选中的那一行
+    assert "页面底部撤销" in box._detail.text
     box._accept()
-    assert ran == [1]                                   # 传的是卡片里的位置，不是人肉数的组号
+    assert ran == [1]  # 传的是卡片里的位置，不是人肉数的组号
 
 
 def test_refresh_drops_a_selection_that_went_away(in_client, box):
@@ -122,8 +123,8 @@ def test_delete_hides_the_row_instead_of_destroying_it(in_client, box):
     picker.ask_delete()
     box._accept()
     assert rows[0].visible is False and rows[1].visible is not False
-    assert list(var) == ['0']                            # 保存链路读的是 var，效果与硬删一致
-    assert list(picker.select.options) == [0]            # 下拉跟着刷新
+    assert list(var) == ["0"]  # 保存链路读的是 var，效果与硬删一致
+    assert list(picker.select.options) == [0]  # 下拉跟着刷新
 
 
 def test_two_deletes_in_a_row_stay_aligned(in_client, box):
@@ -141,7 +142,7 @@ def test_two_deletes_in_a_row_stay_aligned(in_client, box):
         picker.ask_delete()
         box._accept()
     assert rows[0].visible is False and rows[1].visible is False
-    assert list(var) == ['0'] and var['0'] is list(rows[2].descendants())[0]
+    assert list(var) == ["0"] and var["0"] is list(rows[2].descendants())[0]
     assert list(picker.select.options) == [0]
 
 
@@ -175,7 +176,7 @@ def test_dropdown_is_filled_by_the_end_of_build_sweep(in_client, box):
     assert picker.select.options == {}
     refresh_pickers()
     assert list(picker.select.options) == [0, 1]
-    assert picker.select.options[0].startswith('文案存储路径#1 · ')
+    assert picker.select.options[0].startswith("文案存储路径#1 · ")
     assert undo.sticky.visible is False
 
 
@@ -189,7 +190,7 @@ def test_undo_is_one_shot(in_client, box):
     picker.ask_delete()
     box._accept()
     undo.restore()
-    undo.restore()                       # 撤销过一次就不该再有动作
+    undo.restore()  # 撤销过一次就不该再有动作
     assert var == before
 
 
@@ -205,7 +206,7 @@ def test_forget_closes_the_undo_window(in_client, box):
     undo.forget()
     assert undo.sticky.visible is False
     undo.restore()
-    assert list(var) == []               # 已经没有可恢复的东西
+    assert list(var) == []  # 已经没有可恢复的东西
 
 
 def test_picking_a_row_is_not_an_unsaved_change(in_client, box):
@@ -220,7 +221,7 @@ def test_picking_a_row_is_not_an_unsaved_change(in_client, box):
     guard.watch(force=True)
     picker.select.value = 1
     assert guard.count() == 0
-    real.value = 'data/y/'
+    real.value = "data/y/"
     assert guard.count() == 1
 
 
@@ -235,7 +236,7 @@ def test_edits_inside_a_deleted_group_stop_counting(in_client, box):
         picker = make_picker(card, var, lambda pos: shift_out(var, pos))
     guard.watch(force=True)
     first = rows[0].descendants().__next__()
-    first.value = 'data/changed/'
+    first.value = "data/changed/"
     assert guard.count() == 1
     picker.refresh()
     picker.select.value = 0

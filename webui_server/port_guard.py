@@ -10,6 +10,7 @@
 
 不依赖 psutil：base 环境没装，netstat/taskkill/PowerShell 都是系统自带。
 """
+
 import os
 import signal
 import socket
@@ -55,9 +56,10 @@ def _listener_pids(host: str, port: int) -> list:
     if os.name == "nt":
         # 中文系统的 netstat 输出是 GBK，在 UTF-8 模式解释器下会解码失败；解析只涉及
         # ASCII 字段（地址/状态/PID），errors="replace" 足够且不会抛异常
-        out = subprocess.run(
-            ["netstat", "-ano", "-p", "tcp"], capture_output=True, text=True, errors="replace"
-        ).stdout or ""
+        out = (
+            subprocess.run(["netstat", "-ano", "-p", "tcp"], capture_output=True, text=True, errors="replace").stdout
+            or ""
+        )
         for line in out.splitlines():
             parts = line.split()
             # TCP  本地地址  远程地址  状态  PID
@@ -66,10 +68,15 @@ def _listener_pids(host: str, port: int) -> list:
                 if local_port == port and _host_match(host, local_ip):
                     pids.add(int(parts[4]))
     else:
-        out = subprocess.run(
-            ["lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-Fp"],
-            capture_output=True, text=True, errors="replace",
-        ).stdout or ""
+        out = (
+            subprocess.run(
+                ["lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-Fp"],
+                capture_output=True,
+                text=True,
+                errors="replace",
+            ).stdout
+            or ""
+        )
         for line in out.splitlines():
             if line.startswith("p") and line[1:].isdigit():
                 pids.add(int(line[1:]))
@@ -79,21 +86,37 @@ def _listener_pids(host: str, port: int) -> list:
 def _cmdline(pid: int) -> str:
     if os.name == "nt":
         try:
-            out = subprocess.run(
-                ["wmic", "process", "where", f"ProcessId={pid}", "get", "CommandLine", "/value"],
-                capture_output=True, text=True, errors="replace", timeout=10,
-            ).stdout or ""
+            out = (
+                subprocess.run(
+                    ["wmic", "process", "where", f"ProcessId={pid}", "get", "CommandLine", "/value"],
+                    capture_output=True,
+                    text=True,
+                    errors="replace",
+                    timeout=10,
+                ).stdout
+                or ""
+            )
             for line in out.splitlines():
                 if line.startswith("CommandLine="):
                     return line.split("=", 1)[1]
         except Exception:
             pass
         try:
-            out = subprocess.run(
-                ["powershell", "-NoProfile", "-Command",
-                 f"(Get-CimInstance Win32_Process -Filter 'ProcessId={pid}').CommandLine"],
-                capture_output=True, text=True, errors="replace", timeout=15,
-            ).stdout or ""
+            out = (
+                subprocess.run(
+                    [
+                        "powershell",
+                        "-NoProfile",
+                        "-Command",
+                        f"(Get-CimInstance Win32_Process -Filter 'ProcessId={pid}').CommandLine",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    errors="replace",
+                    timeout=15,
+                ).stdout
+                or ""
+            )
             return out.strip()
         except Exception:
             return ""
@@ -108,7 +131,9 @@ def _kill_tree(pid: int):
     if os.name == "nt":
         subprocess.run(
             ["taskkill", "/F", "/T", "/PID", str(pid)],
-            capture_output=True, text=True, errors="replace",
+            capture_output=True,
+            text=True,
+            errors="replace",
         )
     else:
         try:
@@ -140,7 +165,9 @@ def ensure_port_free(host: str, port: int) -> bool:
             stale.append((pid, cmdline))
         else:
             logger.error(f"端口被其它进程占用：PID {pid} -> {cmdline or '（拿不到命令行）'}")
-            logger.error("不是 webui_server 的残留实例，不会自动处理；请换端口（--port / WEBUI_V3_PORT）或先手动结束该进程。")
+            logger.error(
+                "不是 webui_server 的残留实例，不会自动处理；请换端口（--port / WEBUI_V3_PORT）或先手动结束该进程。"
+            )
             return False
 
     if not stale:

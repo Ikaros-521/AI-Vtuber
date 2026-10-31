@@ -6,14 +6,15 @@
 
 结果行必须带上「当前值」：全站光叫「API地址」的框就有 24 个，只列名字等于没列。
 """
+
 from nicegui import ui
 
 from webui_app.fields import build_index, jump_to, value_text
 
 MAX_HITS = 12
 
-INK = '#111827'
-INK_MUT = '#4b5563'
+INK = "#111827"
+INK_MUT = "#4b5563"
 
 # ↑/↓ 在结果里移动焦点，Enter 交给浏览器原生触发（VSCode 命令面板就是这么做的）。
 # 判"对话框开着"不能靠 offsetParent——对话框是 position:fixed，它恒为 null（实测踩过）。
@@ -47,7 +48,7 @@ FOCUS_CSS = """
 def expansion_name(row):
     """这一行所在折叠区的名字（没有就空串）。"""
     expansion = row[4]
-    return str(getattr(expansion, '_props', {}).get('label') or '') if expansion else ''
+    return str(getattr(expansion, "_props", {}).get("label") or "") if expansion else ""
 
 
 def norm(text):
@@ -56,7 +57,7 @@ def norm(text):
     配置键写 openai_tts、界面标签写 OpenAI TTS（走查 audit-5 换的中文名），
     用户从 config.json 还是从屏幕上抄，都应该命中同一个东西。
     """
-    return (text or '').lower().replace('_', '').replace('-', '').replace(' ', '')
+    return (text or "").lower().replace("_", "").replace("-", "").replace(" ", "")
 
 
 def needles(row):
@@ -69,7 +70,7 @@ class ConfigSearch:
 
     def __init__(self, select_tab, accent):
         self._select_tab = select_tab
-        self._accent = accent.rstrip(';')
+        self._accent = accent.rstrip(";")
         self._index = []
         self.dialog = None
         self._results = None
@@ -81,37 +82,39 @@ class ConfigSearch:
         self.dialog = dialog
         ui.add_head_html(NAV_SCRIPT)
         ui.add_head_html(FOCUS_CSS)
-        with dialog, ui.card().classes('luna-search-card').style(
-                'width:100%;max-width:640px;padding:14px;'):
-            self._input = ui.input(placeholder='搜配置项，例如 保留条数', on_change=self._paint).props(
-                'autofocus outlined dense clearable').classes('w-full')
+        with dialog, ui.card().classes("luna-search-card").style("width:100%;max-width:640px;padding:14px;"):
+            self._input = (
+                ui.input(placeholder="搜配置项，例如 保留条数", on_change=self._paint)
+                .props("autofocus outlined dense clearable")
+                .classes("w-full")
+            )
             # 搜索框是界面控件不是配置项：不打这个标，DirtyGuard 会把输入记成「1 项未保存」
             self._input.is_config_field = False
             # Enter 落在输入框里（还没 ↑↓ 过高亮）时也要能跳：命令面板的规矩是 Enter 选当前项，
             # 没有当前项就选第一条命中
-            self._input.on('keydown.enter', self._pick_first)
-            self._summary = ui.label('').style(f'font-size:12px;color:{INK_MUT};margin:6px 0 2px;')
-            self._results = ui.column().style('width:100%;gap:2px;max-height:50vh;overflow-y:auto;')
+            self._input.on("keydown.enter", self._pick_first)
+            self._summary = ui.label("").style(f"font-size:12px;color:{INK_MUT};margin:6px 0 2px;")
+            self._results = ui.column().style("width:100%;gap:2px;max-height:50vh;overflow-y:auto;")
         ui.keyboard(self._on_key)
 
     def open(self):
         self._index = build_index()
         # 索引是重建的，上一轮的关键词留着只会误导，所以每次打开都从空查询开始
-        self._input.set_value('')
+        self._input.set_value("")
         self._paint(None)
         self.dialog.open()
 
     def _on_key(self, e):
         if not e.action.keydown:
             return
-        if e.key not in ('KeyK', 'k'):
+        if e.key not in ("KeyK", "k"):
             return
         if e.modifiers.ctrl or e.modifiers.meta:
             self.open()
 
     def _hits(self, query):
         """名字、分区、页签名、折叠区名都能搜。"""
-        q = norm((query or '').strip())
+        q = norm((query or "").strip())
         if not q:
             return []
         rows = [row for row in self._index if any(q in n for n in needles(row))]
@@ -120,41 +123,46 @@ class ConfigSearch:
         return sorted(rows, key=lambda row: (0 if q in norm(row[0]) else 1, row[2], row[1], row[0]))
 
     def _paint(self, e):
-        query = ((e.value if e is not None else self._input.value) or '').strip()
+        query = ((e.value if e is not None else self._input.value) or "").strip()
         self._results.clear()
         if not query:
-            self._summary.set_text(f'共 {len(self._index)} 个配置项，输入关键词开始找'
-                                   '（↑↓ 选，Enter 跳）')
+            self._summary.set_text(f"共 {len(self._index)} 个配置项，输入关键词开始找（↑↓ 选，Enter 跳）")
             return
         hits = self._hits(query)
         more = len(hits) - MAX_HITS
         self._summary.set_text(
-            f'命中 {len(hits)} 项' + (f'，只显示前 {MAX_HITS} 项，还有 {more} 项请换个更精确的词' if more > 0 else '')
-            + ('；↑↓ 选，Enter 跳' if hits else ''))
+            f"命中 {len(hits)} 项"
+            + (f"，只显示前 {MAX_HITS} 项，还有 {more} 项请换个更精确的词" if more > 0 else "")
+            + ("；↑↓ 选，Enter 跳" if hits else "")
+        )
         with self._results:
             if not hits:
-                with ui.row().style('align-items:center;gap:10px;padding:18px 6px;'):
-                    ui.icon('search_off').style(f'font-size:26px;color:{INK_MUT};')
-                    ui.label(f'没有匹配「{query}」的配置项，换个更短的关键词试试').style(
-                        f'font-size:13px;color:{INK_MUT};')
+                with ui.row().style("align-items:center;gap:10px;padding:18px 6px;"):
+                    ui.icon("search_off").style(f"font-size:26px;color:{INK_MUT};")
+                    ui.label(f"没有匹配「{query}」的配置项，换个更短的关键词试试").style(
+                        f"font-size:13px;color:{INK_MUT};"
+                    )
                 return
             for row in hits[:MAX_HITS]:
                 name, section, tab, element = row[0], row[1], row[2], row[5]
                 where_extra = expansion_name(row)
-                with ui.button(on_click=lambda r=row: self._jump(r)).props(
-                        'flat no-caps align=left dense').classes('w-full'):
-                    with ui.column().style('gap:0;align-items:flex-start;'):
-                        with ui.row().classes('items-baseline').style('gap:8px;flex-wrap:wrap;'):
-                            ui.label(name).style(f'font-size:14px;color:{INK};font-weight:500;')
+                with (
+                    ui.button(on_click=lambda r=row: self._jump(r))
+                    .props("flat no-caps align=left dense")
+                    .classes("w-full")
+                ):
+                    with ui.column().style("gap:0;align-items:flex-start;"):
+                        with ui.row().classes("items-baseline").style("gap:8px;flex-wrap:wrap;"):
+                            ui.label(name).style(f"font-size:14px;color:{INK};font-weight:500;")
                             # 同名控件太多，值才是区分它们的依据
-                            ui.label(f'当前 {value_text(element)}').style(f'font-size:12px;color:{INK_MUT};')
-                        where = ' · '.join(x for x in (tab, section, where_extra) if x)
+                            ui.label(f"当前 {value_text(element)}").style(f"font-size:12px;color:{INK_MUT};")
+                        where = " · ".join(x for x in (tab, section, where_extra) if x)
                         if where:
-                            ui.label(where).style(f'font-size:12px;color:{INK_MUT};')
+                            ui.label(where).style(f"font-size:12px;color:{INK_MUT};")
 
     def _pick_first(self, _e=None):
         """Enter 没落在结果行上时（焦点还在输入框），跳第一条命中。"""
-        hits = self._hits((self._input.value or '').strip())
+        hits = self._hits((self._input.value or "").strip())
         if hits:
             self._jump(hits[0])
 

@@ -11,11 +11,14 @@ import pytest
 
 from utils.common import Common
 
-OPENAI_SHAPE = {"object": "list", "data": [
-    {"id": "gpt-4o", "object": "model"},
-    {"id": "glm-4", "object": "model"},
-    {"id": "gpt-4o", "object": "model"},  # 重复的
-]}
+OPENAI_SHAPE = {
+    "object": "list",
+    "data": [
+        {"id": "gpt-4o", "object": "model"},
+        {"id": "glm-4", "object": "model"},
+        {"id": "gpt-4o", "object": "model"},  # 重复的
+    ],
+}
 
 STATE = {"status": 200, "body": "", "path": None, "auth": "MISSING", "content_type": "application/json"}
 
@@ -37,8 +40,9 @@ class _Handler(BaseHTTPRequestHandler):
 def api():
     """起一个假 OpenAI 兼容服务，返回它的 base_url 和 Common 实例。"""
     for key in STATE:
-        STATE[key] = {"status": 200, "body": "", "path": None, "auth": "MISSING",
-                      "content_type": "application/json"}[key]
+        STATE[key] = {"status": 200, "body": "", "path": None, "auth": "MISSING", "content_type": "application/json"}[
+            key
+        ]
 
     server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -98,12 +102,15 @@ def test_no_key_means_no_authorization_header(api):
     assert resp["code"] == 200
 
 
-@pytest.mark.parametrize('payload, expected', [
-    ({"models": ["a", "b"]}, ["a", "b"]),                      # one-api 风格
-    (["x", "y"], ["x", "y"]),                                  # 直接给列表
-    ({"data": [{"name": "n1"}, {"id": "i2"}]}, ["i2", "n1"]),  # 字段名不统一
-    ({"data": [{"id": None}, 3, "ok"], "models": []}, ["ok"]),  # 脏条目
-])
+@pytest.mark.parametrize(
+    "payload, expected",
+    [
+        ({"models": ["a", "b"]}, ["a", "b"]),  # one-api 风格
+        (["x", "y"], ["x", "y"]),  # 直接给列表
+        ({"data": [{"name": "n1"}, {"id": "i2"}]}, ["i2", "n1"]),  # 字段名不统一
+        ({"data": [{"id": None}, 3, "ok"], "models": []}, ["ok"]),  # 脏条目
+    ],
+)
 def test_the_shapes_other_gateways_return_are_covered(api, payload, expected):
     base_url, common = api
     _reply(payload)
@@ -111,11 +118,14 @@ def test_the_shapes_other_gateways_return_are_covered(api, payload, expected):
     assert common.get_openai_models(base_url, "sk-x")["models"] == expected
 
 
-@pytest.mark.parametrize('payload, status, raw', [
-    ({"data": []}, 200, None),                     # 通了但一个模型都没有
-    ({"error": {"message": "invalid api key"}}, 401, None),
-    (None, 200, "<html>网关挂了</html>"),            # 回来的不是 JSON
-])
+@pytest.mark.parametrize(
+    "payload, status, raw",
+    [
+        ({"data": []}, 200, None),  # 通了但一个模型都没有
+        ({"error": {"message": "invalid api key"}}, 401, None),
+        (None, 200, "<html>网关挂了</html>"),  # 回来的不是 JSON
+    ],
+)
 def test_failures_come_back_as_a_message_not_an_exception(api, payload, status, raw):
     """按钮点下去不能只把页面弄死，得告诉用户为什么。"""
     base_url, common = api
@@ -144,6 +154,7 @@ def test_an_empty_api_address_is_reported(api):
 
 
 # ---------- 回填下拉的取舍 ----------
+
 
 def test_an_empty_model_box_gets_the_first_searched_model():
     from webui_app.pages.llm import merge_model_options
@@ -180,4 +191,3 @@ def test_no_models_and_no_previous_value_stays_empty():
 
     assert options == {}
     assert selected == ""
-

@@ -49,12 +49,8 @@ def start_listen(config, common, my_handle, platform: str):
 
     try:
         if config.get("bilibili", "login_type") == "cookie":
-            logger.info(
-                "b站登录后F12抓网络包获取cookie，强烈建议使用小号！有封号风险"
-            )
-            logger.info(
-                "b站登录后，F12控制台，输入 window.localStorage.ac_time_value 回车获取(如果没有，请重新登录)"
-            )
+            logger.info("b站登录后F12抓网络包获取cookie，强烈建议使用小号！有封号风险")
+            logger.info("b站登录后，F12控制台，输入 window.localStorage.ac_time_value 回车获取(如果没有，请重新登录)")
 
             bilibili_cookie = config.get("bilibili", "cookie")
             bilibili_ac_time_value = config.get("bilibili", "ac_time_value")
@@ -79,10 +75,7 @@ def start_listen(config, common, my_handle, platform: str):
         elif config.get("bilibili", "login_type") == "手机扫码-终端":
             credential = _login_with_qrcode(terminal=True)
         elif config.get("bilibili", "login_type") == "账号密码登录":
-            logger.error(
-                "账号密码登录需要极验验证码，bilibili-api 17.x 已不再支持，"
-                "请改用 cookie 或 手机扫码 登录"
-            )
+            logger.error("账号密码登录需要极验验证码，bilibili-api 17.x 已不再支持，请改用 cookie 或 手机扫码 登录")
             my_handle.abnormal_alarm_handle("platform")
             return
         elif config.get("bilibili", "login_type") == "不登录":
@@ -157,9 +150,7 @@ def start_listen(config, common, my_handle, platform: str):
         # 总金额
         combo_total_coin = event["data"]["data"]["combo_total_coin"]
 
-        logger.info(
-            f"用户：{username} 赠送 {combo_num} 个 {gift_name}，总计 {combo_total_coin}电池"
-        )
+        logger.info(f"用户：{username} 赠送 {combo_num} 个 {gift_name}，总计 {combo_total_coin}电池")
 
         data = {
             "platform": platform,

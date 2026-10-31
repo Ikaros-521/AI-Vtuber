@@ -10,13 +10,14 @@ from utils.config import Config
 config_path = "config.json"
 config = None
 
+
 def start_listen(new_config, common, my_handle, platform: str, schedule_thread):
     global config
     config = new_config
 
     def on_message(ws, message):
         global config, config_path
-        
+
         message_json = json.loads(message)
         # logger.debug(message_json)
         if "Type" in message_json:
@@ -71,9 +72,7 @@ def start_listen(new_config, common, my_handle, platform: str, schedule_thread):
 
                 username = data_json["User"]["Nickname"]
 
-                logger.info(
-                    f'[➕直播间关注消息] 感谢 {data_json["User"]["Nickname"]} 的关注'
-                )
+                logger.info(f"[➕直播间关注消息] 感谢 {data_json['User']['Nickname']} 的关注")
 
                 data = {"platform": platform, "username": username}
 
@@ -104,9 +103,7 @@ def start_listen(new_config, common, my_handle, platform: str, schedule_thread):
                         # 单个礼物金额 需要自己维护礼物价值表
                         discount_price = data_json[gift_name]
                     else:
-                        logger.warning(
-                            f"数据文件：{data_path} 中，没有 {gift_name} 对应的价值，请手动补充数据"
-                        )
+                        logger.warning(f"数据文件：{data_path} 中，没有 {gift_name} 对应的价值，请手动补充数据")
                         discount_price = 1
                 except Exception:
                     logger.error(traceback.format_exc())
@@ -131,7 +128,7 @@ def start_listen(new_config, common, my_handle, platform: str, schedule_thread):
                 my_handle.process_data(data, "gift")
 
             elif type == 6:
-                logger.info(f'[直播间数据] {data_json["Content"]}')
+                logger.info(f"[直播间数据] {data_json['Content']}")
                 # {'OnlineUserCount': 50, 'TotalUserCount': 22003, 'TotalUserCountStr': '2.2万', 'OnlineUserCountStr': '50',
                 # 'MsgId': 7260517442466662207, 'User': None, 'Content': '当前直播间人数 50，累计直播间人数 2.2万', 'RoomId': 7260415920948906807}
                 # logger.info(f"data_json={data_json}")
@@ -145,18 +142,11 @@ def start_listen(new_config, common, my_handle, platform: str, schedule_thread):
                     # 是否开启了动态配置功能
                     if config.get("trends_config", "enable"):
                         for path_config in config.get("trends_config", "path"):
-                            online_num_min = int(
-                                path_config["online_num"].split("-")[0]
-                            )
-                            online_num_max = int(
-                                path_config["online_num"].split("-")[1]
-                            )
+                            online_num_min = int(path_config["online_num"].split("-")[0])
+                            online_num_max = int(path_config["online_num"].split("-")[1])
 
                             # 判断在线人数是否在此范围内
-                            if (
-                                OnlineUserCount >= online_num_min
-                                and OnlineUserCount <= online_num_max
-                            ):
+                            if OnlineUserCount >= online_num_min and OnlineUserCount <= online_num_max:
                                 logger.debug(f"当前配置文件：{path_config['path']}")
                                 # 如果配置文件相同，则跳过
                                 if config_path == path_config["path"]:
@@ -176,9 +166,7 @@ def start_listen(new_config, common, my_handle, platform: str, schedule_thread):
                 pass
 
             elif type == 8:
-                logger.info(
-                    f'[分享直播间] 感谢 {data_json["User"]["Nickname"]} 分享了直播间'
-                )
+                logger.info(f"[分享直播间] 感谢 {data_json['User']['Nickname']} 分享了直播间")
 
                 pass
 

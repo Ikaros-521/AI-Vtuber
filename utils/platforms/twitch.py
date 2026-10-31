@@ -7,6 +7,7 @@ import traceback
 from utils.my_log import logger
 import utils.my_global as my_global
 
+
 def start_listen(config, common, my_handle, platform: str):
     try:
         server = "irc.chat.twitch.tv"
@@ -14,15 +15,11 @@ def start_listen(config, common, my_handle, platform: str):
         nickname = "主人"
 
         try:
-            channel = (
-                "#" + config.get("room_display_id")
+            channel = "#" + config.get(
+                "room_display_id"
             )  # 要从中检索消息的频道，注意#必须携带在头部 The channel you want to retrieve messages from
-            token = config.get(
-                "twitch", "token"
-            )  # 访问 https://twitchapps.com/tmi/ 获取
-            user = config.get(
-                "twitch", "user"
-            )  # 你的Twitch用户名 Your Twitch username
+            token = config.get("twitch", "token")  # 访问 https://twitchapps.com/tmi/ 获取
+            user = config.get("twitch", "user")  # 你的Twitch用户名 Your Twitch username
             # 代理服务器的地址和端口
             proxy_server = config.get("twitch", "proxy_server")
             proxy_port = int(config.get("twitch", "proxy_port"))

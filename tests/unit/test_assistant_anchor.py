@@ -50,9 +50,13 @@ def last_synthesis(audio):
 
 @pytest.fixture
 def text_anchor(configure):
-    handle = configure(base_config({
-        "text": {"enable": True, "format": "text", "file_path": "data/qa", "similarity": 0.9},
-    }))
+    handle = configure(
+        base_config(
+            {
+                "text": {"enable": True, "format": "text", "file_path": "data/qa", "similarity": 0.9},
+            }
+        )
+    )
     My_handle.audio = AnchorAudio()
     handle.find_answer = lambda content, path, similarity: f"晴天:{content}"
     handle.write_to_comment_log = lambda *args: None
@@ -75,9 +79,13 @@ def test_text_answer_without_a_queue_position_stays_silent_on_the_key(text_ancho
 
 @pytest.fixture
 def audio_anchor(configure):
-    handle = configure(base_config({
-        "audio": {"enable": True, "type": "相似度匹配", "file_path": "data/qa", "similarity": 0},
-    }))
+    handle = configure(
+        base_config(
+            {
+                "audio": {"enable": True, "type": "相似度匹配", "file_path": "data/qa", "similarity": 0},
+            }
+        )
+    )
     My_handle.audio = AnchorAudio()
     # 命中问答库这件事本身不是被测点，直接让它必定命中
     handle.common.find_best_match = lambda text, lst, similarity=0.5: lst[0] if lst else None

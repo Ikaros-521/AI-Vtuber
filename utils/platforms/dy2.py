@@ -18,6 +18,7 @@ from utils.config import Config
 config_path = "config.json"
 config = None
 
+
 def start_listen(new_config, common, my_handle, platform: str):
     global config
     config = new_config
@@ -77,7 +78,6 @@ def start_listen(new_config, common, my_handle, platform: str):
             )
 
         def send_heartbeat(self, ws):
-            
 
             def heartbeat():
                 while True:
@@ -138,9 +138,7 @@ def start_listen(new_config, common, my_handle, platform: str):
             else:
                 match = re.search(r'roomId\\":\\"(\d+)\\"', response.text)
                 if match is None or len(match.groups()) < 1:
-                    logger.error(
-                        "【X】无法获取 真 roomId，可能是直播间号配置错了，或者被官方拉黑了"
-                    )
+                    logger.error("【X】无法获取 真 roomId，可能是直播间号配置错了，或者被官方拉黑了")
                     return None
 
                 self.__room_id = match.group(1)
@@ -284,9 +282,7 @@ def start_listen(new_config, common, my_handle, platform: str):
                     # 单个礼物金额 需要自己维护礼物价值表
                     discount_price = data_json[gift_name]
                 else:
-                    logger.warning(
-                        f"数据文件：{data_path} 中，没有 {gift_name} 对应的价值，请手动补充数据"
-                    )
+                    logger.warning(f"数据文件：{data_path} 中，没有 {gift_name} 对应的价值，请手动补充数据")
                     discount_price = 1
             except Exception:
                 logger.error(traceback.format_exc())
@@ -358,12 +354,9 @@ def start_listen(new_config, common, my_handle, platform: str):
             message = RoomUserSeqMessage().parse(payload)
             OnlineUserCount = message.total
             total = message.total_pv_for_anchor
-            logger.info(
-                f"【统计msg】当前观看人数: {OnlineUserCount}, 累计观看人数: {total}"
-            )
+            logger.info(f"【统计msg】当前观看人数: {OnlineUserCount}, 累计观看人数: {total}")
 
             try:
-
                 # {'OnlineUserCount': 50, 'TotalUserCount': 22003, 'TotalUserCountStr': '2.2万', 'OnlineUserCountStr': '50',
                 # 'MsgId': 7260517442466662207, 'User': None, 'Content': '当前直播间人数 50，累计直播间人数 2.2万', 'RoomId': 7260415920948906807}
                 # logger.info(f"data_json={data_json}")
@@ -376,18 +369,11 @@ def start_listen(new_config, common, my_handle, platform: str):
                 # 是否开启了动态配置功能
                 if config.get("trends_config", "enable"):
                     for path_config in config.get("trends_config", "path"):
-                        online_num_min = int(
-                            path_config["online_num"].split("-")[0]
-                        )
-                        online_num_max = int(
-                            path_config["online_num"].split("-")[1]
-                        )
+                        online_num_min = int(path_config["online_num"].split("-")[0])
+                        online_num_max = int(path_config["online_num"].split("-")[1])
 
                         # 判断在线人数是否在此范围内
-                        if (
-                            OnlineUserCount >= online_num_min
-                            and OnlineUserCount <= online_num_max
-                        ):
+                        if OnlineUserCount >= online_num_min and OnlineUserCount <= online_num_max:
                             logger.debug(f"当前配置文件：{path_config['path']}")
                             # 如果配置文件相同，则跳过
                             if config_path == path_config["path"]:
@@ -419,9 +405,7 @@ def start_listen(new_config, common, my_handle, platform: str):
             user = message.user
             common = message.common
             default_content = message.default_content
-            logger.info(
-                f"【聊天表情包id】 {emoji_id},user：{user},common:{common},default_content:{default_content}"
-            )
+            logger.info(f"【聊天表情包id】 {emoji_id},user：{user},common:{common},default_content:{default_content}")
 
         def _parseRoomMsg(self, payload):
             message = RoomMessage().parse(payload)

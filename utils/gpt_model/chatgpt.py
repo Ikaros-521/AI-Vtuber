@@ -25,10 +25,9 @@ class Chatgpt:
     def __init__(self, data_openai, data_chatgpt):
         self.common = Common()
         # 设置会话初始值
-        self.session_config = {'msg': [{"role": "system", "content": data_chatgpt["preset"]}]}
+        self.session_config = {"msg": [{"role": "system", "content": data_chatgpt["preset"]}]}
         self.data_openai = data_openai
         self.data_chatgpt = data_chatgpt
-
 
     # chatgpt相关
     def chat(self, msg, sessionid):
@@ -43,13 +42,13 @@ class Chatgpt:
             session = self.get_chat_session(sessionid)
 
             # 将用户输入的消息添加到会话中
-            session['msg'].append({"role": "user", "content": msg})
+            session["msg"].append({"role": "user", "content": msg})
 
             # 添加当前时间到会话中
-            session['msg'][1] = {"role": "system", "content": "current time is:" + self.common.get_bj_time()}
+            session["msg"][1] = {"role": "system", "content": "current time is:" + self.common.get_bj_time()}
 
             # 调用 ChatGPT 接口生成回复消息
-            message = self.chat_with_gpt(session['msg'])
+            message = self.chat_with_gpt(session["msg"])
 
             if message is None:
                 return None
@@ -60,13 +59,13 @@ class Chatgpt:
                 # 原来删的是 [0:3]，把两条 system 和刚加的 user 全删了，重试那次
                 # 给只有 1 个元素的列表做 msg[1] = ... 直接 IndexError，
                 # 撞上上下文超长就永远只会返回 None
-                del session['msg'][2:]
+                del session["msg"][2:]
                 # 重试那一次自己会把 assistant 回复写回会话，所以这里必须直接返回，
                 # 再往下走会又 append 一遍，历史里留下两条一模一样的回复
                 return self.chat(msg, sessionid)
 
             # 将 ChatGPT 返回的回复消息添加到会话中
-            session['msg'].append({"role": "assistant", "content": message})
+            session["msg"].append({"role": "assistant", "content": message})
 
             # 输出会话 ID 和 ChatGPT 返回的回复消息
             logger.info("会话ID: " + str(sessionid))
@@ -80,7 +79,6 @@ class Chatgpt:
         except Exception:
             logger.error(traceback.format_exc())
             return None
-
 
     def get_chat_session(self, sessionid):
         """
@@ -98,8 +96,8 @@ class Chatgpt:
                 return session
 
             config = deepcopy(self.session_config)
-            config['id'] = sessionid
-            config['msg'].append({"role": "system", "content": "current time is:" + self.common.get_bj_time()})
+            config["id"] = sessionid
+            config["msg"].append({"role": "system", "content": "current time is:" + self.common.get_bj_time()})
             Chatgpt.sessions[sessionid] = config
 
             while len(Chatgpt.sessions) > self.MAX_SESSIONS:
@@ -107,19 +105,18 @@ class Chatgpt:
 
             return Chatgpt.sessions[sessionid]
 
-
     def chat_with_gpt(self, messages):
         """
         使用 ChatGPT 接口生成回复消息
         :param messages: 上下文消息列表
         :return: ChatGPT 返回的回复消息
         """
-        max_length = len(self.data_openai['api_key']) - 1
+        max_length = len(self.data_openai["api_key"]) - 1
 
         try:
-            openai.api_base = self.data_openai['api']
+            openai.api_base = self.data_openai["api"]
 
-            if not self.data_openai['api_key']:
+            if not self.data_openai["api_key"]:
                 logger.error("请设置openai Api Key")
                 return None
             else:
@@ -128,41 +125,38 @@ class Chatgpt:
                     self.current_key_index = 0
                     logger.warning("全部Key均已达到速率限制,请等待一分钟后再尝试")
                     return None
-                openai.api_key = self.data_openai['api_key'][self.current_key_index]
+                openai.api_key = self.data_openai["api_key"][self.current_key_index]
 
             logger.debug(f"openai.__version__={openai.__version__}")
 
             # 判断openai库版本，1.x.x和0.x.x有破坏性更新
-            if version.parse(openai.__version__) < version.parse('1.0.0'):
+            if version.parse(openai.__version__) < version.parse("1.0.0"):
                 # 调用 ChatGPT 接口生成回复消息
-                resp = openai.ChatCompletion.create(
-                    model=self.data_chatgpt['model'],
-                    messages=messages,
-                    timeout=30
-                )
+                resp = openai.ChatCompletion.create(model=self.data_chatgpt["model"], messages=messages, timeout=30)
 
-                resp = resp['choices'][0]['message']['content']
+                resp = resp["choices"][0]["message"]["content"]
             else:
                 logger.debug(f"base_url={openai.api_base}, api_key={openai.api_key}")
 
                 client = openai.OpenAI(base_url=openai.api_base, api_key=openai.api_key)
                 # 调用 ChatGPT 接口生成回复消息
-                resp = client.chat.completions.create(
-                    model=self.data_chatgpt['model'],
-                    messages=messages,
-                    timeout=30
-                )
+                resp = client.chat.completions.create(model=self.data_chatgpt["model"], messages=messages, timeout=30)
 
                 resp = resp.choices[0].message.content
         # 处理 OpenAIError 异常
         except openai.OpenAIError as e:
-            if str(e).__contains__("Rate limit reached for default-gpt-3.5-turbo") and self.current_key_index <= max_length:
+            if (
+                str(e).__contains__("Rate limit reached for default-gpt-3.5-turbo")
+                and self.current_key_index <= max_length
+            ):
                 self.current_key_index = self.current_key_index + 1
                 logger.warning("速率限制，尝试切换key")
                 msg = self.chat_with_gpt(messages)
                 return msg
-            elif str(e).__contains__(
-                    "Your access was terminated due to violation of our policies") and self.current_key_index <= max_length:
+            elif (
+                str(e).__contains__("Your access was terminated due to violation of our policies")
+                and self.current_key_index <= max_length
+            ):
                 logger.warning("请及时确认该Key: " + str(openai.api_key) + " 是否正常，若异常，请移除")
 
                 # 判断是否所有 API key 均已尝试
@@ -174,7 +168,7 @@ class Chatgpt:
                     msg = self.chat_with_gpt(messages)
                     return msg
             else:
-                logger.error('openai 接口报错: ' + str(e))
+                logger.error("openai 接口报错: " + str(e))
                 return None
 
         return resp
@@ -191,21 +185,21 @@ class Chatgpt:
             session = self.get_chat_session(sessionid)
 
             # 将用户输入的消息添加到会话中
-            session['msg'].append({"role": "user", "content": msg})
+            session["msg"].append({"role": "user", "content": msg})
 
             # 添加当前时间到会话中
-            session['msg'][1] = {"role": "system", "content": "current time is:" + self.common.get_bj_time()}
+            session["msg"][1] = {"role": "system", "content": "current time is:" + self.common.get_bj_time()}
 
             # logger.warning(sessionid)
             # logger.warning(session)
 
-            messages = session['msg']
+            messages = session["msg"]
 
-            max_length = len(self.data_openai['api_key']) - 1
+            max_length = len(self.data_openai["api_key"]) - 1
 
-            openai.api_base = self.data_openai['api']
+            openai.api_base = self.data_openai["api"]
 
-            if not self.data_openai['api_key']:
+            if not self.data_openai["api_key"]:
                 logger.error("请设置openai Api Key")
                 return None
             else:
@@ -214,15 +208,15 @@ class Chatgpt:
                     self.current_key_index = 0
                     logger.warning("全部Key均已达到速率限制,请等待一分钟后再尝试")
                     return None
-                openai.api_key = self.data_openai['api_key'][self.current_key_index]
+                openai.api_key = self.data_openai["api_key"][self.current_key_index]
 
             logger.debug(f"openai.__version__={openai.__version__}")
 
             # 判断openai库版本，1.x.x和0.x.x有破坏性更新
-            if version.parse(openai.__version__) < version.parse('1.0.0'):
+            if version.parse(openai.__version__) < version.parse("1.0.0"):
                 # 调用 ChatGPT 接口生成回复消息
                 resp = openai.ChatCompletion.create(
-                    model=self.data_chatgpt['model'],
+                    model=self.data_chatgpt["model"],
                     messages=messages,
                     timeout=30,
                     stream=True,
@@ -234,7 +228,7 @@ class Chatgpt:
                 client = openai.OpenAI(base_url=openai.api_base, api_key=openai.api_key)
                 # 调用 ChatGPT 接口生成回复消息
                 resp = client.chat.completions.create(
-                    model=self.data_chatgpt['model'],
+                    model=self.data_chatgpt["model"],
                     messages=messages,
                     timeout=30,
                     stream=True,
@@ -245,7 +239,6 @@ class Chatgpt:
         except Exception:
             logger.error(traceback.format_exc())
             return None
-
 
     # 调用gpt接口，获取返回内容
     def get_gpt_resp(self, username, prompt, stream=False):
@@ -260,14 +253,14 @@ class Chatgpt:
         except Exception:
             logger.error(traceback.format_exc())
             return None
-    
+
     # 添加AI返回消息到会话，用于提供上下文记忆
     def add_assistant_msg_to_session(self, username, message):
         try:
             # 获取当前用户的会话
             session = self.get_chat_session(str(username))
             # 将 ChatGPT 返回的回复消息添加到会话中
-            session['msg'].append({"role": "assistant", "content": message})
+            session["msg"].append({"role": "assistant", "content": message})
 
             # logger.warning(str(username))
             # logger.warning(session)
@@ -276,4 +269,3 @@ class Chatgpt:
         except Exception:
             logger.error(traceback.format_exc())
             return {"ret": False}
-

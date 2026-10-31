@@ -11,14 +11,13 @@ import pytest
 from nicegui import Client, ui
 from nicegui.page import page
 
-from webui_app.overview import (NAV_GROUPS, OVERVIEW, group_of, page_order,
-                                readiness)
+from webui_app.overview import NAV_GROUPS, OVERVIEW, group_of, page_order, readiness
 from webui_app.repage import PAGE_PLAN, _blocks, _with_following, order_tabs
 from webui_app.fields import field_name
 from webui_app.search import ConfigSearch
 from webui_app.sections import _sections_of
 
-TEST_PAGE = page('/webui-nav-unit-test')
+TEST_PAGE = page("/webui-nav-unit-test")
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
@@ -33,9 +32,10 @@ def in_client():
 
 # ─────────────────────────────────────────── 分组导航
 
+
 def test_every_nav_page_is_listed_once():
     flat = [name for _group, members in NAV_GROUPS for name in members]
-    assert len(flat) == len(set(flat)), '同一个页面被放进了两个组'
+    assert len(flat) == len(set(flat)), "同一个页面被放进了两个组"
 
 
 def test_group_of_maps_members_and_defaults_to_overview():
@@ -43,7 +43,7 @@ def test_group_of_maps_members_and_defaults_to_overview():
         for name in members:
             assert group_of(name) == group
     assert group_of(OVERVIEW) == OVERVIEW
-    assert group_of('没听过的页面') == OVERVIEW     # 未知页面归到总览，不在导航条上高亮一个不存在的组
+    assert group_of("没听过的页面") == OVERVIEW  # 未知页面归到总览，不在导航条上高亮一个不存在的组
 
 
 def test_readiness_reports_real_config_only():
@@ -59,188 +59,218 @@ def test_readiness_reports_real_config_only():
                     return None
             return out
 
-    rows = readiness(FakeConfig({
-        'platform': 'bilibili2', 'room_display_id': '278333', 'chat_type': 'chatgpt',
-        'audio_synthesis_type': 'edge-tts', 'visual_body': '其他',
-    }))
-    assert [r['ok'] for r in rows] == [True, True, True, True]
-    assert '278333' in rows[0]['value']
+    rows = readiness(
+        FakeConfig(
+            {
+                "platform": "bilibili2",
+                "room_display_id": "278333",
+                "chat_type": "chatgpt",
+                "audio_synthesis_type": "edge-tts",
+                "visual_body": "其他",
+            }
+        )
+    )
+    assert [r["ok"] for r in rows] == [True, True, True, True]
+    assert "278333" in rows[0]["value"]
     # 总览把这四行标成 1→4 的首次配置路径，顺序就是引导本身，不能随便重排
-    assert [r['title'] for r in rows] == ['弹幕来源', '大语言模型', '文本转语音', '虚拟身体']
+    assert [r["title"] for r in rows] == ["弹幕来源", "大语言模型", "文本转语音", "虚拟身体"]
 
-    empty = readiness(FakeConfig({'platform': 'talk', 'room_display_id': '', 'chat_type': 'none',
-                                  'audio_synthesis_type': 'none', 'visual_body': None}))
-    assert [r['ok'] for r in empty] == [False, False, False, False]
+    empty = readiness(
+        FakeConfig(
+            {
+                "platform": "talk",
+                "room_display_id": "",
+                "chat_type": "none",
+                "audio_synthesis_type": "none",
+                "visual_body": None,
+            }
+        )
+    )
+    assert [r["ok"] for r in empty] == [False, False, False, False]
     # 就绪度跳的目标页必须真的在导航里，不然「去配置」会跳到一个不存在的 tab
     pages = {OVERVIEW} | {n for _g, m in NAV_GROUPS for n in m}
-    assert all(r['tab'] in pages for r in rows)
+    assert all(r["tab"] in pages for r in rows)
 
 
 # ─────────────────────────────────────────── 搜索
 
+
 def test_name_of_covers_both_label_and_text():
     """ui.switch/checkbox 的文字在 .text 上，只读 .label 会静默漏掉全部开关。"""
     with Client(TEST_PAGE):
-        box = ui.input('违禁词路径')
-        sw = ui.switch('启用音频匹配')
-        cb = ui.checkbox('同意')
-        area = ui.textarea('回复模板')
-        sel = ui.select(label='平台', options=['a'])
+        box = ui.input("违禁词路径")
+        sw = ui.switch("启用音频匹配")
+        cb = ui.checkbox("同意")
+        area = ui.textarea("回复模板")
+        sel = ui.select(label="平台", options=["a"])
         empty = ui.input()
-    assert field_name(box) == '违禁词路径'
-    assert field_name(sw) == '启用音频匹配'
-    assert field_name(cb) == '同意'
-    assert field_name(area) == '回复模板'
-    assert field_name(sel) == '平台'
-    assert field_name(empty) == ''
+    assert field_name(box) == "违禁词路径"
+    assert field_name(sw) == "启用音频匹配"
+    assert field_name(cb) == "同意"
+    assert field_name(area) == "回复模板"
+    assert field_name(sel) == "平台"
+    assert field_name(empty) == ""
 
 
 def test_hits_match_name_and_section_case_insensitively():
-    index = [('保留条数', '定时任务', '定时与闲时', 0, None, None),
-             ('Max Tokens', '大语言模型', '大语言模型', 0, None, None),
-             ('别的', '无关', '无关', 0, None, None)]
-    search = ConfigSearch(lambda name: None, '#3e78bd;')
+    index = [
+        ("保留条数", "定时任务", "定时与闲时", 0, None, None),
+        ("Max Tokens", "大语言模型", "大语言模型", 0, None, None),
+        ("别的", "无关", "无关", 0, None, None),
+    ]
+    search = ConfigSearch(lambda name: None, "#3e78bd;")
     search._index = index
-    assert [r[0] for r in search._hits('保留')] == ['保留条数']
-    assert [r[0] for r in search._hits('max tokens')] == ['Max Tokens']
-    assert [r[0] for r in search._hits('定时任务')] == ['保留条数']   # 按分区也能命中
-    assert search._hits('   ') == []
+    assert [r[0] for r in search._hits("保留")] == ["保留条数"]
+    assert [r[0] for r in search._hits("max tokens")] == ["Max Tokens"]
+    assert [r[0] for r in search._hits("定时任务")] == ["保留条数"]  # 按分区也能命中
+    assert search._hits("   ") == []
 
 
 def test_search_ignores_separators_so_raw_keys_still_hit():
     """标签从 openai_tts 换成 OpenAI TTS 之后（走查 audit-5），
     从 config.json 抄来的键名不能就搜不到了。"""
-    index = [('OpenAI TTS', '文本转语音', '文本转语音', 0, None, None),
-             ('Bert-VITS2', '文本转语音', '文本转语音', 1, None, None)]
-    search = ConfigSearch(lambda name: None, '#3e78bd;')
+    index = [
+        ("OpenAI TTS", "文本转语音", "文本转语音", 0, None, None),
+        ("Bert-VITS2", "文本转语音", "文本转语音", 1, None, None),
+    ]
+    search = ConfigSearch(lambda name: None, "#3e78bd;")
     search._index = index
-    for query in ('openai_tts', 'openai tts', 'OPENAI-TTS'):
-        assert [r[0] for r in search._hits(query)] == ['OpenAI TTS'], query
-    assert [r[0] for r in search._hits('bert_vits2')] == ['Bert-VITS2']
-    assert search._hits('azure_tts') == []
+    for query in ("openai_tts", "openai tts", "OPENAI-TTS"):
+        assert [r[0] for r in search._hits(query)] == ["OpenAI TTS"], query
+    assert [r[0] for r in search._hits("bert_vits2")] == ["Bert-VITS2"]
+    assert search._hits("azure_tts") == []
 
 
 def test_name_hits_rank_above_section_hits():
     """GPT-SoVITS 卡里 11 个字段都按折叠区名命中，把开关本身挤到了显示上限之外（实测）。"""
+
     class Exp:
         def __init__(self, label):
-            self._props = {'label': label}
+            self._props = {"label": label}
 
-    gpt = Exp('GPT-SoVITS')
-    index = [('preset', '文本转语音', '文本转语音', 0, gpt, None),
-             ('temperature', '文本转语音', '文本转语音', 1, gpt, None),
-             ('GPT-SoVITS', '文本转语音', '页面配置', 0, None, None)]
-    search = ConfigSearch(lambda name: None, '#3e78bd;')
+    gpt = Exp("GPT-SoVITS")
+    index = [
+        ("preset", "文本转语音", "文本转语音", 0, gpt, None),
+        ("temperature", "文本转语音", "文本转语音", 1, gpt, None),
+        ("GPT-SoVITS", "文本转语音", "页面配置", 0, None, None),
+    ]
+    search = ConfigSearch(lambda name: None, "#3e78bd;")
     search._index = index
-    assert [r[0] for r in search._hits('gpt_sovits')] == ['GPT-SoVITS', 'preset', 'temperature']
+    assert [r[0] for r in search._hits("gpt_sovits")] == ["GPT-SoVITS", "preset", "temperature"]
 
 
 def test_enter_jumps_to_the_first_hit(in_client):
     """只命中一条时 ↑↓ 走不到那行，Enter 必须能直接跳——命令面板的规矩。"""
-    search = ConfigSearch(lambda name: None, '#3e78bd;')
+    search = ConfigSearch(lambda name: None, "#3e78bd;")
     search.build()
-    search._index = [('保留条数', '定时任务', '定时与闲时', 0, None, None),
-                     ('保留条数', '聊天', '聊天', 1, None, None)]
+    search._index = [("保留条数", "定时任务", "定时与闲时", 0, None, None), ("保留条数", "聊天", "聊天", 1, None, None)]
     jumped = []
     search._jump = lambda row: jumped.append(row[0])
-    search._input.set_value('保留')
+    search._input.set_value("保留")
     search._pick_first()
-    assert jumped == ['保留条数']
-    search._input.set_value('没这个东西')
+    assert jumped == ["保留条数"]
+    search._input.set_value("没这个东西")
     search._pick_first()
-    assert jumped == ['保留条数']       # 没命中就别乱跳
+    assert jumped == ["保留条数"]  # 没命中就别乱跳
 
 
 def test_hits_also_match_the_tab_and_the_collapsed_section():
     """折叠区里的字段搜折叠区名也要能捞出来，不然用户只知道"有这么个设置"时搜不到。"""
+
     class FakeExpansion:
         def __init__(self, label):
-            self._props = {'label': label}
+            self._props = {"label": label}
 
-    index = [('消息保留条数', '过滤', '过滤', 0, FakeExpansion('消息历史清理设置'), None),
-             ('房间号', '平台接入', '平台接入', 0, None, None)]
-    search = ConfigSearch(lambda name: None, '#3e78bd;')
+    index = [
+        ("消息保留条数", "过滤", "过滤", 0, FakeExpansion("消息历史清理设置"), None),
+        ("房间号", "平台接入", "平台接入", 0, None, None),
+    ]
+    search = ConfigSearch(lambda name: None, "#3e78bd;")
     search._index = index
-    assert [r[0] for r in search._hits('历史清理')] == ['消息保留条数']
-    assert [r[0] for r in search._hits('平台接入')] == ['房间号']
+    assert [r[0] for r in search._hits("历史清理")] == ["消息保留条数"]
+    assert [r[0] for r in search._hits("平台接入")] == ["房间号"]
 
 
 def test_duplicate_labels_get_distinct_ordinals(in_client):
     """同名控件（音频存储路径#1/#2）跳过去要落在对的那一个。"""
     from webui_app.search import build_index
+
     with in_client:
         with ui.tabs() as tabs:
-            t = ui.tab('页面')
+            t = ui.tab("页面")
         with ui.tab_panels(tabs, value=t):
             with ui.tab_panel(t):
-                ui.input(label='重复项')
-                ui.input(label='重复项')
-    rows = [r for r in build_index() if r[0] == '重复项']
+                ui.input(label="重复项")
+                ui.input(label="重复项")
+    rows = [r for r in build_index() if r[0] == "重复项"]
     assert [r[3] for r in rows] == [0, 1]
-    assert all(r[2] == '页面' for r in rows)          # 归属到所在 tab
+    assert all(r[2] == "页面" for r in rows)  # 归属到所在 tab
 
 
 # ─────────────────────────────────────────── 区块索引
+
 
 def test_sections_of_stops_at_nested_cards(in_client):
     with in_client:
         with ui.column() as root:
             with ui.card():
-                ui.label('外层')
+                ui.label("外层")
                 with ui.card():
-                    ui.label('内层不该单独列')
+                    ui.label("内层不该单独列")
             with ui.row():
                 with ui.card():
-                    ui.label('包在 row 里也要找到')
-    assert _sections_of(root) == ['外层', '包在 row 里也要找到']
+                    ui.label("包在 row 里也要找到")
+    assert _sections_of(root) == ["外层", "包在 row 里也要找到"]
 
 
 def test_sections_of_drills_into_expansions(in_client):
     """折叠区里有卡片就按卡片分块；只有一张无标题容器卡的（联动程序）整块算一个。"""
     with in_client:
         with ui.column() as root:
-            with ui.expansion('互动功能'):
+            with ui.expansion("互动功能"):
                 with ui.card():
-                    ui.label('念弹幕')
+                    ui.label("念弹幕")
                 with ui.card():
-                    ui.label('答谢')
-            with ui.expansion('联动程序'):
+                    ui.label("答谢")
+            with ui.expansion("联动程序"):
                 ui.card()
-    assert _sections_of(root) == ['念弹幕', '答谢', '联动程序']
+    assert _sections_of(root) == ["念弹幕", "答谢", "联动程序"]
 
 
 def test_short_pages_get_no_index(in_client, monkeypatch):
-    monkeypatch.setattr('webui_app.sections.MIN_SECTIONS', 2)
+    monkeypatch.setattr("webui_app.sections.MIN_SECTIONS", 2)
     with in_client:
         with ui.tabs() as tabs:
-            t1 = ui.tab('短页')
-            t2 = ui.tab('长页')
+            t1 = ui.tab("短页")
+            t2 = ui.tab("长页")
         with ui.tab_panels(tabs, value=t1) as panels:
             with ui.tab_panel(t1):
                 with ui.card():
-                    ui.label('只有一块')
+                    ui.label("只有一块")
             with ui.tab_panel(t2):
-                for name in ('一', '二'):
+                for name in ("一", "二"):
                     with ui.card():
                         ui.label(name)
         from webui_app.sections import add_section_indexes
-        result = add_section_indexes('#3e78bd;')
+
+        result = add_section_indexes("#3e78bd;")
         short_panel, long_panel = list(panels)
-    assert list(result) == ['长页']
-    assert len(list(short_panel)) == 1                        # 短页不挂索引条
-    index_row = list(long_panel)[0]                           # 索引条必须在最前面
-    assert '本页区块' in [c.text for c in index_row if hasattr(c, 'text')]
+    assert list(result) == ["长页"]
+    assert len(list(short_panel)) == 1  # 短页不挂索引条
+    index_row = list(long_panel)[0]  # 索引条必须在最前面
+    assert "本页区块" in [c.text for c in index_row if hasattr(c, "text")]
 
 
 # ─────────────────────────────────────────── 页面拆分
+
 
 def test_unknown_block_title_fails_loudly(in_client):
     with in_client:
         with ui.column() as root:
             with ui.card():
-                ui.label('存在的块')
+                ui.label("存在的块")
     with pytest.raises(LookupError):
-        _with_following(root, _blocks(root), ['不存在的块'])
+        _with_following(root, _blocks(root), ["不存在的块"])
 
 
 def test_following_untitled_card_travels_with_its_group(in_client):
@@ -248,11 +278,11 @@ def test_following_untitled_card_travels_with_its_group(in_client):
     with in_client:
         with ui.column() as root:
             with ui.card():
-                ui.label('定时任务')
+                ui.label("定时任务")
             group = ui.card()
             with ui.card():
-                ui.label('下一块')
-    picked = _with_following(root, _blocks(root), ['定时任务'])
+                ui.label("下一块")
+    picked = _with_following(root, _blocks(root), ["定时任务"])
     assert [id(p) for p in picked] == [id(list(root)[0]), id(group)]
 
 
@@ -261,17 +291,17 @@ def test_page_plan_titles_still_exist_in_the_source():
 
     这里直接扫源码把标题钉住：改卡片名的人会在测试里看到是哪一条对不上。
     """
-    source = open(ROOT / 'webui_app' / 'pages' / 'common_config.py', encoding='utf-8').read()
+    source = open(ROOT / "webui_app" / "pages" / "common_config.py", encoding="utf-8").read()
     labels = set(re.findall(r'ui\.label\(\s*[\'"]([^\'"]+)[\'"]', source))
     labels |= set(re.findall(r'ui\.expansion\(\s*[\'"]([^\'"]+)[\'"]', source))
     fields = set(re.findall(r'label\s*=\s*[\'"]([^\'"]+)[\'"]', source))
 
     for _page, wanted in PAGE_PLAN:
         for item in wanted:
-            if item.startswith('@row:'):
-                assert item.split(':', 1)[1] in fields, f'裸 row 的锚定字段没了：{item}'
+            if item.startswith("@row:"):
+                assert item.split(":", 1)[1] in fields, f"裸 row 的锚定字段没了：{item}"
             else:
-                assert item in labels, f'{_page} 页要的区块标题找不到了：{item}'
+                assert item in labels, f"{_page} 页要的区块标题找不到了：{item}"
 
 
 def test_split_filter_page_still_saves_the_same_fields():
@@ -281,14 +311,14 @@ def test_split_filter_page_still_saves_the_same_fields():
     class FakeConfig:
         def get(self, *keys):
             # 只回答「板块显示/隐藏」，控件初值一律给 None（等价于配置里没有这一项）
-            return True if keys[-1] == 'filter' and keys[0] == 'webui' else None
+            return True if keys[-1] == "filter" and keys[0] == "webui" else None
 
     with Client(TEST_PAGE):
-        page_config = build_interact_filter_tab(FakeConfig(), '', '')
-    fields = page_config.mapping['filter']
-    assert {'before_must_str', 'badwords', 'priority_mapping', 'blacklist'} <= set(fields)
-    assert fields['max_len'][1] == 'int'
-    assert fields['badwords']['path'][1] == 'str'
+        page_config = build_interact_filter_tab(FakeConfig(), "", "")
+    fields = page_config.mapping["filter"]
+    assert {"before_must_str", "badwords", "priority_mapping", "blacklist"} <= set(fields)
+    assert fields["max_len"][1] == "int"
+    assert fields["badwords"]["path"][1] == "str"
 
 
 def test_page_order_covers_every_tab(in_client):
@@ -303,10 +333,10 @@ def test_page_order_covers_every_tab(in_client):
 def test_order_tabs_sorts_the_strip(in_client):
     with in_client:
         with ui.tabs() as tabs:
-            a = ui.tab('关于')
-            b = ui.tab('平台接入')
-            c = ui.tab('播报与输出')
-    order_tabs(tabs, ['平台接入', '播报与输出', '关于'])
-    assert [t._props.get('name') for t in tabs] == ['平台接入', '播报与输出', '关于']
+            a = ui.tab("关于")
+            b = ui.tab("平台接入")
+            c = ui.tab("播报与输出")
+    order_tabs(tabs, ["平台接入", "播报与输出", "关于"])
+    assert [t._props.get("name") for t in tabs] == ["平台接入", "播报与输出", "关于"]
     kids = list(tabs)
     assert kids[0] is b and kids[1] is c and kids[2] is a

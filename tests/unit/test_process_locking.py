@@ -64,6 +64,7 @@ def test_handlers_stay_serialized_across_flags(configure, monkeypatch):
             time.sleep(seconds)
             with lock:
                 running.remove(name)
+
         return _handler
 
     monkeypatch.setattr(handle, "comment_handle", make_handler("comment", 0.3))
@@ -72,8 +73,7 @@ def test_handlers_stay_serialized_across_flags(configure, monkeypatch):
     handle.process_data({"content": "c"}, "comment")
     handle.process_data({"gift_name": "g"}, "gift")
 
-    workers = [threading.Thread(target=handle.process_last_data, args=(flag,))
-               for flag in ("comment", "gift")]
+    workers = [threading.Thread(target=handle.process_last_data, args=(flag,)) for flag in ("comment", "gift")]
     for worker in workers:
         worker.start()
     for worker in workers:
@@ -122,9 +122,7 @@ def test_data_arriving_after_a_batch_is_taken_is_handled_next_round(configure, m
     handle = configure(_cfg("comment"))
     batches = []
 
-    monkeypatch.setattr(
-        handle, "comment_handle", lambda data: batches.append(data["content"])
-    )
+    monkeypatch.setattr(handle, "comment_handle", lambda data: batches.append(data["content"]))
 
     handle.process_data({"content": "a"}, "comment")
     handle.process_last_data("comment")

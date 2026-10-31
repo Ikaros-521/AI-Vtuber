@@ -32,16 +32,17 @@ from .my_log import logger
 # 项目认作「可播放音频」的扩展名，全仓唯一来源。
 # 之前 Common.is_audio_file 与 Audio.get_dir_audios_filename 各有一份列表且大小写处理不同，
 # 导致纯 flac/m4a 曲库走随机点歌时一首都找不到。
-SUPPORTED_AUDIO_EXTENSIONS = ('.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a')
+SUPPORTED_AUDIO_EXTENSIONS = (".mp3", ".wav", ".flac", ".aac", ".ogg", ".m4a")
 
 
 class Common:
-    def __init__(self):  
+    def __init__(self):
         self.count = 1
 
     """
     数据校验
     """
+
     # 检测是否为纯数字
     def is_pure_number(self, text):
         """检测是否为纯数字
@@ -54,7 +55,6 @@ class Common:
         """
         return text.isdigit()
 
-
     # 是否是url
     def is_url_check(self, url):
         try:
@@ -62,7 +62,7 @@ class Common:
             return all([result.scheme, result.netloc])
         except ValueError:
             return False
-        
+
     # 是否是IP地址
     def is_valid_ip(self, ip):
         import ipaddress
@@ -82,7 +82,7 @@ class Common:
             return False
 
     # 判断传入的字符串是否是文件夹路径或文件路径，且此文件夹路径或文件路径是否存在，返回bool
-    def is_dir_or_file(self, path: str, type: str="all"):
+    def is_dir_or_file(self, path: str, type: str = "all"):
         """判断传入的字符串是否是文件夹路径或文件路径，且此文件夹路径或文件路径是否存在，返回bool
 
         Args:
@@ -104,7 +104,7 @@ class Common:
             if os.path.isdir(path) or os.path.isfile(path):
                 return True
             return False
-        
+
     # 识别操作系统
     def detect_os(self):
         """
@@ -113,13 +113,13 @@ class Common:
         import platform
 
         system = platform.system()
-        if system == 'Linux':
-            return 'Linux'
-        elif system == 'Windows':
-            return 'Windows'
-        elif system == 'Darwin':
-            return 'MacOS'
-        
+        if system == "Linux":
+            return "Linux"
+        elif system == "Windows":
+            return "Windows"
+        elif system == "Darwin":
+            return "MacOS"
+
         # 如果platform模块无法识别，则尝试使用os模块
         # system = os.name
         # if system == 'posix':
@@ -127,7 +127,7 @@ class Common:
         # elif system == 'nt':
         #     return 'Windows'
 
-        return '未知系统'
+        return "未知系统"
 
     """
     数字操作
@@ -156,10 +156,10 @@ class Common:
             utc_now = datetime.utcnow().replace(tzinfo=timezone.utc)  # 获取当前 UTC 时间
             SHA_TZ = timezone(
                 timedelta(hours=8),
-                name='Asia/Shanghai',
+                name="Asia/Shanghai",
             )
             beijing_now = utc_now.astimezone(SHA_TZ)  # 将 UTC 时间转换为北京时间
-            fmt = '%Y-%m-%d %H:%M:%S'
+            fmt = "%Y-%m-%d %H:%M:%S"
             now_fmt = beijing_now.strftime(fmt)
             return now_fmt
         elif type == 1:
@@ -173,7 +173,7 @@ class Common:
             now = time.localtime()  # 获取当前时间
 
             # hour = now.tm_hour   # 获取当前小时
-            # minute = now.tm_min  # 获取当前分钟 
+            # minute = now.tm_min  # 获取当前分钟
             second = now.tm_sec  # 获取当前秒数
 
             return str(second)
@@ -188,28 +188,28 @@ class Common:
         elif type == 5:
             now = time.localtime()  # 获取当前时间
 
-            hour = now.tm_hour   # 获取当前小时
+            hour = now.tm_hour  # 获取当前小时
             minute = now.tm_min  # 获取当前分钟
 
             return str(hour) + "点" + str(minute) + "分"
         elif type == 6:
             now = time.localtime()  # 获取当前时间
 
-            hour = now.tm_hour   # 获取当前小时
-            minute = now.tm_min  # 获取当前分钟 
+            hour = now.tm_hour  # 获取当前小时
+            minute = now.tm_min  # 获取当前分钟
 
             return hour, minute
         elif type == 7:
             utc_now = datetime.utcnow().replace(tzinfo=timezone.utc)  # 获取当前 UTC 时间
             SHA_TZ = timezone(
                 timedelta(hours=8),
-                name='Asia/Shanghai',
+                name="Asia/Shanghai",
             )
             beijing_now = utc_now.astimezone(SHA_TZ)  # 将 UTC 时间转换为北京时间
-            fmt = '%Y-%m-%d %H-%M-%S %f'
+            fmt = "%Y-%m-%d %H-%M-%S %f"
             now_fmt = beijing_now.strftime(fmt)
             return now_fmt
-    
+
     def time_difference_in_seconds(self, specific_time_str: str):
         """计算传入时间和当前时间的时间差
 
@@ -225,13 +225,13 @@ class Common:
         except ValueError:
             # 如果时间字符串格式不正确，则返回 None 或者抛出异常，取决于你的需求
             return None  # 或者 raise ValueError("Invalid time format. Please use %Y-%m-%dT%H:%M:%S.")
-        
+
         # 获取当前时间
         current_time = datetime.now()
-        
+
         # 计算时间差
         time_difference = specific_time - current_time
-        
+
         # 返回时间差的总秒数
         return time_difference.total_seconds()
 
@@ -253,15 +253,14 @@ class Common:
 
         random_float = round(random.uniform(lower_limit, upper_limit), 2)
         return random_float
-    
 
     """
     Dict操作
     """
+
     def find_keys_by_value(self, dictionary, target_value):
         # 返回一个包含所有具有指定值的键的列表
         return [key for key, value in dictionary.items() if value == target_value]
-
 
     def find_key_by_value(self, d: dict, value):
         # 遍历字典项
@@ -300,18 +299,19 @@ class Common:
         """
         try:
             import json
+
             json.loads(text)
             return True
         except json.JSONDecodeError:
             return False
 
     # 生成hash字符串 用于gradio请求
-    def generate_session_hash(self, length: int=11):
+    def generate_session_hash(self, length: int = 11):
         import hashlib
         import string
 
         characters = string.ascii_letters + string.digits
-        random_string = ''.join(random.choice(characters) for i in range(length))
+        random_string = "".join(random.choice(characters) for i in range(length))
         hash_object = hashlib.sha1(random_string.encode())
         session_hash = hash_object.hexdigest()[:length]
 
@@ -330,21 +330,21 @@ class Common:
         try:
             # 定义阿拉伯数字到中文数字的映射
             digit_to_chinese = {
-                '0': '零',
-                '1': '一',
-                '2': '二',
-                '3': '三',
-                '4': '四',
-                '5': '五',
-                '6': '六',
-                '7': '七',
-                '8': '八',
-                '9': '九'
+                "0": "零",
+                "1": "一",
+                "2": "二",
+                "3": "三",
+                "4": "四",
+                "5": "五",
+                "6": "六",
+                "7": "七",
+                "8": "八",
+                "9": "九",
             }
 
             # 遍历输入字符串并替换数字为中文数字
-            result = ''.join(digit_to_chinese.get(char, char) for char in input_str)
-            
+            result = "".join(digit_to_chinese.get(char, char) for char in input_str)
+
             return result
         except Exception as e:
             logger.error(f"转换数字到中文时出错: {e}")
@@ -355,13 +355,12 @@ class Common:
         words = text.split()
         if len(words) > max_len:
             words = words[:max_len]  # 列表切片，保留前30个单词
-            text = ' '.join(words) + '...'  # 使用join()函数将单词列表重新组合为字符串，并在末尾添加省略号
+            text = " ".join(words) + "..."  # 使用join()函数将单词列表重新组合为字符串，并在末尾添加省略号
         return text[:max_char_len]
-
 
     # 本地敏感词检测 传入敏感词库文件路径和待检查的文本
     def check_sensitive_words(self, file_path, text):
-        with open(file_path, encoding='utf-8') as file:
+        with open(file_path, encoding="utf-8") as file:
             sensitive_words = [line.strip() for line in file.readlines()]
 
         for word in sensitive_words:
@@ -369,11 +368,10 @@ class Common:
                 return True
 
         return False
-    
 
     # 本地敏感词检测 Aho-Corasick 算法 传入敏感词库文件路径和待检查的文本
     def check_sensitive_words2(self, file_path, text):
-        with open(file_path, encoding='utf-8') as file:
+        with open(file_path, encoding="utf-8") as file:
             sensitive_words = [line.strip() for line in file.readlines()]
 
         # 创建 Aho-Corasick 自动机
@@ -393,10 +391,9 @@ class Common:
 
         return None
 
-
     # 本地敏感词转拼音检测 传入敏感词库文件路径和待检查的文本
     def check_sensitive_words3(self, file_path, text):
-        with open(file_path, encoding='utf-8') as file:
+        with open(file_path, encoding="utf-8") as file:
             sensitive_words = [line.strip() for line in file.readlines()]
 
         pinyin_text = self.text2pinyin(text)
@@ -404,13 +401,12 @@ class Common:
 
         for word in sensitive_words:
             pinyin_word = self.text2pinyin(word)
-            pattern = r'\b' + re.escape(pinyin_word) + r'\b'
+            pattern = r"\b" + re.escape(pinyin_word) + r"\b"
             if re.search(pattern, pinyin_text):
                 logger.warning(f"同音违禁拼音：{pinyin_word}")
                 return True
 
         return False
-
 
     # 语言检测 TODO:有内存泄漏风险
     def lang_check(self, text, need="none"):
@@ -425,16 +421,15 @@ class Common:
             else:
                 return language
 
-
     # 判断字符串是否全为标点符号
     def is_punctuation_string(self, string):
         # 使用正则表达式匹配标点符号
-        pattern = r'^[^\w\s]+$'
+        pattern = r"^[^\w\s]+$"
         return re.match(pattern, string) is not None
-    
+
     # 判断字符串是否全为空格和特殊字符
     def is_all_space_and_punct(self, text):
-        pattern = r'^[\s\W]+$'
+        pattern = r"^[\s\W]+$"
         return re.match(pattern, text) is not None
 
     # 违禁词校验
@@ -460,26 +455,24 @@ class Common:
             # 处理异常，例如打印错误消息或者返回 False
             logger.error(f"Error: {e}")
             return None
-        
+
         return None
-
-
 
     # 文本切分算法
     def split_sentences(self, text):
         # 使用正则表达式切分句子
-        sentences = re.split(r'(?<=[。！？!?])', text)
+        sentences = re.split(r"(?<=[。！？!?])", text)
         result = []
         current_sentence = ""
-        
+
         for sentence in sentences:
             # 去除换行和空格
-            sentence = sentence.replace('\n', '')
-            
+            sentence = sentence.replace("\n", "")
+
             # 如果句子为空则跳过
             if not sentence:
                 continue
-            
+
             # 如果句子长度小于10个字，则与下一句合并
             if len(current_sentence) < 10:
                 current_sentence += sentence
@@ -490,19 +483,18 @@ class Common:
                     current_sentence = sentence
                 else:
                     # 如果当前句子不以标点符号结尾，则进行二次切分
-                    split_sentences = re.split(r'(?<=[,，;；])', current_sentence)
+                    split_sentences = re.split(r"(?<=[,，;；])", current_sentence)
                     if len(split_sentences) > 1:
                         result.extend(split_sentences[:-1])
                         current_sentence = split_sentences[-1] + sentence
                     else:
                         current_sentence += sentence
-        
+
         # 添加最后一句
         if current_sentence:
             result.append(current_sentence)
-        
-        return result
 
+        return result
 
     # 字符串匹配算法来计算字符串之间的相似度，并选择匹配度最高的字符串作为结果
     def find_best_match(self, substring, string_list, similarity=0.5):
@@ -518,20 +510,19 @@ class Common:
         """
         best_match = None
         best_ratio = 0
-        
+
         for string in string_list:
             ratio = difflib.SequenceMatcher(None, substring, string).ratio()
             # print(f"String: {string}, Ratio: {ratio}")  # 添加调试语句，输出每个字符串的相似度
             if ratio > best_ratio:
                 best_ratio = ratio
                 best_match = string
-        
+
         # 如果相似度不到similarity，则认为匹配不成功
         if best_ratio < similarity:
             return None
 
         return best_match
-    
 
     # 检查 query_string 是否包含 string_list 列表中的任意一个子字符串
     def find_substring_in_list(self, query_string, string_list):
@@ -550,7 +541,6 @@ class Common:
                 return string
         return None
 
-
     def text2pinyin(self, text):
         """文本转拼音
 
@@ -568,14 +558,13 @@ class Common:
                 _pinyin = char_pinyin_list[0][0]
             else:
                 _pinyin = char
-            
+
             # 将ü等转换为v
             _pinyin = re.sub(r"ü", "v", _pinyin)
-            
+
             pinyin_list.append(_pinyin)
 
         return " ".join(pinyin_list)
-
 
     def merge_consecutive_asterisks(self, s):
         """合并字符串末尾连续的*
@@ -588,15 +577,14 @@ class Common:
         """
         # 从字符串末尾开始遍历，找到连续的*的起始索引
         idx = len(s) - 1
-        while idx >= 0 and s[idx] == '*':
+        while idx >= 0 and s[idx] == "*":
             idx -= 1
 
         # 如果找到了超过3个连续的*，则进行替换
         if len(s) - 1 - idx > 3:
-            s = s[:idx + 1] + '*' + s[len(s) - 1:]
+            s = s[: idx + 1] + "*" + s[len(s) - 1 :]
 
         return s
-
 
     def replace_special_characters(self, input_string, special_characters):
         """
@@ -611,9 +599,8 @@ class Common:
         """
         for char in special_characters:
             input_string = input_string.replace(char, "")
-        
-        return input_string
 
+        return input_string
 
     # 将cookie数据字符串分割成键值对列表
     def parse_cookie_data(self, data_str, field_name):
@@ -627,13 +614,13 @@ class Common:
             str: 键所对应的值
         """
         # 将数据字符串分割成键值对列表
-        key_value_pairs = data_str.split(';')
+        key_value_pairs = data_str.split(";")
 
         # print(key_value_pairs)
 
         # 遍历键值对列表，查找指定字段名
         for pair in key_value_pairs:
-            key, sep, value = pair.strip().partition('=')
+            key, sep, value = pair.strip().partition("=")
             # 结尾的 ';' 会切出空项；值本身含 '='（如 base64 填充）时只按第一个 '=' 切
             if not sep:
                 continue
@@ -643,9 +630,8 @@ class Common:
         # 如果未找到指定字段，返回空字符串
         return ""
 
-
     # 动态变量替换
-    def dynamic_variable_replacement(self, template: str, data_json: dict=None):
+    def dynamic_variable_replacement(self, template: str, data_json: dict = None):
         """动态变量替换
 
         Args:
@@ -664,7 +650,7 @@ class Common:
 
             for var_name in var_names:
                 if var_name in data_json:
-                    template = template.replace("{"+var_name+"}", str(data_json[var_name]))
+                    template = template.replace("{" + var_name + "}", str(data_json[var_name]))
                 else:
                     # 变量不存在,保留原样
                     pass
@@ -675,7 +661,6 @@ class Common:
         except Exception:
             logger.error(traceback.format_exc())
             return None
-
 
     # [1|2]括号语法随机获取一个值，返回取值完成后的字符串
     def brackets_text_randomize(self, text: str):
@@ -688,20 +673,22 @@ class Common:
             str: 最终字符串
         """
         # 查找所有括号内的内容
-        brackets_content = re.findall(r'\[([^\]]*)\]', text)
-        
+        brackets_content = re.findall(r"\[([^\]]*)\]", text)
+
         for content in brackets_content:
             # 分割每个括号内的选项
-            choices = content.split('|')
+            choices = content.split("|")
             # 从选项中随机选择一个
             random_choice = random.choice(choices)
             # 替换文本中的括号内容
-            text = text.replace(f'[{content}]', random_choice, 1)
-        
+            text = text.replace(f"[{content}]", random_choice, 1)
+
         return text
 
     # 从列表中随机获取一个字符串，并进行变量语法转换。如果列表为空，使用单个字符串进行转换。
-    def get_random_str_in_list_and_format(self, ori_content: str = None, ori_list: list = None, var_json: dict = None) -> dict:
+    def get_random_str_in_list_and_format(
+        self, ori_content: str = None, ori_list: list = None, var_json: dict = None
+    ) -> dict:
         """
         从列表中随机获取一个字符串，并进行变量语法转换。如果列表为空，使用单个字符串进行转换。
 
@@ -713,7 +700,7 @@ class Common:
         返回:
             dict: 包含转换后内容的字典和返回码。成功时返回 {"ret": 0, "content": content}，失败时返回 {"ret": -1, "content": None}。
         """
-        
+
         # 检查并处理字符串列表
         if ori_list:
             content = random.choice(ori_list)
@@ -751,14 +738,14 @@ class Common:
     def llm_resp_content_filter_tags(self, text: str, filter_state: dict) -> str:
         """
         过滤标签内容的辅助函数
-        
+
         Args:
             text: 要处理的文本
             filter_state: 过滤状态字典，包含：
                 - is_filtering: 是否正在过滤
                 - current_tag: 当前正在处理的标签
                 - buffer: 未处理完的文本缓冲
-        
+
         Returns:
             过滤后的文本
         """
@@ -767,31 +754,31 @@ class Common:
 
         # logger.debug(f"[过滤] 标签过滤前：{text}")
         # logger.debug(f"[过滤] 过滤状态：{filter_state}")
-        
+
         while i < len(text):
-            if text[i] == '<':
+            if text[i] == "<":
                 # logger.debug(f"[过滤] 发现开始标签：{text[i]}")
                 # 可能是开始标签
-                tag_end = text.find('>', i)
+                tag_end = text.find(">", i)
                 if tag_end != -1:
-                    tag = text[i:tag_end+1]
-                    if tag.startswith('</'):
+                    tag = text[i : tag_end + 1]
+                    if tag.startswith("</"):
                         # logger.debug(f"[过滤] 发现结束标签：{tag}")
                         # 结束标签
                         tag_name = tag[2:-1]
-                        if filter_state['is_filtering'] and tag_name == filter_state['current_tag']:
-                            filter_state['is_filtering'] = False
-                            filter_state['current_tag'] = None
+                        if filter_state["is_filtering"] and tag_name == filter_state["current_tag"]:
+                            filter_state["is_filtering"] = False
+                            filter_state["current_tag"] = None
                     else:
                         # logger.debug(f"[过滤] 发现开始标签：{tag}")
                         # 开始标签
                         tag_name = tag[1:-1]
-                        filter_state['is_filtering'] = True
-                        filter_state['current_tag'] = tag_name
+                        filter_state["is_filtering"] = True
+                        filter_state["current_tag"] = tag_name
                     i = tag_end + 1
                     continue
-                    
-            if not filter_state['is_filtering']:
+
+            if not filter_state["is_filtering"]:
                 # logger.debug(f"[过滤] 发现非过滤状态：{text[i]}")
                 result += text[i]
             i += 1
@@ -811,35 +798,32 @@ class Common:
        .[`         ,[        \@/      .[[[ ..  ,@/      ,@/   .@@`            .     .@/.  \@`  ,[`,[[[[[[[[[[.  ,[            .[`         ,[   ,@/     \@/      \@/      ,[[.  ,@/..\@`   ,@/ .[[         ,[    
     
     """
-    
+
     # 读取指定文件中所有文本内容并返回 如果文件不存在则创建
     def read_file_return_content(self, file_path):
         try:
             if not os.path.exists(file_path):
                 logger.warning(f"文件不存在，将创建新文件: {file_path}")
                 # 创建文件
-                with open(file_path, 'w', encoding='utf-8') as file:
+                with open(file_path, "w", encoding="utf-8") as file:
                     content = ""
                 return content
-        
-            with open(file_path, encoding='utf-8') as file:
+
+            with open(file_path, encoding="utf-8") as file:
                 content = file.read()
             return content
         except OSError as e:
             logger.error(f"无法写入文件:{file_path}\n{e}")
             return None
 
-
-    
     # 将一个文件路径的字符串切分成路径和文件名
     def split_path_and_filename(self, file_path):
         folder_path, file_name = os.path.split(file_path)
         # 检查路径末尾是否已经包含了'/'，如果没有，则添加
-        if not folder_path.endswith('/'):
-            folder_path += '/'
-        
-        return folder_path, file_name
+        if not folder_path.endswith("/"):
+            folder_path += "/"
 
+        return folder_path, file_name
 
     # 从文件路径中提取出带有扩展名的文件名
     def extract_filename(self, file_path, with_extension=False):
@@ -859,12 +843,10 @@ class Common:
             file_name_without_extension = os.path.splitext(file_name_with_extension)[0]
             return file_name_without_extension
 
-
     # 获取指定文件夹下的所有文件夹的名称
     def get_folder_names(self, path):
         folder_names = next(os.walk(path))[1]
         return folder_names
-
 
     # 返回指定文件夹内所有文件的文件绝对路径（包括文件扩展名）
     def get_all_file_paths(self, folder_path):
@@ -916,9 +898,8 @@ class Common:
             list: 文件名组成的新列表
         """
         # 使用列表推导来处理整个列表，去掉每个文件名的拓展名
-        file_name_without_extension_list = [file_name.split('.')[0] for file_name in file_name_list]
+        file_name_without_extension_list = [file_name.split(".")[0] for file_name in file_name_list]
         return file_name_without_extension_list
-
 
     def is_audio_file(self, file_path):
         """判断文件是否是音频文件
@@ -931,7 +912,6 @@ class Common:
         """
         _, extension = os.path.splitext(file_path)
         return extension.lower() in SUPPORTED_AUDIO_EXTENSIONS
-
 
     def random_search_a_audio_file(self, root_dir):
         """搜索指定文件夹内所有的音频文件，并随机返回一个音频文件路径
@@ -962,10 +942,6 @@ class Common:
         else:
             return None
 
-
-    
-
-
     r"""
                                                                                                  
               .]]@@              .@]]       @@@@        O@@`  ,]]]]]]]]]]]].      /]]   /@]`                  
@@ -986,12 +962,12 @@ class Common:
     # 读取文件内容 它接受文件路径和返回类型参数，并根据参数返回文件内容作为字典或纯文本。如果读取文件过程中出现异常，则返回 None。
     def read_file(self, file_path: str, return_type: str):
         try:
-            with open(file_path, encoding='utf-8') as file:
+            with open(file_path, encoding="utf-8") as file:
                 content = file.read()
-            
-            if return_type == 'dict':
+
+            if return_type == "dict":
                 return json.loads(content)
-            elif return_type == 'text':
+            elif return_type == "text":
                 return content
             else:
                 logger.error("Invalid return type. Use 'dict' or 'text'.")
@@ -999,7 +975,7 @@ class Common:
         except Exception:
             logger.error(traceback.format_exc())
             return None
-        
+
     def ensure_directory_exists(self, path):
         # 检查路径是否存在
         if not os.path.exists(path):
@@ -1010,7 +986,7 @@ class Common:
     # 写入内容到指定文件中 返回T/F
     def write_content_to_file(self, file_path, content, write_log=True):
         try:
-            with open(file_path, 'w', encoding='utf-8') as file:
+            with open(file_path, "w", encoding="utf-8") as file:
                 file.write(content)
 
             if write_log:
@@ -1039,10 +1015,9 @@ class Common:
         """
         logger.debug(f"source_path={source_path},destination_path={destination_path},rename={rename}")
 
-        
         # if rename is not None:
         #     destination_path = os.path.join(os.path.dirname(destination_path), rename)
-        
+
         # shutil.move(source_path, destination_path)
         # logger.info(f"文件移动成功：{source_path} -> {destination_path}")
         destination_directory = os.path.dirname(destination_path)
@@ -1051,9 +1026,9 @@ class Common:
 
         if rename is not None:
             destination_filename = rename + "." + format
-        
+
         destination_path = os.path.join(destination_directory, destination_filename)
-        
+
         if os.path.exists(destination_path):
             # 如果目标位置已存在同名文件，则先删除
             os.remove(destination_path)
@@ -1062,7 +1037,6 @@ class Common:
         logger.info(f"文件移动成功：{source_path} -> {destination_path}")
 
         return destination_path
-
 
     # 删除文件
     def del_file(self, file_path) -> bool:
@@ -1081,7 +1055,7 @@ class Common:
                 logger.info(f"文件删除成功：{file_path}")
 
                 return True
-            
+
             logger.error(f"文件不存在：{file_path}")
             return False
         except Exception:
@@ -1092,7 +1066,7 @@ class Common:
     def get_filename_from_path(self, file_path):
         """
         从给定的文件路径中提取文件名及其扩展名。
-        
+
         参数:
         file_path (str): 文件的绝对路径或相对路径。
 
@@ -1100,37 +1074,37 @@ class Common:
         dict: 包含状态码和数据的字典。成功时返回文件名，失败时返回错误信息。
         """
         response = {
-            'code': 200,  # 默认成功状态码
-            'data': None,
-            'error': None
+            "code": 200,  # 默认成功状态码
+            "data": None,
+            "error": None,
         }
-        
+
         try:
             # 验证输入路径是否为空
             if not file_path:
-                response['code'] = 400  # 客户端错误状态码
-                response['error'] = '路径不能为空'
-                raise ValueError(response['error'])
+                response["code"] = 400  # 客户端错误状态码
+                response["error"] = "路径不能为空"
+                raise ValueError(response["error"])
 
             # 验证文件是否存在
             if not os.path.exists(file_path):
-                response['code'] = 404  # 文件未找到状态码
-                response['error'] = f'文件 {file_path} 不存在'
-                raise FileNotFoundError(response['error'])
+                response["code"] = 404  # 文件未找到状态码
+                response["error"] = f"文件 {file_path} 不存在"
+                raise FileNotFoundError(response["error"])
 
             # 提取文件名及其扩展名
             filename = os.path.basename(file_path)
-            response['data'] = filename
+            response["data"] = filename
 
         except ValueError as ve:
             logger.error(ve)
         except FileNotFoundError as fnf:
             logger.error(fnf)
         except Exception as e:
-            response['code'] = 500  # 服务器错误状态码
-            response['error'] = '发生未知错误'
+            response["code"] = 500  # 服务器错误状态码
+            response["error"] = "发生未知错误"
             logger.error(e)
-        
+
         return response
 
     r"""
@@ -1149,6 +1123,7 @@ class Common:
             ....           ....    ,.        ,.        .     ...   ....     .....   .                        
 
     """
+
     # 获取新的音频路径
     def get_new_audio_path(self, audio_out_path, file_name):
         # 判断路径是否为绝对路径
@@ -1157,8 +1132,8 @@ class Common:
             voice_tmp_path = os.path.join(audio_out_path, file_name)
         else:
             # 如果不是绝对路径，检查是否包含 ./，如果不包含，添加 ./，然后拼接路径
-            if not audio_out_path.startswith('./'):
-                audio_out_path = './' + audio_out_path
+            if not audio_out_path.startswith("./"):
+                audio_out_path = "./" + audio_out_path
             voice_tmp_path = os.path.normpath(os.path.join(audio_out_path, file_name))
 
         voice_tmp_path = os.path.abspath(voice_tmp_path)
@@ -1183,13 +1158,13 @@ class Common:
             for device_index in range(device_count):
                 device_info = audio.get_device_info_by_index(device_index)
                 if type == "out":
-                    if device_info['maxOutputChannels'] > 0:
-                        device_infos.append({"device_index": device_index, "device_info": device_info['name']})
+                    if device_info["maxOutputChannels"] > 0:
+                        device_infos.append({"device_index": device_index, "device_info": device_info["name"]})
                 elif type == "in":
-                    if device_info['maxInputChannels'] > 0:
-                        device_infos.append({"device_index": device_index, "device_info": device_info['name']})
+                    if device_info["maxInputChannels"] > 0:
+                        device_infos.append({"device_index": device_index, "device_info": device_info["name"]})
                 else:
-                    device_infos.append({"device_index": device_index, "device_info": device_info['name']})
+                    device_infos.append({"device_index": device_index, "device_info": device_info["name"]})
         finally:
             # 不 terminate 就会一直占着 PortAudio 实例，
             # 聊天页每次打开都要调这里一次，进几次页面后设备枚举会开始失败
@@ -1213,7 +1188,16 @@ class Common:
                                                                     .@/.  =@@@  ,@@@@@@@.       =@@@@@@`            
                                                                     
     """
-    def send_request(self, url: str, method: str='GET', json_data: dict=None, resp_data_type: str="json", timeout: int=60, proxy: str=None):
+
+    def send_request(
+        self,
+        url: str,
+        method: str = "GET",
+        json_data: dict = None,
+        resp_data_type: str = "json",
+        timeout: int = 60,
+        proxy: str = None,
+    ):
         """
         发送 HTTP 请求并返回结果
 
@@ -1228,15 +1212,17 @@ class Common:
         Returns:
             dict|str: 包含响应的 JSON数据 | 字符串数据
         """
-        headers = {'Content-Type': 'application/json'}
+        headers = {"Content-Type": "application/json"}
 
         try:
-            if method in ['GET', 'get']:
+            if method in ["GET", "get"]:
                 response = requests.get(url, headers=headers, timeout=timeout, proxies=proxy)
-            elif method in ['POST', 'post']:
-                response = requests.post(url, headers=headers, data=json.dumps(json_data), timeout=timeout, proxies=proxy)
+            elif method in ["POST", "post"]:
+                response = requests.post(
+                    url, headers=headers, data=json.dumps(json_data), timeout=timeout, proxies=proxy
+                )
             else:
-                raise ValueError('无效 method. 支持的 methods 为 GET 和 POST.')
+                raise ValueError("无效 method. 支持的 methods 为 GET 和 POST.")
 
             # 检查请求是否成功
             response.raise_for_status()
@@ -1247,7 +1233,7 @@ class Common:
             else:
                 result = response.content
                 # 使用 'utf-8' 编码来解码字节串
-                result = result.decode('utf-8')
+                result = result.decode("utf-8")
 
             return result
 
@@ -1260,7 +1246,15 @@ class Common:
             logger.error(f"请求出错: {e}")
             return None
 
-    async def send_async_request(self, url: str, method: str='GET', json_data: dict=None, resp_data_type: str="json", timeout: int=60, proxy: str=None):
+    async def send_async_request(
+        self,
+        url: str,
+        method: str = "GET",
+        json_data: dict = None,
+        resp_data_type: str = "json",
+        timeout: int = 60,
+        proxy: str = None,
+    ):
         """
         发送异步 HTTP 请求并返回结果
 
@@ -1277,12 +1271,12 @@ class Common:
         """
         import aiohttp
 
-        headers = {'Content-Type': 'application/json'}
+        headers = {"Content-Type": "application/json"}
 
         try:
             # 创建 aiohttp.ClientSession
             async with aiohttp.ClientSession() as session:
-                if method in ['GET', 'get']:
+                if method in ["GET", "get"]:
                     async with session.get(url, headers=headers, timeout=timeout, proxy=proxy) as response:
                         # 检查请求是否成功
                         response.raise_for_status()
@@ -1293,8 +1287,10 @@ class Common:
                         else:
                             result = await response.read()
 
-                elif method in ['POST', 'post']:
-                    async with session.post(url, headers=headers, data=json.dumps(json_data), timeout=timeout, proxy=proxy) as response:
+                elif method in ["POST", "post"]:
+                    async with session.post(
+                        url, headers=headers, data=json.dumps(json_data), timeout=timeout, proxy=proxy
+                    ) as response:
                         # 检查请求是否成功
                         response.raise_for_status()
 
@@ -1305,7 +1301,7 @@ class Common:
                             result = await response.read()
 
                 else:
-                    raise ValueError('无效 method. 支持的 methods 为 GET 和 POST.')
+                    raise ValueError("无效 method. 支持的 methods 为 GET 和 POST.")
 
                 return result
 
@@ -1333,14 +1329,10 @@ class Common:
             # logger.error(f"请求出错: {e}")
             return None
 
-
     def check_login(self, api_url: str, username: str, password: str):
         try:
-            data_json = {
-                "username": username,
-                "password": password
-            }
-            
+            data_json = {"username": username, "password": password}
+
             resp_json = self.send_request(api_url, "POST", data_json, resp_data_type="json")
             if resp_json is None:
                 return {"code": 500, "msg": "请求失败"}
@@ -1369,7 +1361,7 @@ class Common:
         # 记录数据库):
         try:
             # TODO: 换成异步请求
-            response = requests.get(url=api_ip_port + f'/send_message?content={content}', timeout=(10, 300))
+            response = requests.get(url=api_ip_port + f"/send_message?content={content}", timeout=(10, 300))
             response.raise_for_status()  # 检查响应的状态码
 
             result = response.content
@@ -1377,37 +1369,33 @@ class Common:
 
             logger.debug(ret)
 
-            if ret['code'] == 200:
-                logger.debug(ret['message'])
+            if ret["code"] == 200:
+                logger.debug(ret["message"])
                 return True
             else:
-                logger.error(ret['message'])
+                logger.error(ret["message"])
                 return False
         except Exception:
-            logger.error('web字幕打印机请求失败！请确认配置是否正确或者服务端是否运行！')
+            logger.error("web字幕打印机请求失败！请确认配置是否正确或者服务端是否运行！")
             logger.error(traceback.format_exc())
             return False
-        
-    
+
     # openai 测试key可用性
     def test_openai_key(self, data_json, type=1):
         if type == 1:
             from urllib.parse import urljoin
-            
+
             # 检查可用性
             def check_useful(data_json):
                 # 尝试调用 list engines 接口
                 try:
-                    api_key = data_json["api_keys"].split('\n')[0].rstrip()
+                    api_key = data_json["api_keys"].split("\n")[0].rstrip()
 
-                    url = urljoin(data_json["base_url"], '/v1/chat/completions')
+                    url = urljoin(data_json["base_url"], "/v1/chat/completions")
 
                     logger.debug(f"url=【{url}】, api_keys=【{api_key}】")
-    
-                    headers = {
-                        "Content-Type": "application/json",
-                        "Authorization": f"Bearer {api_key}"
-                    }
+
+                    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
 
                     data = {
                         "model": data_json["model"],
@@ -1416,7 +1404,7 @@ class Common:
                         "max_tokens": data_json["max_tokens"],
                         "top_p": data_json["top_p"],
                         "presence_penalty": data_json["presence_penalty"],
-                        "frequency_penalty": data_json["frequency_penalty"]
+                        "frequency_penalty": data_json["frequency_penalty"],
                     }
 
                     response = requests.post(url, headers=headers, json=data, timeout=(10, 300))
@@ -1445,9 +1433,11 @@ class Common:
             def check_useful(data_json):
                 # 尝试调用 list engines 接口
                 try:
-                    api_key = data_json["api_keys"].split('\n')[0].rstrip()
+                    api_key = data_json["api_keys"].split("\n")[0].rstrip()
 
-                    logger.info(f'base_url=【{data_json["base_url"]}】, api_keys=【{api_key}】, 模型=【{data_json["model"]}】')
+                    logger.info(
+                        f"base_url=【{data_json['base_url']}】, api_keys=【{api_key}】, 模型=【{data_json['model']}】"
+                    )
 
                     # openai.base_url = self.data_openai['api']
                     # openai.api_key = self.data_openai['api_key'][0]
@@ -1458,7 +1448,7 @@ class Common:
                     openai.api_key = api_key
 
                     # 判断openai库版本，1.x.x和0.x.x有破坏性更新
-                    if version.parse(openai.__version__) < version.parse('1.0.0'):
+                    if version.parse(openai.__version__) < version.parse("1.0.0"):
                         # 调用 ChatGPT 接口生成回复消息
                         resp = openai.ChatCompletion.create(
                             model=data_json["model"],
@@ -1468,10 +1458,10 @@ class Common:
                             top_p=data_json["top_p"],
                             presence_penalty=data_json["presence_penalty"],
                             frequency_penalty=data_json["frequency_penalty"],
-                            timeout=30
+                            timeout=30,
                         )
 
-                        resp = resp['choices'][0]['message']['content']
+                        resp = resp["choices"][0]["message"]["content"]
                     else:
                         client = openai.OpenAI(base_url=openai.api_base, api_key=openai.api_key)
                         # 调用 ChatGPT 接口生成回复消息
@@ -1483,7 +1473,7 @@ class Common:
                             top_p=data_json["top_p"],
                             presence_penalty=data_json["presence_penalty"],
                             frequency_penalty=data_json["frequency_penalty"],
-                            timeout=30
+                            timeout=30,
                         )
 
                         resp = resp.choices[0].message.content
@@ -1499,9 +1489,8 @@ class Common:
                     logger.error(traceback.format_exc())
                     logger.error(f"OpenAI API key 不可用: {e}")
                     return {"code": -1, "msg": f"OpenAI API key 不可用: {e}"}
-        
-        return check_useful(data_json)
 
+        return check_useful(data_json)
 
     # 取 OpenAI 兼容接口下面的模型列表
     def get_openai_models(self, base_url: str, api_keys: str):
@@ -1516,9 +1505,9 @@ class Common:
         from urllib.parse import urljoin
 
         try:
-            api_key = (api_keys or "").split('\n')[0].strip()
+            api_key = (api_keys or "").split("\n")[0].strip()
 
-            url = urljoin(base_url, '/v1/models')
+            url = urljoin(base_url, "/v1/models")
             headers = {"Content-Type": "application/json"}
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
@@ -1558,10 +1547,10 @@ class Common:
             logger.error(f"获取模型列表失败: {e}")
             return {"code": -1, "msg": f"获取模型列表失败: {e}"}
 
-
     """
     图像操作
     """
+
     # 获取所有有标题的窗口对象
     def list_visible_windows(self):
         """获取所有有标题的窗口对象
@@ -1576,8 +1565,8 @@ class Common:
                 logger.warning("未安装 pygetwindow（见 requirements/visual.txt），窗口列表暂时为空")
                 return []
 
-            windows = gw.getWindowsWithTitle('')
-            
+            windows = gw.getWindowsWithTitle("")
+
             window_titles = []
 
             # 打印每个窗口的标题
@@ -1588,8 +1577,6 @@ class Common:
             return []
 
         return window_titles
-
-    
 
     def capture_window_by_title(self, img_save_path: str, window_title: str):
         """根据窗口名截图（截图窗口不能被遮挡，必须前置窗口）
@@ -1642,7 +1629,6 @@ class Common:
             logger.error(traceback.format_exc())
 
         return None
-    
 
     """
     摄像头相关
@@ -1674,14 +1660,13 @@ class Common:
 
         return []
 
-
     def capture_image(self, img_save_path="./out/图像识别", camera_index=0):
         try:
             import tempfile
             import cv2
 
             cap = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
-            
+
             # 检查摄像头是否成功打开
             if not cap.isOpened():
                 logger.info(f"无法打开摄像头 索引={camera_index}")
@@ -1707,10 +1692,10 @@ class Common:
 
             # 在系统临时目录中创建一个临时文件
             temp_dir = tempfile.gettempdir()
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png', dir=temp_dir)
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png", dir=temp_dir)
             temp_path = temp_file.name
             temp_file.close()  # 关闭文件，确保可以被其他进程使用
-            
+
             # 保存图像
             save_ret = cv2.imwrite(temp_path, frame)
             if save_ret:
@@ -1718,15 +1703,14 @@ class Common:
             else:
                 logger.error(f"图像保存失败：{temp_path}")
                 return None
-            
+
             # 将文件从临时路径移动到目标路径
-            final_path = self.move_file(temp_path, destination_path, f"camera_{camera_index}_{cv2.getTickCount()}", "png")
-            
+            final_path = self.move_file(
+                temp_path, destination_path, f"camera_{camera_index}_{cv2.getTickCount()}", "png"
+            )
+
             return final_path
         except Exception:
             logger.error(traceback.format_exc())
 
         return None
-
-
-    

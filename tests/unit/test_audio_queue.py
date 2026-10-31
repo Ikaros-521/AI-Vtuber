@@ -116,6 +116,7 @@ def test_get_audio_info_reports_both_queues(audio):
 
     assert info == {"wait_play_audio_num": 1, "wait_synthesis_msg_num": 1}
 
+
 def test_greater_of_zero_is_a_real_threshold(audio):
     """greater=0 表示「队列非空就返回 True」。以前写成 if greater，
     0 被当成没传，这条判断永远不会成立。"""

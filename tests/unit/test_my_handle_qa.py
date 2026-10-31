@@ -39,10 +39,16 @@ def test_find_answer_returns_none_when_answer_line_is_missing(configure, tmp_pat
 def test_find_similar_answer_picks_by_keyword(configure, tmp_path):
     handle = configure({"filter": {}})
     qa = tmp_path / "qa.json"
-    qa.write_text(json.dumps([
-        {"关键词": ["你好", "您好"], "回答": ["你好呀"]},
-        {"关键词": ["点歌"], "回答": ["想听什么"]},
-    ], ensure_ascii=False), encoding="utf-8")
+    qa.write_text(
+        json.dumps(
+            [
+                {"关键词": ["你好", "您好"], "回答": ["你好呀"]},
+                {"关键词": ["点歌"], "回答": ["想听什么"]},
+            ],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
 
     assert handle.find_similar_answer("你好", str(qa)) == "你好呀"
     assert handle.find_similar_answer("您好", str(qa)) == "你好呀"
@@ -51,8 +57,7 @@ def test_find_similar_answer_picks_by_keyword(configure, tmp_path):
 def test_find_similar_answer_below_threshold_returns_none(configure, tmp_path):
     handle = configure({"filter": {}})
     qa = tmp_path / "qa.json"
-    qa.write_text(json.dumps([{"关键词": ["点歌"], "回答": ["想听什么"]}], ensure_ascii=False),
-                  encoding="utf-8")
+    qa.write_text(json.dumps([{"关键词": ["点歌"], "回答": ["想听什么"]}], ensure_ascii=False), encoding="utf-8")
 
     assert handle.find_similar_answer("完全无关的一句话", str(qa)) is None
 

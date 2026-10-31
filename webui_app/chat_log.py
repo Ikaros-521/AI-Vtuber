@@ -1,4 +1,5 @@
 """聊天记录面板：/callback 接口与聊天页共用。"""
+
 from collections import deque
 
 from nicegui import Client, ui
@@ -27,8 +28,8 @@ class ChatLog:
         if not self.messages:
             with scroll_area:
                 self._placeholders[id(scroll_area)] = ui.label(
-                    '还没有聊天记录：弹幕被回复后会显示在这里，最多保留最近 100 条'
-                ).style('font-size:13px;color:#4b5563;padding:14px 12px;')
+                    "还没有聊天记录：弹幕被回复后会显示在这里，最多保留最近 100 条"
+                ).style("font-size:13px;color:#4b5563;padding:14px 12px;")
         scroll_area.scroll_to(percent=1, duration=0.2)
 
     def add(self, data_json):
@@ -57,8 +58,7 @@ class ChatLog:
             placeholder.delete()
 
         with scroll_area:
-            ui.chat_message(message["content"], name=message["name"],
-                            stamp=message["stamp"], avatar=message["avatar"])
+            ui.chat_message(message["content"], name=message["name"], stamp=message["stamp"], avatar=message["avatar"])
 
         children = list(scroll_area)
         if len(children) > MAX_MESSAGES:

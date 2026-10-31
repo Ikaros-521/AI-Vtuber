@@ -37,13 +37,15 @@ def make_config(**overrides):
         "local_audio_path": "data/异常报警/llm",
     }
     alarm_cfg.update(overrides)
-    return FakeConfig({
-        "abnormal_alarm": {"llm": alarm_cfg},
-        "webui": {"ip": "0.0.0.0", "port": "8846"},
-        "audio_synthesis_type": "edge_tts",
-        "edge_tts": {"speaker": "xiaoxiao"},
-        "filter": {"username_convert_digits_to_chinese": True},
-    })
+    return FakeConfig(
+        {
+            "abnormal_alarm": {"llm": alarm_cfg},
+            "webui": {"ip": "0.0.0.0", "port": "8846"},
+            "audio_synthesis_type": "edge_tts",
+            "edge_tts": {"speaker": "xiaoxiao"},
+            "filter": {"username_convert_digits_to_chinese": True},
+        }
+    )
 
 
 @pytest.fixture

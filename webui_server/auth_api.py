@@ -1,9 +1,10 @@
 """登录门禁（对齐 v2 login.enable 的 UI 门控行为）。
 
- * v2 走 UMS 云账号；v3 是本地校验：账号密码取 config.json 的 login.username/password。
- * 与 v2 一致只挡 UI，不挡 /set_config 等机机接口（main.py 不带凭证调用它们）。
- * 会话存内存令牌（cookie），服务重启后需要重新登录。
+* v2 走 UMS 云账号；v3 是本地校验：账号密码取 config.json 的 login.username/password。
+* 与 v2 一致只挡 UI，不挡 /set_config 等机机接口（main.py 不带凭证调用它们）。
+* 会话存内存令牌（cookie），服务重启后需要重新登录。
 """
+
 import secrets
 
 from fastapi import APIRouter, Request
@@ -36,8 +37,7 @@ def _check_credentials(username: str, password: str) -> bool:
 def status(request: Request):
     token = request.cookies.get(COOKIE_NAME, "")
     authed = token in _sessions
-    return {"code": 200, "enabled": _login_enabled(), "authed": authed,
-            "username": _sessions.get(token)}
+    return {"code": 200, "enabled": _login_enabled(), "authed": authed, "username": _sessions.get(token)}
 
 
 @router.post("/login")

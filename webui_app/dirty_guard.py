@@ -9,12 +9,13 @@
 
 角标还能点开，列出「改了哪些项、现在是什么值」，点某一项跳到那个框（story-2 的验收标准）。
 """
+
 from nicegui import app, context, ui
 
 from webui_app.fields import INPUT_TYPES, field_name, hidden, jump_to_element, locate, value_text
 
-INK = '#111827'
-INK_MUT = '#4b5563'
+INK = "#111827"
+INK_MUT = "#4b5563"
 
 # 浏览器侧的拦截开关：Chrome 只在用户已经和页面交互过之后才允许 beforeunload 弹窗，
 # 而「改过控件」本身就意味着交互过，所以这里不需要额外兜底。
@@ -40,7 +41,7 @@ class DirtyGuard:
         self._status = None
         self._elements = {}
         self._select_tab = None
-        self._accent = '#3e78bd'
+        self._accent = "#3e78bd"
         self.dialog = None
         self._list = None
         self._hint = None
@@ -63,30 +64,34 @@ class DirtyGuard:
     def bind_nav(self, select_tab, accent) -> None:
         """未保存清单要点开某一项就能跳过去，所以需要切页回调与主题色。"""
         self._select_tab = select_tab
-        self._accent = accent.rstrip(';')
+        self._accent = accent.rstrip(";")
 
     def build_list(self) -> None:
         """未保存清单对话框：全站建一次复用（同 confirm 的理由）。"""
         dialog = ui.dialog()
         self.dialog = dialog
-        with dialog, ui.card().style('width:100%;max-width:620px;padding:14px;'):
-            self._hint = ui.label('').style(f'font-size:12px;color:{INK_MUT};margin-bottom:6px;')
-            self._list = ui.column().style('width:100%;gap:2px;max-height:50vh;overflow-y:auto;')
+        with dialog, ui.card().style("width:100%;max-width:620px;padding:14px;"):
+            self._hint = ui.label("").style(f"font-size:12px;color:{INK_MUT};margin-bottom:6px;")
+            self._list = ui.column().style("width:100%;gap:2px;max-height:50vh;overflow-y:auto;")
 
     def open_list(self) -> None:
         items = self.items()
         self._list.clear()
-        self._hint.set_text(f'共 {len(items)} 项改动还没写进配置文件；点某一项跳到那个框'
-                            if items else '没有未保存的改动')
+        self._hint.set_text(
+            f"共 {len(items)} 项改动还没写进配置文件；点某一项跳到那个框" if items else "没有未保存的改动"
+        )
         with self._list:
             for label, value, tab, section, element in items:
-                with ui.button(on_click=lambda el=element: self._jump_to_field(el)).props(
-                        'flat no-caps align=left dense').classes('w-full'):
-                    with ui.column().style('gap:0;align-items:flex-start;'):
-                        ui.label(f'{label} = {value}').style(f'font-size:14px;color:{INK};')
-                        where = ' · '.join(x for x in (tab, section) if x)
+                with (
+                    ui.button(on_click=lambda el=element: self._jump_to_field(el))
+                    .props("flat no-caps align=left dense")
+                    .classes("w-full")
+                ):
+                    with ui.column().style("gap:0;align-items:flex-start;"):
+                        ui.label(f"{label} = {value}").style(f"font-size:14px;color:{INK};")
+                        where = " · ".join(x for x in (tab, section) if x)
                         if where:
-                            ui.label(where).style(f'font-size:12px;color:{INK_MUT};')
+                            ui.label(where).style(f"font-size:12px;color:{INK_MUT};")
         self.dialog.open()
 
     def _jump_to_field(self, element):
@@ -99,8 +104,8 @@ class DirtyGuard:
         for element in self._live():
             label = field_name(element)
             if not label:
-                props = getattr(element, '_props', {}) or {}
-                label = str(props.get('placeholder') or props.get('hint') or f'未命名配置项#{element.id}').strip()
+                props = getattr(element, "_props", {}) or {}
+                label = str(props.get("placeholder") or props.get("hint") or f"未命名配置项#{element.id}").strip()
             tab, section, _expansion = locate(element)
             rows.append((label, value_text(element), tab, section, element))
         rows.sort(key=lambda r: (r[2], r[3], r[0]))
@@ -108,8 +113,11 @@ class DirtyGuard:
 
     def _live(self):
         """还看得见的那些脏控件：删到一半收起的那一组，它的改动不再算「待保存」。"""
-        return [element for element in (self._elements.get(i) for i in self._dirty)
-                if element is not None and not element.is_deleted and not hidden(element)]
+        return [
+            element
+            for element in (self._elements.get(i) for i in self._dirty)
+            if element is not None and not element.is_deleted and not hidden(element)
+        ]
 
     def count(self) -> int:
         return len(self.items())
@@ -122,9 +130,9 @@ class DirtyGuard:
         for element in list(client.elements.values()):
             if not isinstance(element, INPUT_TYPES) or element.id in self._watched:
                 continue
-            if getattr(element, 'is_config_field', True) is False:   # 选择器之类的界面控件
+            if getattr(element, "is_config_field", True) is False:  # 选择器之类的界面控件
                 continue
-            if not field_name(element) and getattr(element, 'is_config_field', None) is not True:
+            if not field_name(element) and getattr(element, "is_config_field", None) is not True:
                 continue
             self._watched.add(element.id)
             self._elements[element.id] = element
@@ -143,23 +151,23 @@ class DirtyGuard:
         count = self.count()
         if self._sent != count and context.client.has_socket_connection:
             self._sent = count
-            context.client.run_javascript(f'window.__unsavedGuard({count})')
+            context.client.run_javascript(f"window.__unsavedGuard({count})")
         self._paint_label()
 
     def _on_connect(self, client) -> None:
         # 第二个标签页连进来时，页面脚本是全新的，得把当前状态补发一次
         count = self.count()
         self._sent = count
-        client.run_javascript(f'window.__unsavedGuard({count})')
+        client.run_javascript(f"window.__unsavedGuard({count})")
         self._paint_label()
 
     def _paint_label(self) -> None:
         count = self.count()
         if self._label is not None:
-            self._label.set_text(f'● {count} 项未保存' if count else '● 配置已保存')
+            self._label.set_text(f"● {count} 项未保存" if count else "● 配置已保存")
             # 角标是 ui.button，NiceGUI 给它挂的 Quasar text-primary 是 !important 规则，
             # 内联色不带 !important 压不过它
-            self._label.style('color:' + ('#b45309' if count else '#16a34a') + ' !important;')
+            self._label.style("color:" + ("#b45309" if count else "#16a34a") + " !important;")
         if self._status is not None:
-            self._status.set_text(f'当前有 {count} 项改动还没写进配置文件' if count else '所有改动都已保存')
-            self._status.style('color:' + ('#b45309' if count else '#4b5563'))
+            self._status.set_text(f"当前有 {count} 项改动还没写进配置文件" if count else "所有改动都已保存")
+            self._status.style("color:" + ("#b45309" if count else "#4b5563"))

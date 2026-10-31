@@ -4,6 +4,7 @@ host/port 默认取 config.json 的 webui.ip / webui.port；环境变量 WEBUI_V
 WEBUI_V3_PORT 可覆盖（开发时旧版 webui 还占着 webui.port，就用环境变量错开）。
 服务就绪后自动用浏览器打开配置页；自动化场景设 WEBUI_V3_NO_OPEN=1 关掉。
 """
+
 import argparse
 import os
 import socket
@@ -63,9 +64,7 @@ def main():
     if not os.environ.get("WEBUI_V3_NO_OPEN"):
         # 监听 0.0.0.0 时浏览器走本机回环
         url_host = "127.0.0.1" if host in ("0.0.0.0", "::") else host
-        threading.Thread(
-            target=_open_browser_when_ready, args=(url_host, port), daemon=True
-        ).start()
+        threading.Thread(target=_open_browser_when_ready, args=(url_host, port), daemon=True).start()
 
     uvicorn.run("webui_server.app:create_app", factory=True, host=host, port=port)
 

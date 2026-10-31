@@ -3,6 +3,7 @@ import traceback
 
 from utils.my_log import logger
 
+
 # 对接AUDIO_PLAYER 音频播放器项目
 class AUDIO_PLAYER:
     def __init__(self, data):
@@ -25,7 +26,7 @@ class AUDIO_PLAYER:
                 if data_json["code"] != 200:
                     logger.error(data_json["message"])
                     return False
-                    
+
                 return True
             else:
                 logger.error(response.text)
@@ -44,7 +45,7 @@ class AUDIO_PLAYER:
                 if data["code"] != 200:
                     logger.error(data["message"])
                     return False
-                    
+
                 return True
             else:
                 logger.error(response.text)
@@ -63,7 +64,7 @@ class AUDIO_PLAYER:
                 if data["code"] != 200:
                     logger.error(data["message"])
                     return False
-                    
+
                 return True
             else:
                 logger.error(response.text)
@@ -85,7 +86,7 @@ class AUDIO_PLAYER:
                 if data["code"] != 200:
                     logger.error(data["message"])
                     return False
-                    
+
                 return True
             else:
                 logger.error(response.text)
@@ -107,7 +108,7 @@ class AUDIO_PLAYER:
                 if data["code"] != 200:
                     logger.error(data["message"])
                     return None
-                
+
                 return data["message"]
             else:
                 logger.error(response.text)
@@ -137,4 +138,3 @@ class AUDIO_PLAYER:
         except Exception:
             logger.error(traceback.format_exc())
             return False
-        

@@ -36,8 +36,7 @@ def thanks_handle(configure):
 
 
 def gift_data():
-    return {"username": "小明", "gift_name": "小心心", "num": 1,
-            "unit_price": 1, "total_price": 10}
+    return {"username": "小明", "gift_name": "小心心", "num": 1, "unit_price": 1, "total_price": 10}
 
 
 def test_sequential_gift_thanks_rotates_through_the_config_copies(thanks_handle):

@@ -12,6 +12,7 @@ from packaging import version
 from utils.common import Common
 from utils.my_log import logger
 
+
 class Zhipu:
     def __init__(self, data):
         self.common = Common()
@@ -23,16 +24,18 @@ class Zhipu:
 
         try:
             # 判断zhipu库版本，1.x.x和2.x.x有破坏性更新
-            if version.parse(zhipuai.__version__) < version.parse('2.0.0'):
+            if version.parse(zhipuai.__version__) < version.parse("2.0.0"):
                 self.zhipuai_ver = "1.0.0"
                 zhipuai.api_key = data["api_key"]
             else:
                 self.zhipuai_ver = zhipuai.__version__
                 from zhipuai import ZhipuAI
+
                 self.client = ZhipuAI(api_key=data["api_key"])
         except Exception:
             self.zhipuai_ver = "1.0.0"
             from zhipuai import ZhipuAI
+
             self.client = ZhipuAI(api_key=data["api_key"])
 
         self.model = data["model"]
@@ -51,10 +54,7 @@ class Zhipu:
 
                 url = urljoin(self.base_url, "/api/llm-application/open/application")
 
-                data = {
-                    "page": 1,
-                    "size": 100
-                }
+                data = {"page": 1, "size": 100}
 
                 # get请求
                 response = requests.get(url=url, data=data, headers=self.headers, timeout=(10, 300))
@@ -64,7 +64,7 @@ class Zhipu:
                 resp_json = response.json()
 
                 tmp_content = "智谱应用列表："
-            
+
                 for data in resp_json["data"]["list"]:
                     tmp_content += f"\n应用名：{data['name']}，应用ID：{data['id']}，知识库：{data['knowledge_ids']}"
 
@@ -73,7 +73,9 @@ class Zhipu:
                 logger.error(traceback.format_exc())
         elif self.model == "智能体":
             self.assistant_api_conversation_id = None
-            self.assistant_api_token = self.get_assistant_api_token(self.config_data["assistant_api"]["api_key"], self.config_data["assistant_api"]["api_secret"])
+            self.assistant_api_token = self.get_assistant_api_token(
+                self.config_data["assistant_api"]["api_key"], self.config_data["assistant_api"]["api_secret"]
+            )
             if self.assistant_api_token:
                 logger.info("智谱AI 智能体 API Token获取成功")
 
@@ -84,10 +86,7 @@ class Zhipu:
         try:
             url = urljoin("https://chatglm.cn", "/chatglm/assistant-api/v1/get_token")
 
-            data = {
-                "api_key": api_key,
-                "api_secret": api_secret
-            }
+            data = {"api_key": api_key, "api_secret": api_secret}
 
             # logger.debug(f"url={url}, data={data}")
 
@@ -113,8 +112,6 @@ class Zhipu:
             logger.error(traceback.format_exc())
             return None
 
-
-
     def invoke_example(self, prompt):
         response = zhipuai.model_api.invoke(
             model=self.model,
@@ -125,7 +122,7 @@ class Zhipu:
         # logger.info(response)
 
         return response
-    
+
     def invoke_characterglm(self, prompt):
         response = zhipuai.model_api.invoke(
             model=self.model,
@@ -134,7 +131,7 @@ class Zhipu:
                 "user_info": self.config_data["user_info"],
                 "bot_info": self.config_data["bot_info"],
                 "bot_name": self.config_data["bot_name"],
-                "username": self.config_data["username"]
+                "username": self.config_data["username"],
             },
             top_p=float(self.config_data["top_p"]),
             temperature=float(self.config_data["temperature"]),
@@ -143,13 +140,13 @@ class Zhipu:
 
         return response
 
-    '''
+    """
     说明：
     add: 事件流开启
     error: 平台服务或者模型异常，响应的异常事件
     interrupted: 中断事件，例如：触发敏感词
     finish: 数据接收完毕，关闭事件流
-    '''
+    """
 
     # 非SDK鉴权
     def generate_token(self, apikey: str, exp_seconds: int):
@@ -165,11 +162,7 @@ class Zhipu:
         }
 
         # 使用PyJWT编码payload
-        token = jwt.encode(
-            payload,
-            secret,
-            headers={"alg": "HS256", "sign_type": "SIGN"}
-        )
+        token = jwt.encode(payload, secret, headers={"alg": "HS256", "sign_type": "SIGN"})
 
         return token
 
@@ -198,7 +191,6 @@ class Zhipu:
 
         return response
 
-
     def get_resp(self, prompt, stream=False):
         """请求对应接口，获取返回值
 
@@ -210,7 +202,7 @@ class Zhipu:
             str: 返回的文本回答
         """
         try:
-            if version.parse(self.zhipuai_ver) < version.parse('2.0.0'):
+            if version.parse(self.zhipuai_ver) < version.parse("2.0.0"):
                 if self.config_data["history_enable"]:
                     self.history.append({"role": "user", "content": prompt})
                     data_json = self.history
@@ -218,11 +210,13 @@ class Zhipu:
                     data_json = [{"role": "user", "content": prompt}]
 
                 logger.debug(f"data_json={data_json}")
-                
+
                 if self.model == "characterglm":
                     ret = self.invoke_characterglm(data_json)
                 elif self.model == "应用":
-                    url = urljoin(self.base_url, f"/api/llm-application/open/model-api/{self.config_data['app_id']}/invoke")
+                    url = urljoin(
+                        self.base_url, f"/api/llm-application/open/model-api/{self.config_data['app_id']}/invoke"
+                    )
 
                     self.history.append({"role": "user", "content": prompt})
                     data = {
@@ -258,23 +252,24 @@ class Zhipu:
 
                         return resp_content
                     except Exception:
+
                         def is_odd(number):
                             # 检查数除以2的余数是否为1
                             return number % 2 != 0
-                        
+
                         # 保持history始终为偶数个
                         if is_odd(len(self.history)):
                             self.history.pop(0)
 
                         logger.error(traceback.format_exc())
                         return None
-                    
+
                 else:
                     ret = self.invoke_example(data_json)
 
                 logger.debug(f"ret={ret}")
 
-                if ret['success'] is False:
+                if ret["success"] is False:
                     logger.error(f"请求智谱ai失败，错误代码：{ret['code']}，{ret['msg']}")
                     return None
 
@@ -287,13 +282,15 @@ class Zhipu:
                         if total_chars > int(self.config_data["history_max_len"]):
                             self.history.pop(0)
                         else:
-                            self.history.append(ret['data']['choices'][0])
+                            self.history.append(ret["data"]["choices"][0])
                             break
 
-                return ret['data']['choices'][0]['content']
+                return ret["data"]["choices"][0]["content"]
             else:
                 if self.model == "应用":
-                    url = urljoin(self.base_url, f"/api/llm-application/open/model-api/{self.config_data['app_id']}/invoke")
+                    url = urljoin(
+                        self.base_url, f"/api/llm-application/open/model-api/{self.config_data['app_id']}/invoke"
+                    )
 
                     self.history.append({"role": "user", "content": prompt})
                     data = {
@@ -329,10 +326,11 @@ class Zhipu:
 
                         return resp_content
                     except Exception:
+
                         def is_odd(number):
                             # 检查数除以2的余数是否为1
                             return number % 2 != 0
-                        
+
                         # 保持history始终为偶数个
                         if is_odd(len(self.history)):
                             self.history.pop(0)
@@ -342,14 +340,14 @@ class Zhipu:
                 elif self.model == "智能体":
                     headers = {
                         "Authorization": f"Bearer {self.assistant_api_token}",
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
                     }
 
                     data = {
                         "assistant_id": self.config_data["assistant_api"]["assistant_id"],
                         "conversation_id": self.assistant_api_conversation_id,
                         "prompt": prompt,
-                        "meta_data": None
+                        "meta_data": None,
                     }
 
                     if stream:
@@ -389,74 +387,65 @@ class Zhipu:
                             return None
                 else:
                     if self.config_data["history_enable"]:
-                        import copy 
+                        import copy
+
                         tmp_msg = copy.copy(self.history)
                         tmp_msg.append({"role": "user", "content": prompt})
                         logger.debug(f"tmp_msg={tmp_msg}")
 
                         if self.model == "charglm-3":
                             response = self.get_zhipu_resp(
-                                { 
+                                {
                                     "model": self.model,  # 填写需要调用的模型名称
                                     "messages": tmp_msg,
                                     "meta": {
                                         "user_info": self.config_data["user_info"],
                                         "bot_info": self.config_data["bot_info"],
                                         "bot_name": self.config_data["bot_name"],
-                                        "username": self.config_data["username"]
+                                        "username": self.config_data["username"],
                                     },
-                                    "stream": stream
+                                    "stream": stream,
                                 }
                             )
                         else:
                             response = self.get_zhipu_resp(
-                                { 
+                                {
                                     "model": self.model,  # 填写需要调用的模型名称
                                     "messages": tmp_msg,
-                                    "stream": stream
+                                    "stream": stream,
                                 }
                             )
                     else:
                         if self.model == "charglm-3":
                             response = self.get_zhipu_resp(
-                                { 
+                                {
                                     "model": self.model,  # 填写需要调用的模型名称
-                                    "messages": [
-                                        {
-                                            "role": "user",
-                                            "content": prompt
-                                        }
-                                    ],
+                                    "messages": [{"role": "user", "content": prompt}],
                                     "meta": {
                                         "user_info": self.config_data["user_info"],
                                         "bot_info": self.config_data["bot_info"],
                                         "bot_name": self.config_data["bot_name"],
-                                        "username": self.config_data["username"]
+                                        "username": self.config_data["username"],
                                     },
-                                    "stream": stream
+                                    "stream": stream,
                                 }
                             )
                         else:
                             response = self.get_zhipu_resp(
-                                { 
+                                {
                                     "model": self.model,  # 填写需要调用的模型名称
-                                    "messages": [
-                                        {
-                                            "role": "user",
-                                            "content": prompt
-                                        }
-                                    ],
-                                    "stream": stream
+                                    "messages": [{"role": "user", "content": prompt}],
+                                    "stream": stream,
                                 }
                             )
 
                     if response is None:
                         return None
-                    
+
                     if stream:
                         # 返回响应
                         return response
-            
+
                     resp_content = response.choices[0].message.content.strip()
 
                     # 启用历史就给我记住！
@@ -472,7 +461,7 @@ class Zhipu:
                                 self.history.append({"role": "user", "content": prompt})
                                 self.history.append({"role": "assistant", "content": resp_content})
                                 break
-                    
+
                     return resp_content
         except Exception:
             logger.error(traceback.format_exc())
@@ -497,27 +486,16 @@ class Zhipu:
                 messages=[
                     {
                         "role": "user",
-                        "content": [
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url" : img
-                                }
-                            },
-                            {
-                                "type": "text",
-                                "text": prompt
-                            }
-                        ]
+                        "content": [{"type": "image_url", "image_url": {"url": img}}, {"type": "text", "text": prompt}],
                     }
-                ]
+                ],
             )
 
             if response is None:
                 return None
 
             resp_content = response.choices[0].message.content.strip()
-        
+
             logger.debug(f"resp_content={resp_content}")
 
             return resp_content
@@ -549,7 +527,8 @@ class Zhipu:
             logger.error(traceback.format_exc())
             return {"ret": False}
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # 配置日志输出格式
     logger.basicConfig(
         level=logger.DEBUG,  # 设置日志级别，可以根据需求调整
@@ -570,7 +549,7 @@ if __name__ == '__main__':
         "bot_info": "苏梦远，本名苏远心，是一位当红的国内女歌手及演员。在参加选秀节目后，凭借独特的嗓音及出众的舞台魅力迅速成名，进入娱乐圈。她外表美丽动人，但真正的魅力在于她的才华和勤奋。苏梦远是音乐学院毕业的优秀生，善于创作，拥有多首热门原创歌曲。除了音乐方面的成就，她还热衷于慈善事业，积极参加公益活动，用实际行动传递正能量。在工作中，她对待工作非常敬业，拍戏时总是全身心投入角色，赢得了业内人士的赞誉和粉丝的喜爱。虽然在娱乐圈，但她始终保持低调、谦逊的态度，深得同行尊重。在表达时，苏梦远喜欢使用“我们”和“一起”，强调团队精神。",
         "bot_name": "苏梦远",
         "username": "陆星辰",
-        "remove_useless": True
+        "remove_useless": True,
     }
 
     zhipu = Zhipu(data)

@@ -277,8 +277,7 @@ def test_audio_device_enumeration_releases_the_portaudio_handle(c, monkeypatch):
 
     devices = c.get_all_audio_device_info("in")
 
-    assert devices == [{"device_index": 0, "device_info": "dev0"},
-                       {"device_index": 1, "device_info": "dev1"}]
+    assert devices == [{"device_index": 0, "device_info": "dev0"}, {"device_index": 1, "device_info": "dev1"}]
     assert closed["terminated"] == 1
 
 

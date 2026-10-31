@@ -20,6 +20,7 @@ log_dir.mkdir(parents=True, exist_ok=True)
 now = datetime.now()
 file_path = str(log_dir / f"log-{now.year}-{now.month}-{now.day}.txt")
 
+
 # 配置 logger
 def configure_logger(file_path, log_level, max_file_size):
     level = log_level.upper() if log_level else "INFO"
@@ -32,9 +33,9 @@ def configure_logger(file_path, log_level, max_file_size):
     # logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss.SSS} | <lvl>{level:8}</>| <lvl>{message}</>", colorize=True, level=level)
     logger.add(sys.stderr, colorize=True, level=level)
 
-
     # 配置文件输出
     logger.add(file_path, level=level, rotation=max_size)
+
 
 # 获取日志配置
 log_level = config["webui"]["log"].get("log_level", "INFO")
@@ -62,6 +63,7 @@ werkzeug_logger = logging.getLogger("werkzeug")
 # 设置 httpx 日志记录器的级别为 WARNING
 werkzeug_logger.setLevel(logging.WARNING)
 
+
 # 将 loguru 与标准 logging 结合
 class InterceptHandler(logging.Handler):
     def emit(self, record):
@@ -72,6 +74,7 @@ class InterceptHandler(logging.Handler):
             frame = frame.f_back
             depth += 1
         loguru_logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
 
 # 将 InterceptHandler 添加到 jieba logger
 jieba_logger.addHandler(InterceptHandler())

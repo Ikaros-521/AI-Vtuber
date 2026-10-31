@@ -27,12 +27,7 @@ def _tone(path, seconds, rate=8000):
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(rate)
-        w.writeframes(
-            b"".join(
-                struct.pack("<h", int(2000 * math.sin(i / 8)))
-                for i in range(int(rate * seconds))
-            )
-        )
+        w.writeframes(b"".join(struct.pack("<h", int(2000 * math.sin(i / 8))) for i in range(int(rate * seconds))))
     return str(path)
 
 

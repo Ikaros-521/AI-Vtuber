@@ -47,26 +47,26 @@ def parse_key_and_simulate_key_mouse_press(key):
 
     # keys = remove_needless(keys)
 
-    if key not in ['1', '2', 're']:
+    if key not in ["1", "2", "re"]:
         return
 
-    if key == '1':
-        key = 'w'
+    if key == "1":
+        key = "w"
         simulate_key_press(key)
-    elif key == '2':
-        key = 'up'
+    elif key == "2":
+        key = "up"
         simulate_key_press(key)
-    elif key == 're':
+    elif key == "re":
         # 根据实际情况设置坐标值
         x = 1076
         y = 771
-        simulate_mouse_press(x, y, 'left')
+        simulate_mouse_press(x, y, "left")
 
         time.sleep(1)
 
         x = 1311
         y = 951
-        simulate_mouse_press(x, y, 'left')
+        simulate_mouse_press(x, y, "left")
 
 
 # 解析字符串数组，根据字符串第一位判断是否需要转换按键后，按压按键
@@ -76,46 +76,46 @@ def parse_keys_and_simulate_keys_press(keys, re=1):
     # 删除数组中非 w a s d 1 2 3 的其他字符串
     def remove_needless(keys):
         for i in range(len(keys)):
-            if keys[i] not in ['w', 'a', 's', 'd', '1']:
+            if keys[i] not in ["w", "a", "s", "d", "1"]:
                 keys.pop(i)
         return keys
-    
+
     if isinstance(keys, list) and len(keys) > 0:
-        if keys[0] == '1':
+        if keys[0] == "1":
             keys = keys[1:]
 
             keys = remove_needless(keys)
 
             # 遍历数组，将123改为yui
             for i in range(len(keys)):
-                if keys[i] == '1':
-                    keys[i] = 'f'
+                if keys[i] == "1":
+                    keys[i] = "f"
                 # elif keys[i] == '2':
                 #     keys[i] = 'u'
                 # elif keys[i] == '3':
                 #     keys[i] = 'i'
-        elif keys[0] == '2':
+        elif keys[0] == "2":
             keys = keys[1:]
 
             keys = remove_needless(keys)
-            
+
             # 遍历数组，将wsad改为上下左右，123改为789
             for i in range(len(keys)):
-                if keys[i] == 'w':
-                    keys[i] = 'up'
-                elif keys[i] == 's':
-                    keys[i] = 'down'
-                elif keys[i] == 'a':
-                    keys[i] = 'left'
-                elif keys[i] == 'd':
-                    keys[i] = 'right'
-                elif keys[i] == '1':
-                    keys[i] = 'l'
+                if keys[i] == "w":
+                    keys[i] = "up"
+                elif keys[i] == "s":
+                    keys[i] = "down"
+                elif keys[i] == "a":
+                    keys[i] = "left"
+                elif keys[i] == "d":
+                    keys[i] = "right"
+                elif keys[i] == "1":
+                    keys[i] = "l"
                 # elif keys[i] == '2':
                 #     keys[i] = '8'
                 # elif keys[i] == '3':
                 #     keys[i] = '9'
-        elif keys[0] == 're':
+        elif keys[0] == "re":
             # 鼠标按压的坐标，请手动重新校准坐标以适配
             x = 1097
             y = 779
@@ -134,7 +134,7 @@ def parse_keys_and_simulate_keys_press(keys, re=1):
         simulate_keys_press(keys, re)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 测试游戏：醉酒拔河 https://www.4399.com/flash/221542_1.htm
 
     # 循环获取鼠标当前坐标
@@ -146,16 +146,16 @@ if __name__ == '__main__':
             while True:
                 # 获取鼠标当前的坐标
                 x, y = pyautogui.position()
-                
+
                 # 打印坐标信息
                 print(f"当前鼠标坐标：x={x}, y={y}")
-                
+
                 # 等待一段时间后再次获取坐标
                 time.sleep(interval)
 
         except KeyboardInterrupt:
             print("获取鼠标坐标的程序已结束。")
-    
+
     get_mouse_pos()
 
     # game1 = Game1()

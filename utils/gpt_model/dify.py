@@ -6,6 +6,7 @@ from loguru import logger
 
 from utils.common import Common
 
+
 class Dify:
     def __init__(self, data: dict):
         self.config_data = data
@@ -22,7 +23,7 @@ class Dify:
         for key, value in variables.items():
             # 同 utils/gpt_model/custom_llm.py：替换串来自观众输入，
             # 不能交给 re.sub 当模板解析，否则 \1 这种内容直接抛 re.error
-            text = re.sub(r'\{\{' + re.escape(key) + r'\}\}', lambda _match, value=value: value, text)
+            text = re.sub(r"\{\{" + re.escape(key) + r"\}\}", lambda _match, value=value: value, text)
         return text
 
     def get_resp(self, data: dict, stream: bool = False):
@@ -39,7 +40,7 @@ class Dify:
             resp_content = None
 
             if self.config_data["type"] == "聊天助手":
-                API_URL = urljoin(self.config_data["api_ip_port"], '/v1/chat-messages')
+                API_URL = urljoin(self.config_data["api_ip_port"], "/v1/chat-messages")
 
                 if stream:
                     data_json = {
@@ -50,7 +51,7 @@ class Dify:
                         # 会话 ID，需要基于之前的聊天记录继续对话，必须传之前消息的 conversation_id。
                         "conversation_id": self.conversation_id,
                         # 用户名是否区分 视情况而定，暂时为了稳定性统一
-                        "user": "test"
+                        "user": "test",
                     }
                 else:
                     data_json = {
@@ -61,13 +62,10 @@ class Dify:
                         # 会话 ID，需要基于之前的聊天记录继续对话，必须传之前消息的 conversation_id。
                         "conversation_id": self.conversation_id,
                         # 用户名是否区分 视情况而定，暂时为了稳定性统一
-                        "user": "test"
+                        "user": "test",
                     }
-                headers = {
-                    'Content-Type': 'application/json',
-                    'Authorization': f'Bearer {self.config_data["api_key"]}'
-                }
-                
+                headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.config_data['api_key']}"}
+
                 response = requests.request("POST", API_URL, headers=headers, json=data_json, timeout=(10, 300))
 
                 if response is None:
@@ -78,7 +76,7 @@ class Dify:
                     return response
 
                 resp_json = json.loads(response.content)
-                
+
                 logger.debug(f"[dify] resp_json={resp_json}")
 
                 if "answer" in resp_json:
@@ -93,14 +91,14 @@ class Dify:
 
                 return resp_content
             elif self.config_data["type"] == "工作流":
-                API_URL = urljoin(self.config_data["api_ip_port"], '/v1/workflows/run')
+                API_URL = urljoin(self.config_data["api_ip_port"], "/v1/workflows/run")
 
                 variables = {
                     "cur_time": self.common.get_bj_time(0),
-                    "comment": data['prompt'],
+                    "comment": data["prompt"],
                 }
 
-                custom_params = self.replace_variables(self.config_data['custom_params'], variables)
+                custom_params = self.replace_variables(self.config_data["custom_params"], variables)
                 custom_params = json.loads(custom_params)
 
                 if stream:
@@ -109,7 +107,7 @@ class Dify:
                         # 阻塞模式
                         "response_mode": "streaming",
                         # 用户名是否区分 视情况而定，暂时为了稳定性统一
-                        "user": "test"
+                        "user": "test",
                     }
                 else:
                     data_json = {
@@ -117,14 +115,11 @@ class Dify:
                         # 阻塞模式
                         "response_mode": "blocking",
                         # 用户名是否区分 视情况而定，暂时为了稳定性统一
-                        "user": "test"
+                        "user": "test",
                     }
                     logger.debug(f"[dify] data_json={data_json}")
-                headers = {
-                    'Content-Type': 'application/json',
-                    'Authorization': f'Bearer {self.config_data["api_key"]}'
-                }
-                
+                headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.config_data['api_key']}"}
+
                 response = requests.request("POST", API_URL, headers=headers, json=data_json, timeout=(10, 300))
 
                 if response is None:
@@ -133,9 +128,9 @@ class Dify:
                 # 流式的话 直接返回
                 if stream:
                     return response
-                
+
                 resp_json = json.loads(response.content)
-                
+
                 logger.debug(f"[dify] resp_json={resp_json}")
 
                 if "data" in resp_json:
@@ -152,24 +147,25 @@ class Dify:
             logger.error(traceback.format_exc())
 
         return None
-    
+
     # 添加AI返回消息到会话，用于提供上下文记忆
     def add_assistant_msg_to_session(self, conversation_id: str):
         try:
             # 启用历史就给我记住！
-            if self.config_data['history_enable']:
+            if self.config_data["history_enable"]:
                 self.conversation_id = conversation_id
             return {"ret": True}
         except Exception:
             logger.error(traceback.format_exc())
             return {"ret": False}
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     data = {
         "api_ip_port": "http://172.26.189.21/v1",
         "type": "聊天助手",
         "api_key": "app-64xu0vQjP2kxN4DKR8Ch7ZGY",
-        "history_enable": True
+        "history_enable": True,
     }
 
     # 实例化并调用

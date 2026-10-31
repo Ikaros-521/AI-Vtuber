@@ -1,4 +1,5 @@
 """一键运行 / 停止 / 重启 / 恢复出厂，以及运行态查询。"""
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 

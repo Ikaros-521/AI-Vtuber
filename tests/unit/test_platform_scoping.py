@@ -18,32 +18,31 @@ import pytest
 from fakes import FakeConfig
 
 CRLF, NL = chr(13) + chr(10), chr(10)
-DUNDER = {'__file__', '__name__', '__doc__', '__package__', '__spec__',
-          '__loader__', '__builtins__', '__debug__'}
+DUNDER = {"__file__", "__name__", "__doc__", "__package__", "__spec__", "__loader__", "__builtins__", "__debug__"}
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
 def _production_files():
-    out = [str(p) for d in ('utils', 'webui_app') for p in (ROOT / d).rglob('*.py')]
-    out += [str(ROOT / 'main.py'), str(ROOT / 'webui.py')]
-    return sorted(f for f in out if '__pycache__' not in f)
+    out = [str(p) for d in ("utils", "webui_app") for p in (ROOT / d).rglob("*.py")]
+    out += [str(ROOT / "main.py"), str(ROOT / "webui.py")]
+    return sorted(f for f in out if "__pycache__" not in f)
 
 
 PRODUCTION_FILES = _production_files()
-LISTENERS = sorted(str(p) for p in (ROOT / 'utils' / 'platforms').glob('*.py'))
+LISTENERS = sorted(str(p) for p in (ROOT / "utils" / "platforms").glob("*.py"))
 
 
 def read(path):
-    return open(path, encoding='utf-8', newline='').read().replace(CRLF, NL)
+    return open(path, encoding="utf-8", newline="").read().replace(CRLF, NL)
 
 
 def add_bindings(tree, bound):
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             for alias in node.names:
-                if alias.name != '*':
-                    bound.add((alias.asname or alias.name).split('.')[0])
+                if alias.name != "*":
+                    bound.add((alias.asname or alias.name).split(".")[0])
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             bound.add(node.name)
         elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
@@ -61,10 +60,10 @@ def module_scope(path, tree):
     for node in tree.body:
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             for alias in node.names:
-                if alias.name != '*':
+                if alias.name != "*":
                     continue
-                dep = (node.module or '').replace('.', os.sep)
-                for cand in (str(ROOT / dep / '__init__.py'), str(ROOT / (dep + '.py'))):
+                dep = (node.module or "").replace(".", os.sep)
+                for cand in (str(ROOT / dep / "__init__.py"), str(ROOT / (dep + ".py"))):
                     if os.path.exists(cand):
                         add_bindings(ast.parse(read(cand)), bound)
     add_bindings(tree, bound)
@@ -93,8 +92,8 @@ def top_level_names(tree):
                     add_target(t)
             elif isinstance(node, (ast.Import, ast.ImportFrom)):
                 for alias in node.names:
-                    if alias.name != '*':
-                        names.add((alias.asname or alias.name).split('.')[0])
+                    if alias.name != "*":
+                        names.add((alias.asname or alias.name).split(".")[0])
             elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 names.add(node.name)
             elif isinstance(node, ast.With):
@@ -141,7 +140,6 @@ def first_lines(nodes):
     return assigned, loaded
 
 
-
 def unbound_names(path):
     tree = ast.parse(read(path))
     used = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
@@ -167,7 +165,7 @@ def reads_before_assignment(path):
             assigned, loaded = first_lines(nodes)
             for name in sorted((set(assigned) & candidates) - declared):
                 if name in loaded and loaded[name] < assigned[name]:
-                    offenders.append('%s:%s %s 在赋值前先读了 %s' % (path, inner.lineno, inner.name, name))
+                    offenders.append("%s:%s %s 在赋值前先读了 %s" % (path, inner.lineno, inner.name, name))
     return sorted(offenders)
 
 
@@ -177,22 +175,25 @@ def globals_without_module_binding(path):
     bad = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Global):
-            bad += ['%s:%s global %s（模块级没有这个绑定）' % (path, node.lineno, name)
-                    for name in node.names if name not in top]
+            bad += [
+                "%s:%s global %s（模块级没有这个绑定）" % (path, node.lineno, name)
+                for name in node.names
+                if name not in top
+            ]
     return sorted(bad)
 
 
-@pytest.mark.parametrize('path', PRODUCTION_FILES)
+@pytest.mark.parametrize("path", PRODUCTION_FILES)
 def test_no_name_used_without_any_binding(path):
     assert unbound_names(path) == []
 
 
-@pytest.mark.parametrize('path', PRODUCTION_FILES)
+@pytest.mark.parametrize("path", PRODUCTION_FILES)
 def test_no_read_of_outer_name_before_local_assignment(path):
     assert reads_before_assignment(path) == []
 
 
-@pytest.mark.parametrize('path', PRODUCTION_FILES)
+@pytest.mark.parametrize("path", PRODUCTION_FILES)
 def test_global_declares_only_module_level_names(path):
     assert globals_without_module_binding(path) == []
 
@@ -210,18 +211,20 @@ def process_types_without_idle_reset(path):
             continue
         if len(node.args) < 2 or not isinstance(node.args[1], ast.Constant):
             continue
-        if node.func.attr == 'process_data':
+        if node.func.attr == "process_data":
             sent.add(node.args[1].value)
-        elif node.func.attr == 'idle_time_auto_clear':
+        elif node.func.attr == "idle_time_auto_clear":
             cleared.add(node.args[1].value)
     return sorted(sent - cleared)
 
 
-@pytest.mark.parametrize('path', LISTENERS)
+@pytest.mark.parametrize("path", LISTENERS)
 def test_every_message_type_also_resets_the_idle_timer(path):
     assert process_types_without_idle_reset(path) == []
 
+
 # ---------- websockets handler 契约 ----------
+
 
 def _capture_served_handler(monkeypatch, module):
     captured = {}
@@ -231,12 +234,12 @@ def _capture_served_handler(monkeypatch, module):
             return None
 
     async def fake_serve(handler, *args, **kwargs):
-        captured['handler'] = handler
+        captured["handler"] = handler
         return FakeServer()
 
-    monkeypatch.setattr(module.websockets, 'serve', fake_serve)
-    module.start_listen(FakeConfig({}), None, None, 'douyu')
-    return captured['handler']
+    monkeypatch.setattr(module.websockets, "serve", fake_serve)
+    module.start_listen(FakeConfig({}), None, None, "douyu")
+    return captured["handler"]
 
 
 def test_lx_handler_takes_the_single_connection_argument(monkeypatch):
@@ -246,7 +249,9 @@ def test_lx_handler_takes_the_single_connection_argument(monkeypatch):
     import utils.platforms.lx_live_monitor_assistant as lx
 
     handler = _capture_served_handler(monkeypatch, lx)
-    params = [p for p in inspect.signature(handler).parameters.values()
-              if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
-    assert len(params) == 1, 'on_message 应该只收 connection 一个参数，现在是 %s' % (
-        [p.name for p in params])
+    params = [
+        p
+        for p in inspect.signature(handler).parameters.values()
+        if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
+    ]
+    assert len(params) == 1, "on_message 应该只收 connection 一个参数，现在是 %s" % ([p.name for p in params])

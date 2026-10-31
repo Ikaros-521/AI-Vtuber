@@ -30,7 +30,7 @@ def register_api(config, common, audio):
         audio: 音频类，/tts 调它的 tts_handle。
     """
 
-    @app.post('/set_config')
+    @app.post("/set_config")
     async def set_config(msg: SetConfigMessage):
         """
         配置config
@@ -43,7 +43,7 @@ def register_api(config, common, audio):
         """
         try:
             data_json = msg.dict()
-            logger.info(f'set_config接口 收到数据：{data_json}')
+            logger.info(f"set_config接口 收到数据：{data_json}")
 
             config_data = None
 
@@ -59,7 +59,7 @@ def register_api(config, common, audio):
 
             # 写入配置到配置文件
             try:
-                with open(data_json["config_path"], 'w', encoding="utf-8") as config_file:
+                with open(data_json["config_path"], "w", encoding="utf-8") as config_file:
                     json.dump(config_data, config_file, indent=2, ensure_ascii=False)
                     config_file.flush()  # 刷新缓冲区，确保写入立即生效
 
@@ -73,7 +73,7 @@ def register_api(config, common, audio):
             logger.error(traceback.format_exc())
             return CommonResult(code=-1, message=f"执行失败！{e}")
 
-    @app.post('/sys_cmd')
+    @app.post("/sys_cmd")
     async def sys_cmd(msg: SysCmdMessage):
         """
         系统命令
@@ -93,30 +93,30 @@ def register_api(config, common, audio):
         """
         try:
             data_json = msg.dict()
-            logger.info(f'sys_cmd接口 收到数据：{data_json}')
+            logger.info(f"sys_cmd接口 收到数据：{data_json}")
             logger.info(f"开始执行 {data_json['type']}命令...")
 
             resp_json = {}
 
-            if data_json['type'] == 'run':
+            if data_json["type"] == "run":
                 # 运行
-                resp_json = run_external_program(config, data_json['data']['config_path'], type="api")
-            elif data_json['type'] == 'stop':
+                resp_json = run_external_program(config, data_json["data"]["config_path"], type="api")
+            elif data_json["type"] == "stop":
                 # 停止
                 resp_json = stop_external_program(config, type="api")
-            elif data_json['type'] == 'restart':
+            elif data_json["type"] == "restart":
                 # 重启
-                resp_json = restart_application(config, type=data_json['api_type'])
-            elif data_json['type'] == 'factory':
+                resp_json = restart_application(config, type=data_json["api_type"])
+            elif data_json["type"] == "factory":
                 # 恢复出厂
-                resp_json = factory(config, data_json['data']['src_path'], data_json['data']['dst_path'], type="api")
+                resp_json = factory(config, data_json["data"]["src_path"], data_json["data"]["dst_path"], type="api")
 
             return resp_json
         except Exception as e:
             logger.error(traceback.format_exc())
             return CommonResult(code=-1, message=f"{data_json['type']}执行失败！{e}")
 
-    @app.post('/send')
+    @app.post("/send")
     async def send(msg: SendMessage):
         """
         发送数据
@@ -134,17 +134,19 @@ def register_api(config, common, audio):
         """
         try:
             data_json = msg.dict()
-            logger.info(f'WEBUI API send接口收到数据：{data_json}')
+            logger.info(f"WEBUI API send接口收到数据：{data_json}")
 
             main_api_ip = "127.0.0.1" if config.get("api_ip") == "0.0.0.0" else config.get("api_ip")
-            resp_json = await common.send_async_request(f'http://{main_api_ip}:{config.get("api_port")}/send', "POST", data_json)
+            resp_json = await common.send_async_request(
+                f"http://{main_api_ip}:{config.get('api_port')}/send", "POST", data_json
+            )
 
             return resp_json
         except Exception as e:
             logger.error(traceback.format_exc())
             return CommonResult(code=-1, message=f"发送数据失败！{e}")
 
-    @app.post('/callback')
+    @app.post("/callback")
     async def callback(request: Request):
         """
         数据回调
@@ -167,7 +169,7 @@ def register_api(config, common, audio):
         """
         try:
             data_json = await request.json()
-            logger.info(f'WEBUI API callback接口收到数据：{data_json}')
+            logger.info(f"WEBUI API callback接口收到数据：{data_json}")
 
             chat_log.add(data_json)
 
@@ -176,7 +178,7 @@ def register_api(config, common, audio):
             logger.error(traceback.format_exc())
             return CommonResult(code=-1, message=f"失败！{e}")
 
-    @app.post('/tts')
+    @app.post("/tts")
     async def tts(request: Request):
         """
         TTS合成，获取合成的音频文件路径
@@ -207,7 +209,7 @@ def register_api(config, common, audio):
         """
         try:
             data_json = await request.json()
-            logger.info(f'WEBUI API tts接口收到数据：{data_json}')
+            logger.info(f"WEBUI API tts接口收到数据：{data_json}")
 
             resp_json = await audio.tts_handle(data_json)
 
@@ -216,7 +218,7 @@ def register_api(config, common, audio):
             logger.error(traceback.format_exc())
             return CommonResult(code=-1, message=f"失败！{e}")
 
-    @app.post('/llm')
+    @app.post("/llm")
     async def llm(request: Request):
         """
         LLM推理，获取推理结果
@@ -235,10 +237,12 @@ def register_api(config, common, audio):
         """
         try:
             data_json = await request.json()
-            logger.info(f'WEBUI API llm接口 收到数据：{data_json}')
+            logger.info(f"WEBUI API llm接口 收到数据：{data_json}")
 
             main_api_ip = "127.0.0.1" if config.get("api_ip") == "0.0.0.0" else config.get("api_ip")
-            resp_json = await common.send_async_request(f'http://{main_api_ip}:{config.get("api_port")}/llm', "POST", data_json, "json", timeout=60)
+            resp_json = await common.send_async_request(
+                f"http://{main_api_ip}:{config.get('api_port')}/llm", "POST", data_json, "json", timeout=60
+            )
             if resp_json:
                 return resp_json
 
@@ -252,7 +256,9 @@ def register_api(config, common, audio):
         """获取 main.py 侧的系统信息。"""
         try:
             main_api_ip = "127.0.0.1" if config.get("api_ip") == "0.0.0.0" else config.get("api_ip")
-            resp_json = await common.send_async_request(f'http://{main_api_ip}:{config.get("api_port")}/get_sys_info', "GET", None, "json", timeout=60)
+            resp_json = await common.send_async_request(
+                f"http://{main_api_ip}:{config.get('api_port')}/get_sys_info", "GET", None, "json", timeout=60
+            )
             if resp_json:
                 return resp_json
             return CommonResult(code=-1, message="失败！")

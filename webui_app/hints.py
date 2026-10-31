@@ -13,6 +13,7 @@ placeholder 一输入就消失：用户照着「取值范围 (0.0,1.0]，不能�
 helper 用 Quasar 的 hint + persistent-hint，跟着字段自己的 DOM 走；
 不动栅格结构，避免像另起一行 label 那样把列数顶乱。
 """
+
 from nicegui import context, ui
 from nicegui.elements.number import Number
 from nicegui.elements.tooltip import Tooltip
@@ -22,43 +23,43 @@ HINT_MIN_LEN = 24
 # 超过这个长度不再整段常驻，只留首句 + tooltip 看全文
 HINT_MAX_LEN = 90
 # 打在字段根节点上的标记类，样式见 webui.py 的 PAGE_SCRIPTS
-PERSIST_CLASS = 'has-persistent-hint'
+PERSIST_CLASS = "has-persistent-hint"
 
 INPUT_LIKE = (ui.input, ui.textarea, Number)
 
 
 def first_sentence(text):
     """取首句：先按换行找到第一段够长的，再按中文句读断句，都没有就截断加省略号。"""
-    for part in text.split('\n'):
+    for part in text.split("\n"):
         part = part.strip()
         if len(part) >= HINT_MIN_LEN:
             text = part
             break
-    for sep in ('。', '；'):
+    for sep in ("。", "；"):
         index = text.find(sep)
         if HINT_MIN_LEN <= index < len(text) - 1:
-            return text[:index + 1]
+            return text[: index + 1]
     if len(text) <= HINT_MAX_LEN:
         return text
-    return text[:HINT_MAX_LEN - 1] + '…'
+    return text[: HINT_MAX_LEN - 1] + "…"
 
 
 def move_long_placeholders_to_hints():
     """返回 {控件 id: helper 文本}，便于测试与排查。"""
     elements = list(context.client.elements.values())
-    tipped = {str(t.props.get('target') or '') for t in elements if isinstance(t, Tooltip)}
+    tipped = {str(t.props.get("target") or "") for t in elements if isinstance(t, Tooltip)}
     changed = {}
     for element in elements:
         if not isinstance(element, INPUT_LIKE):
             continue
-        placeholder = str(element._props.get('placeholder') or '').strip()
+        placeholder = str(element._props.get("placeholder") or "").strip()
         if len(placeholder) < HINT_MIN_LEN:
             continue
         if len(placeholder) <= HINT_MAX_LEN:
             hint = placeholder
         else:
             hint = first_sentence(placeholder)
-            target = f'#{element.html_id}'
+            target = f"#{element.html_id}"
             if target not in tipped:
                 # 必须把 tooltip 建到字段所在的那个容器里：写成兄弟节点之外的位置
                 # （比如页面根节点）时，实测 hover 弹不出来——建页时同写法的那些 tooltip 能弹，
@@ -66,9 +67,9 @@ def move_long_placeholders_to_hints():
                 with element.parent_slot:
                     element.tooltip(placeholder)
                 tipped.add(target)
-        element.props['hint'] = hint
-        element.props['persistent-hint'] = True
-        element.props.pop('placeholder', None)
+        element.props["hint"] = hint
+        element.props["persistent-hint"] = True
+        element.props.pop("placeholder", None)
         # Quasar 把 .q-field__bottom 做成绝对定位 + translateY(100%) 的「抽屉」，只在聚焦/报错时滑出来；
         # 常驻 helper 要占回自己的高度，否则两三行说明会直接压到下一行字段上（实测按键映射页整片重叠）。
         # 打个标记类给 webui.py 的样式用，避免把没有常驻说明的字段也一起改了。

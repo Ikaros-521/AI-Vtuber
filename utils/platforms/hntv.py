@@ -5,6 +5,7 @@ import traceback
 
 from utils.my_log import logger
 
+
 def start_listen(config, common, my_handle, platform: str):
     # 初始化已获取的commentId集合
     comment_set = set()

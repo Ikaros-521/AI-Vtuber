@@ -24,8 +24,9 @@ def test_pb2_uses_the_modern_builder_style(name):
     """老式文件直接 new Descriptor，protobuf 4.25+ 会拒绝。"""
     source = (pathlib.Path(__file__).resolve().parents[2] / f"{name}.py").read_text(encoding="utf-8")
 
-    assert "from google.protobuf.internal import builder as _builder" in source, \
+    assert "from google.protobuf.internal import builder as _builder" in source, (
         f"{name}.py 还是老式生成代码，protobuf 4.25+ 导入即失败"
+    )
     assert "symbol_database._symbol_database" not in source
 
 
@@ -67,8 +68,15 @@ def test_kuaishou_descriptor_covers_every_symbol():
 
     names = {n for n in dir(ks) if not n.startswith("_") and n[0].isupper()}
 
-    for required in ("SocketMessage", "SCWebFeedPush", "CSWebEnterRoom", "WebCommentFeed",
-                     "SimpleUserInfo", "PayloadType", "WebGiftFeed"):
+    for required in (
+        "SocketMessage",
+        "SCWebFeedPush",
+        "CSWebEnterRoom",
+        "WebCommentFeed",
+        "SimpleUserInfo",
+        "PayloadType",
+        "WebGiftFeed",
+    ):
         assert required in names, f"{required} 在重新生成后丢失"
     assert len(ks.DESCRIPTOR.message_types_by_name) == 14
     assert len(ks.DESCRIPTOR.enum_types_by_name) == 3

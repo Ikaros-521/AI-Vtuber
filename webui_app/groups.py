@@ -5,6 +5,7 @@
 按 2 填进去删掉的反而是标号 #3 那行。所以这里直接列出还看得见的行，摘要取行上第一个控件的
 名字与当前值：用户挑的是自己看到的东西，位置由这里换算。
 """
+
 from nicegui import context, ui
 
 from webui_app import confirm as confirm_module
@@ -12,9 +13,9 @@ from webui_app.confirm import GROUP_DETAIL
 from webui_app.fields import field_name, value_text
 from webui_app.undo import undo
 
-SELECT_WIDTH = 'width:320px;'
+SELECT_WIDTH = "width:320px;"
 # 每个客户端自己一份（一个标签页一套元素树，共用列表会串页）
-_REGISTRY = '_group_pickers'
+_REGISTRY = "_group_pickers"
 
 
 def _registry():
@@ -54,11 +55,14 @@ class GroupPicker:
         self.select = None
 
     def build(self):
-        self.select = ui.select(label=f'要删除的{self._name}组', options={}) \
-            .props('outlined dense options-dense clearable').style(SELECT_WIDTH)
+        self.select = (
+            ui.select(label=f"要删除的{self._name}组", options={})
+            .props("outlined dense options-dense clearable")
+            .style(SELECT_WIDTH)
+        )
         # 它只是个选择器，值不写进配置：标一下，脏状态守卫与全局搜索都跳过它
         self.select.is_config_field = False
-        _registry().append(self)      # 选项在建页收尾时由 refresh_pickers() 填
+        _registry().append(self)  # 选项在建页收尾时由 refresh_pickers() 填
         return self
 
     def rows(self):
@@ -67,15 +71,15 @@ class GroupPicker:
         连续序号同时是 var 里的组号——各页面删完会把后面的键往前挪，所以两边对得上；
         收起的行仍占着卡片里的位置，不能拿它当序号。
         """
-        visible = [row for row in self._card() if getattr(row, 'visible', True) is not False]
+        visible = [row for row in self._card() if getattr(row, "visible", True) is not False]
         return list(enumerate(visible))
 
     def _title(self, row):
         for element in row.descendants():
             label = field_name(element)
             if label:
-                return f'{label} · {value_text(element)}'[:46]
-        return '（这一行没有控件）'
+                return f"{label} · {value_text(element)}"[:46]
+        return "（这一行没有控件）"
 
     def refresh(self):
         options = {pos: self._title(row) for pos, row in self.rows()}
@@ -94,12 +98,14 @@ class GroupPicker:
         pos = self.position
         row = dict(self.rows()).get(pos)
         if row is None:
-            ui.notify(position='top', type='warning', message=f'请先选要删除的「{self._name}」组')
+            ui.notify(position="top", type="warning", message=f"请先选要删除的「{self._name}」组")
             return
-        title = self._titles.get(pos, f'第 {pos + 1} 组')
+        title = self._titles.get(pos, f"第 {pos + 1} 组")
         confirm_module.confirm.ask(
-            f'确认删除「{self._name}」这一组？（{title}）',
-            lambda: self._delete(row, pos, dict(self._var()), title), GROUP_DETAIL)
+            f"确认删除「{self._name}」这一组？（{title}）",
+            lambda: self._delete(row, pos, dict(self._var()), title),
+            GROUP_DETAIL,
+        )
 
     def _delete(self, row, pos, snapshot, title):
         # 行一旦被 card.remove() 掉，NiceGUI 会清空它整棵子树的 slot 与事件监听，重建不回来；
@@ -107,7 +113,7 @@ class GroupPicker:
         row.set_visibility(False)
         self._action(pos)
         self.refresh()
-        undo.offer(f'已删除「{self._name}」{title}', lambda: self._restore(row, snapshot))
+        undo.offer(f"已删除「{self._name}」{title}", lambda: self._restore(row, snapshot))
 
     def _restore(self, row, snapshot):
         var = self._var()

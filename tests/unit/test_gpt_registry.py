@@ -68,9 +68,7 @@ def test_importing_the_registry_does_not_pull_in_any_provider():
         "import sys; import utils.gpt_model.gpt;"
         "print(','.join(m for m in sys.modules if m.startswith('utils.gpt_model.') and m != 'utils.gpt_model.gpt'))"
     )
-    proc = subprocess.run(
-        [sys.executable, "-c", code], capture_output=True, text=True, cwd=REPO_ROOT
-    )
+    proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, cwd=REPO_ROOT)
 
     assert proc.returncode == 0, proc.stderr
     assert proc.stdout.strip() == ""

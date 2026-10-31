@@ -5,6 +5,7 @@ v3 起 WebUI 由 webui_server（FastAPI）+ webui_react（React）提供，启�
 这个文件仅作为回退保留：v3 缺少你需要的功能时可以临时用它（两边读写同一份 config.json），
 后续版本会移除。日常使用请不要再从 webui.py 启动。
 """
+
 from nicegui import ui, app
 import sys
 import os
@@ -128,6 +129,8 @@ config_path = None
 """
 初始化基本配置
 """
+
+
 def init():
     """
     初始化基本配置
@@ -136,9 +139,9 @@ def init():
 
     common = Common()
 
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         # 当前是打包后的可执行文件
-        bundle_dir = Path(getattr(sys, '_MEIPASS', Path(sys.executable).parent))
+        bundle_dir = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
         file_relative_path = bundle_dir.resolve()
     else:
         # 当前是源代码
@@ -149,19 +152,19 @@ def init():
     # 初始化文件夹
     def init_dir():
         # 创建日志文件夹
-        log_dir = file_relative_path / 'log'
+        log_dir = file_relative_path / "log"
         # mkdir 方法的 parents=True 参数可以确保父目录的创建（如有必要），exist_ok=True 则避免在目录已存在时抛出异常。
         log_dir.mkdir(parents=True, exist_ok=True)
 
         # 创建音频输出文件夹
-        audio_out_dir = file_relative_path / 'out'
+        audio_out_dir = file_relative_path / "out"
         audio_out_dir.mkdir(parents=True, exist_ok=True)
 
     init_dir()
     logger.debug("项目相关文件夹初始化完成")
 
     # 配置文件路径（可用 LUNA_CONFIG_PATH 覆盖，便于多实例与自动化测试）
-    config_path = os.environ.get("LUNA_CONFIG_PATH") or str(file_relative_path / 'config.json')
+    config_path = os.environ.get("LUNA_CONFIG_PATH") or str(file_relative_path / "config.json")
 
     logger.debug("配置文件路径=" + str(config_path))
 
@@ -170,13 +173,14 @@ def init():
     # 实例化配置类
     config = Config(config_path)
 
+
 # 初始化基本配置
 init()
 
 # 将本地目录中的静态文件（如 CSS、JavaScript、图片等）暴露给 web 服务器，以便用户可以通过特定的 URL 访问这些文件。
 if config.get("webui", "local_dir_to_endpoint", "enable"):
     for tmp in config.get("webui", "local_dir_to_endpoint", "config"):
-        app.add_static_files(tmp['url_path'], tmp['local_dir'])
+        app.add_static_files(tmp["url_path"], tmp["local_dir"])
 
 # 对 main.py 暴露的 HTTP 接口，注册一次即可
 register_api(config, common, audio)
@@ -215,7 +219,8 @@ button_bottom_color = config.get("webui", "theme", "list", theme_choose, "button
 button_internal_css = config.get("webui", "theme", "list", theme_choose, "button_internal")
 # 五套主题这里的 button_internal_color 全是空串，留空的意思就是「用主题主色」，见 theme.py
 button_internal_color = internal_button_color(
-    config.get("webui", "theme", "list", theme_choose, "button_internal_color"))
+    config.get("webui", "theme", "list", theme_choose, "button_internal_color")
+)
 switch_internal_css = config.get("webui", "theme", "list", theme_choose, "switch_internal")
 echart_css = config.get("webui", "theme", "list", theme_choose, "echart")
 
@@ -224,8 +229,10 @@ dirty_guard = DirtyGuard()
 
 # 右下角两枚状态徽标的底样式。徽标是 ui.button，NiceGUI 会给它挂上 Quasar 的 text-primary，
 # 那是条 !important 规则，普通内联色压不过，所以状态色一律要带 !important（实测踩过）。
-PILL_CSS = ("font-size:12px;padding:4px 10px;border-radius:14px;background:#ffffff;"
-            "box-shadow:0 1px 4px rgba(0,0,0,0.18);color:{} !important;")
+PILL_CSS = (
+    "font-size:12px;padding:4px 10px;border-radius:14px;background:#ffffff;"
+    "box-shadow:0 1px 4px rgba(0,0,0,0.18);color:{} !important;"
+)
 
 """
 页面级脚本与样式
@@ -407,6 +414,7 @@ html,body{background:#f1f5f9;}
 </script>
 """
 
+
 def goto_func_page():
     """
     跳转到功能页
@@ -438,8 +446,9 @@ def goto_func_page():
             return config_data
         except Exception as e:
             logger.error(f"无法读取webui配置到变量！\n{e}")
-            ui.notify(position="top", type="negative",
-                        message=f"读取界面上的值失败：{explain(e)}（完整错误见服务端日志）")
+            ui.notify(
+                position="top", type="negative", message=f"读取界面上的值失败：{explain(e)}（完整错误见服务端日志）"
+            )
             logger.error(traceback.format_exc())
 
             return None
@@ -453,8 +462,9 @@ def goto_func_page():
         error = validate_config()
         if error:
             message, field = error
-            ui.notify(position="top", type="negative",
-                      message=message if field is None else f'{message} · 已跳到那个框')
+            ui.notify(
+                position="top", type="negative", message=message if field is None else f"{message} · 已跳到那个框"
+            )
             if field is not None:
                 jump_to_element(field, button_bottom_color, select_tab, color=INVALID_RING)
             return False
@@ -464,8 +474,7 @@ def goto_func_page():
                 config_data = json.load(config_file)
         except Exception as e:
             logger.error(f"无法读取配置文件！\n{e}")
-            ui.notify(position="top", type="negative",
-                message=f"配置文件读不出来：{explain(e)}（路径 {config_path}）")
+            ui.notify(position="top", type="negative", message=f"配置文件读不出来：{explain(e)}（路径 {config_path}）")
             return False
 
         # 读取webui配置到dict变量
@@ -479,7 +488,7 @@ def goto_func_page():
 
         # 写入配置到配置文件
         try:
-            with open(config_path, 'w', encoding="utf-8") as config_file:
+            with open(config_path, "w", encoding="utf-8") as config_file:
                 json.dump(config_data, config_file, indent=2, ensure_ascii=False)
                 config_file.flush()  # 刷新缓冲区，确保写入立即生效
 
@@ -495,11 +504,8 @@ def goto_func_page():
             return True
         except Exception as e:
             logger.error(f"无法写入配置文件！\n{str(e)}")
-            ui.notify(position="top", type="negative",
-                    message=f"配置文件写不进去：{explain(e)}（路径 {config_path}）")
+            ui.notify(position="top", type="negative", message=f"配置文件写不进去：{explain(e)}（路径 {config_path}）")
             return False
-        
-
 
     r"""
 
@@ -536,11 +542,15 @@ def goto_func_page():
 
     # 窄屏提示：定宽控件在 <900px 已被上面那段样式表改成单列，不再裁；
     # 这条只说明「窄屏能看到的东西少」，别再写会被裁掉那种已经不实的话
-    with ui.row().style(
-            'background:#fef3c7;color:#78350f;padding:8px 14px;border-radius:8px;'
-            'justify-content:center;align-items:center;margin:0 10px 6px;').classes('narrow-tip'):
-        ui.label('窄屏已自动改成单列，配置项多时要滚很久；能放宽窗口就放宽，一屏能看到更多。') \
-            .style('font-size:13px;')
+    with (
+        ui.row()
+        .style(
+            "background:#fef3c7;color:#78350f;padding:8px 14px;border-radius:8px;"
+            "justify-content:center;align-items:center;margin:0 10px 6px;"
+        )
+        .classes("narrow-tip")
+    ):
+        ui.label("窄屏已自动改成单列，配置项多时要滚很久；能放宽窗口就放宽，一屏能看到更多。").style("font-size:13px;")
 
     # 分组导航条：16 个平铺 tab 归到「总览 + 6 组」，点组名跳到该组第一页。
     # 这里不重建面板，只是给既有 tab 加一层可读的外壳
@@ -550,75 +560,122 @@ def goto_func_page():
     config_search = ConfigSearch(select_tab, button_bottom_color)
     # 「只看已启用」开关（走查 audit-9）：开关建在导航条里，藏不藏由 tab_panels 上一个类决定
     enabled_filter = EnabledFilter()
-    mark_group = build_nav_chips(select_tab, button_bottom_color.rstrip(';'),
-                                 config_search.open, enabled_filter.build_switch)
+    mark_group = build_nav_chips(
+        select_tab, button_bottom_color.rstrip(";"), config_search.open, enabled_filter.build_switch
+    )
     # 运行日志的对话框也必须在建页时建好，点「运行日志」只是填内容 + 打开
     run_log = RunLog(lambda: log_file_path).build()
 
     # 9 大核心工作区 tab 条已隐藏：导航由上方的单排工作区按钮负责，
     # 这条只保留作 tab_panels 的绑定与 ?tab= 深链脚本 el.click() 的落点
     # （display:none 的元素程序化 click 依然生效）
-    with ui.tabs().classes('w-full').style('display:none;') as tabs:
-        overview_page = ui.tab('总览')
-        chat_page = ui.tab('聊天')
-        live_connect_page = ui.tab('直播接入')
-        brain_page = ui.tab('人设与大脑')
-        voice_stage_page = ui.tab('声音与表现')
-        danmu_page = ui.tab('弹幕与礼仪')
-        interaction_page = ui.tab('互动与玩法')
-        hardware_page = ui.tab('外设与联动')
-        system_page = ui.tab('运维与系统')
+    with ui.tabs().classes("w-full").style("display:none;") as tabs:
+        overview_page = ui.tab("总览")
+        chat_page = ui.tab("聊天")
+        live_connect_page = ui.tab("直播接入")
+        brain_page = ui.tab("人设与大脑")
+        voice_stage_page = ui.tab("声音与表现")
+        danmu_page = ui.tab("弹幕与礼仪")
+        interaction_page = ui.tab("互动与玩法")
+        hardware_page = ui.tab("外设与联动")
+        system_page = ui.tab("运维与系统")
 
     tabs.on_value_change(lambda e: mark_group(e.value))
     mark_group(OVERVIEW)
 
-    with ui.tab_panels(tabs, value=overview_page).classes('w-full') as tab_panels:
+    with ui.tab_panels(tabs, value=overview_page).classes("w-full") as tab_panels:
         with ui.tab_panel(overview_page).style(tab_panel_css):
-            build_overview_tab(config, state, dirty_guard, select_tab, save_config, card_css,
-                               button_bottom_color)
+            build_overview_tab(config, state, dirty_guard, select_tab, save_config, card_css, button_bottom_color)
 
         with ui.tab_panel(chat_page).style(tab_panel_css):
-            page_config_mappings.append(build_chat_tab(
-                config, common, state, chat_log, card_css, switch_internal_css, button_internal_color, button_internal_css))
+            page_config_mappings.append(
+                build_chat_tab(
+                    config,
+                    common,
+                    state,
+                    chat_log,
+                    card_css,
+                    switch_internal_css,
+                    button_internal_color,
+                    button_internal_css,
+                )
+            )
 
         with ui.tab_panel(live_connect_page).style(tab_panel_css) as live_connect_panel:
-            page_config_mappings.append(build_common_config_tab(
-                config, common, card_css, switch_internal_css, button_internal_color, button_internal_css))
+            page_config_mappings.append(
+                build_common_config_tab(
+                    config, common, card_css, switch_internal_css, button_internal_color, button_internal_css
+                )
+            )
 
         with ui.tab_panel(brain_page).style(tab_panel_css) as brain_panel:
-            page_config_mappings.append(build_llm_tab(
-                config, common, card_css, switch_internal_css, button_bottom_color, button_bottom_css, button_internal_color, button_internal_css))
-            page_config_mappings.append(build_image_recognition_tab(
-                config, common, state, card_css, switch_internal_css, button_internal_color, button_internal_css))
+            page_config_mappings.append(
+                build_llm_tab(
+                    config,
+                    common,
+                    card_css,
+                    switch_internal_css,
+                    button_bottom_color,
+                    button_bottom_css,
+                    button_internal_color,
+                    button_internal_css,
+                )
+            )
+            page_config_mappings.append(
+                build_image_recognition_tab(
+                    config, common, state, card_css, switch_internal_css, button_internal_color, button_internal_css
+                )
+            )
             page_config_mappings.append(build_translate_tab(config, card_css, switch_internal_css))
 
         with ui.tab_panel(voice_stage_page).style(tab_panel_css) as voice_stage_panel:
-            page_config_mappings.append(build_tts_tab(
-                config, common, audio, card_css, switch_internal_css, button_internal_color, button_internal_css))
+            page_config_mappings.append(
+                build_tts_tab(
+                    config, common, audio, card_css, switch_internal_css, button_internal_color, button_internal_css
+                )
+            )
             page_config_mappings.append(build_svc_tab(config, common, card_css, switch_internal_css))
-            page_config_mappings.append(build_talk_tab(
-                config, common, state, card_css, switch_internal_css, button_internal_color, button_internal_css))
+            page_config_mappings.append(
+                build_talk_tab(
+                    config, common, state, card_css, switch_internal_css, button_internal_color, button_internal_css
+                )
+            )
             page_config_mappings.append(build_visual_body_tab(config, common, card_css, switch_internal_css))
 
         with ui.tab_panel(danmu_page).style(tab_panel_css) as danmu_panel:
             page_config_mappings.append(build_interact_filter_tab(config, card_css, switch_internal_css))
 
         with ui.tab_panel(interaction_page).style(tab_panel_css) as interaction_panel:
-            page_config_mappings.append(build_copywriting_tab(
-                config, common, audio, card_css, switch_internal_css, button_internal_color, button_internal_css))
+            page_config_mappings.append(
+                build_copywriting_tab(
+                    config, common, audio, card_css, switch_internal_css, button_internal_color, button_internal_css
+                )
+            )
             page_config_mappings.append(build_integral_tab(config, card_css, switch_internal_css))
 
         with ui.tab_panel(hardware_page).style(tab_panel_css) as hardware_panel:
-            page_config_mappings.append(build_assistant_anchor_tab(
-                config, common, audio_synthesis_type_options, card_css, switch_internal_css))
-            page_config_mappings.append(build_serial_tab(
-                config, card_css, switch_internal_css, button_internal_color, button_internal_css))
+            page_config_mappings.append(
+                build_assistant_anchor_tab(config, common, audio_synthesis_type_options, card_css, switch_internal_css)
+            )
+            page_config_mappings.append(
+                build_serial_tab(config, card_css, switch_internal_css, button_internal_color, button_internal_css)
+            )
 
         with ui.tab_panel(system_page).style(tab_panel_css) as system_panel:
             page_config_mappings.append(build_data_analysis_tab(config, config_path, echart_css))
-            page_config_mappings.append(build_web_page_tab(
-                config, common, config_path, webui_config_to_dict, card_css, switch_internal_css,
-                button_internal_color, button_internal_css, dirty_guard))
+            page_config_mappings.append(
+                build_web_page_tab(
+                    config,
+                    common,
+                    config_path,
+                    webui_config_to_dict,
+                    card_css,
+                    switch_internal_css,
+                    button_internal_color,
+                    button_internal_css,
+                    dirty_guard,
+                )
+            )
             build_docs_tab(card_css)
             build_about_tab(card_css)
 
@@ -626,13 +683,18 @@ def goto_func_page():
     # 390 宽换行成 114px 高（占视口 15%）还有一半按钮掉出视口。改成右下角可折叠的一条，
     # 平时只留「未保存」角标和一个按钮，要用了再展开。
     def ask_stop():
-        confirm.ask('确认停止正在运行的直播程序？', lambda: stop_external_program(config),
-                    '弹幕监听、文案播报和虚拟身体会一起停下；正在直播的话，这一下就是断播。')
+        confirm.ask(
+            "确认停止正在运行的直播程序？",
+            lambda: stop_external_program(config),
+            "弹幕监听、文案播报和虚拟身体会一起停下；正在直播的话，这一下就是断播。",
+        )
 
     def ask_restart():
-        confirm.ask('确认重启 webui？', lambda: restart_application(config),
-                    '会先停掉正在运行的直播程序，再用当前配置重新拉起 webui；'
-                    '没点「保存配置」的改动会全部丢失。')
+        confirm.ask(
+            "确认重启 webui？",
+            lambda: restart_application(config),
+            "会先停掉正在运行的直播程序，再用当前配置重新拉起 webui；没点「保存配置」的改动会全部丢失。",
+        )
 
     ops_open = False
 
@@ -640,7 +702,7 @@ def goto_func_page():
         nonlocal ops_open
         ops_open = not ops_open
         ops_row.set_visibility(ops_open)
-        button_ops.set_text('收起' if ops_open else '操作')
+        button_ops.set_text("收起" if ops_open else "操作")
 
     run_badge = None
     run_state_shown = None
@@ -657,45 +719,65 @@ def goto_func_page():
         if on == run_state_shown:
             return
         run_state_shown = on
-        run_badge.set_text('● 直播程序运行中' if on else '○ 直播程序未运行')
-        run_badge.style(PILL_CSS.format('#16a34a' if on else '#4b5563'))
+        run_badge.set_text("● 直播程序运行中" if on else "○ 直播程序未运行")
+        run_badge.style(PILL_CSS.format("#16a34a" if on else "#4b5563"))
 
     with ui.page_sticky(position="bottom-right", x_offset=12, y_offset=12):
         with ui.column().style("align-items:flex-end;gap:8px;"):
             # 角标做成真按钮：点开「哪些项还没保存、现在是什么值」的清单（story-2 验收标准）
-            dirty_badge = ui.button('● 配置已保存', on_click=dirty_guard.open_list).props(
-                'flat no-caps dense').style(PILL_CSS.format('#16a34a')).tooltip('点开看哪些项还没保存')
-            run_badge = ui.button('○ 直播程序未运行', on_click=lambda: select_tab(OVERVIEW)).props(
-                'flat no-caps dense').style(PILL_CSS.format('#4b5563')).tooltip('到总览页看开播就绪度')
+            dirty_badge = (
+                ui.button("● 配置已保存", on_click=dirty_guard.open_list)
+                .props("flat no-caps dense")
+                .style(PILL_CSS.format("#16a34a"))
+                .tooltip("点开看哪些项还没保存")
+            )
+            run_badge = (
+                ui.button("○ 直播程序未运行", on_click=lambda: select_tab(OVERVIEW))
+                .props("flat no-caps dense")
+                .style(PILL_CSS.format("#4b5563"))
+                .tooltip("到总览页看开播就绪度")
+            )
 
             with ui.row().style("flex-wrap:wrap;justify-content:flex-end;gap:6px;") as ops_row:
-                ui.button('保存配置', on_click=lambda: save_config(), color=button_bottom_color).style(button_bottom_css).tooltip("保存webui的配置到本地文件，有些配置保存后需要重启生效")
-                ui.button('一键运行', on_click=lambda: run_external_program(config), color=button_bottom_color).style(button_bottom_css).tooltip("运行main.py")
+                ui.button("保存配置", on_click=lambda: save_config(), color=button_bottom_color).style(
+                    button_bottom_css
+                ).tooltip("保存webui的配置到本地文件，有些配置保存后需要重启生效")
+                ui.button("一键运行", on_click=lambda: run_external_program(config), color=button_bottom_color).style(
+                    button_bottom_css
+                ).tooltip("运行main.py")
                 # 创建一个按钮，用于停止正在运行的程序
-                ui.button("停止运行", on_click=ask_stop, color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py")
+                ui.button("停止运行", on_click=ask_stop, color=button_bottom_color).style(button_bottom_css).tooltip(
+                    "停止运行main.py"
+                )
                 # 运行结果原先只有一条会自行消失的 toast，出问题得自己去翻文件（走查 audit-3）
-                ui.button('运行日志', icon='receipt_long', on_click=run_log.open,
-                          color=button_bottom_color).style(button_bottom_css).tooltip(
-                    '看今天的日志末尾 400 行；日志文件在 log/ 下，按大小滚动')
-                ui.button('重启', on_click=ask_restart, color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py并重启webui")
+                ui.button("运行日志", icon="receipt_long", on_click=run_log.open, color=button_bottom_color).style(
+                    button_bottom_css
+                ).tooltip("看今天的日志末尾 400 行；日志文件在 log/ 下，按大小滚动")
+                ui.button("重启", on_click=ask_restart, color=button_bottom_color).style(button_bottom_css).tooltip(
+                    "停止运行main.py并重启webui"
+                )
             ops_row.set_visibility(False)
 
             with ui.row().style("align-items:center;gap:6px;"):
-                ui.button('回到顶部', icon='keyboard_arrow_up', on_click=lambda: scroll_to_top(), color=button_bottom_color).style(button_bottom_css).tooltip("平滑滚动到页面顶部")
-                button_ops = ui.button('操作', icon='settings', on_click=switch_ops, color=button_bottom_color).style(button_bottom_css)
+                ui.button(
+                    "回到顶部", icon="keyboard_arrow_up", on_click=lambda: scroll_to_top(), color=button_bottom_color
+                ).style(button_bottom_css).tooltip("平滑滚动到页面顶部")
+                button_ops = ui.button("操作", icon="settings", on_click=switch_ops, color=button_bottom_color).style(
+                    button_bottom_css
+                )
 
     ui.timer(1.0, paint_run_state)
 
     # 8 大工作区区块挂载：把 通用配置 的区块分流改挂到对应的宿主 TabPanel 上。
     # 只搬 DOM 归属，控件与 save_common 留在原文件，保存链路不动
     panel_map = {
-        '直播接入': live_connect_panel,
-        '人设与大脑': brain_panel,
-        '声音与表现': voice_stage_panel,
-        '弹幕与礼仪': danmu_panel,
-        '互动与玩法': interaction_panel,
-        '外设与联动': hardware_panel,
-        '运维与系统': system_panel,
+        "直播接入": live_connect_panel,
+        "人设与大脑": brain_panel,
+        "声音与表现": voice_stage_panel,
+        "弹幕与礼仪": danmu_panel,
+        "互动与玩法": interaction_panel,
+        "外设与联动": hardware_panel,
+        "运维与系统": system_panel,
     }
     apply_page_plan(panel_map, live_connect_panel, card_css)
     order_tabs(tabs, page_order())
@@ -740,6 +822,7 @@ def goto_func_page():
         logger.info("自动运行 已启用")
         run_external_program(config, type="api")
 
+
 # 发送心跳包
 ui.timer(9 * 60, lambda: common.send_heartbeat())
 
@@ -759,7 +842,14 @@ else:
         goto_func_page()
 
 
-
-ui.run(host=webui_ip, port=webui_port, title=webui_title, favicon="./ui/favicon-64.ico", language="zh-CN", dark=False, reload=False)
+ui.run(
+    host=webui_ip,
+    port=webui_port,
+    title=webui_title,
+    favicon="./ui/favicon-64.ico",
+    language="zh-CN",
+    dark=False,
+    reload=False,
+)
 # ui.run(host=webui_ip, port=webui_port, title=webui_title, favicon="./ui/favicon-64.ico", language="zh-CN", dark=False, reload=False,
 #        ssl_certfile="F:\\FunASR_WS\\cert.pem", ssl_keyfile="F:\\FunASR_WS\\key.pem")

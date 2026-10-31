@@ -9,6 +9,7 @@ from utils.my_log import logger
 
 # 前往官网：https://cloud.baidu.com/product/wenxinworkshop 申请服务获取
 
+
 class My_WenXinWorkShop:
     def __init__(self, data):
         self.common = Common()
@@ -23,7 +24,7 @@ class My_WenXinWorkShop:
         logger.debug(self.config_data)
 
         try:
-            if self.config_data['type'] == "千帆大模型":
+            if self.config_data["type"] == "千帆大模型":
                 model_url_map = {
                     "ERNIEBot": LLMAPI.ERNIEBot,
                     "ERNIEBot_turbo": LLMAPI.ERNIEBot_turbo,
@@ -52,28 +53,27 @@ class My_WenXinWorkShop:
                     self.my_bot = LLMAPI(
                         api_key=self.config_data["api_key"],
                         secret_key=self.config_data["secret_key"],
-                        url=model_url_map[selected_model]
+                        url=model_url_map[selected_model],
                     )
                     logger.info(f"千帆大模型加载成功，模型名称：{selected_model}，url：{model_url_map[selected_model]}")
-            elif self.config_data['type'] == "AppBuilder":
+            elif self.config_data["type"] == "AppBuilder":
                 self.app_builder_get_conversation_id()
         except Exception as e:
             logger.error(traceback.format_exc())
             logger.error(f"千帆大模型加载失败，错误信息：{str(e)}")
 
-
     def app_builder_get_conversation_id(self):
         try:
             url = "https://qianfan.baidubce.com/v2/app/conversation"
-        
+
             payload = json.dumps({"app_id": self.config_data["app_id"]})
             headers = {
-                'Content-Type': 'application/json',
-                'X-Appbuilder-Authorization': f'Bearer {self.config_data["app_token"]}'
+                "Content-Type": "application/json",
+                "X-Appbuilder-Authorization": f"Bearer {self.config_data['app_token']}",
             }
 
-            logger.debug(f'payload={payload}\nheaders={headers}')
-            
+            logger.debug(f"payload={payload}\nheaders={headers}")
+
             response = requests.request("POST", url, headers=headers, data=payload, timeout=(10, 300))
             resp_json = json.loads(response.content)
             if "conversation_id" in resp_json:
@@ -88,8 +88,7 @@ class My_WenXinWorkShop:
             logger.error(f"获取会话ID失败，请检查app_id/app_token是否正确。错误信息：{e}")
             return None
 
-
-    def get_resp(self, prompt: str, stream: bool=False):
+    def get_resp(self, prompt: str, stream: bool = False):
         """请求对应接口，获取返回值
 
         Args:
@@ -102,20 +101,14 @@ class My_WenXinWorkShop:
         try:
             resp_content = None
 
-            if self.config_data['type'] == "千帆大模型":
+            if self.config_data["type"] == "千帆大模型":
                 # create messages
                 messages: Messages = []
-                
-                for history in self.history:
-                    messages.append(Message(
-                        role=history["role"],
-                        content=history["content"]
-                    ))
 
-                messages.append(Message(
-                    role='user',
-                    content=prompt
-                ))
+                for history in self.history:
+                    messages.append(Message(role=history["role"], content=history["content"]))
+
+                messages.append(Message(role="user", content=prompt))
 
                 logger.debug(f"self.history={self.history}")
 
@@ -126,9 +119,9 @@ class My_WenXinWorkShop:
                     penalty_score=self.config_data["penalty_score"],
                     stream=stream,
                     user_id=None,
-                    chunk_size=512
+                    chunk_size=512,
                 )
-            
+
                 if stream:
                     return resp_content
 
@@ -136,7 +129,7 @@ class My_WenXinWorkShop:
                 if self.config_data["history_enable"]:
                     while True:
                         # 获取嵌套列表中所有字符串的字符数
-                        total_chars = sum(len(item['content']) for item in self.history if 'content' in item)
+                        total_chars = sum(len(item["content"]) for item in self.history if "content" in item)
                         # 如果大于限定最大历史数，就剔除第一个元素
                         if total_chars > self.config_data["history_max_len"]:
                             self.history.pop(0)
@@ -146,35 +139,37 @@ class My_WenXinWorkShop:
                             self.history.append({"role": "user", "content": prompt})
                             self.history.append({"role": "assistant", "content": resp_content})
                             break
-            elif self.config_data['type'] == "AppBuilder":
+            elif self.config_data["type"] == "AppBuilder":
                 url = "https://qianfan.baidubce.com/v2/app/conversation/runs"
-    
-                payload = json.dumps({
-                    "app_id": self.config_data["app_id"],
-                    "query": prompt,
-                    "stream": stream,
-                    "conversation_id": self.conversation_id
-                })
+
+                payload = json.dumps(
+                    {
+                        "app_id": self.config_data["app_id"],
+                        "query": prompt,
+                        "stream": stream,
+                        "conversation_id": self.conversation_id,
+                    }
+                )
                 headers = {
-                    'Content-Type': 'application/json',
-                    'X-Appbuilder-Authorization': f'Bearer {self.config_data["app_token"]}'
+                    "Content-Type": "application/json",
+                    "X-Appbuilder-Authorization": f"Bearer {self.config_data['app_token']}",
                 }
-                
+
                 response = requests.request("POST", url, headers=headers, data=payload, timeout=(10, 300))
                 if stream:
                     return response
-                
+
                 resp_json = json.loads(response.content)
-                
+
                 logger.debug(f"resp_json={resp_json}")
 
                 def remove_ref_markers(s):
                     import re
-                    
+
                     # 使用正则表达式替换 '*' 和 '^' 为 ''
-                    tmp = re.sub(r'[\*]', '', s)
+                    tmp = re.sub(r"[\*]", "", s)
                     # 使用正则表达式替换形如 ^[数字]^ 的模式为 ''
-                    return re.sub(r'\^\[\d+\]\^', '', tmp)
+                    return re.sub(r"\^\[\d+\]\^", "", tmp)
 
                 if "content" in resp_json:
                     for data in reversed(resp_json["content"]):
@@ -187,7 +182,7 @@ class My_WenXinWorkShop:
                     return None
 
             return resp_content
-            
+
         except Exception:
             logger.error(traceback.format_exc())
 
@@ -196,12 +191,12 @@ class My_WenXinWorkShop:
     # 添加AI返回消息到会话，用于提供上下文记忆
     def add_assistant_msg_to_session(self, prompt: str, message: str):
         try:
-            if self.config_data['type'] == "千帆大模型":
+            if self.config_data["type"] == "千帆大模型":
                 # 启用历史就给我记住！
                 if self.config_data["history_enable"]:
                     while True:
                         # 获取嵌套列表中所有字符串的字符数
-                        total_chars = sum(len(item['content']) for item in self.history if 'content' in item)
+                        total_chars = sum(len(item["content"]) for item in self.history if "content" in item)
                         # 如果大于限定最大历史数，就剔除第一个元素
                         if total_chars > self.config_data["history_max_len"]:
                             self.history.pop(0)
@@ -213,7 +208,7 @@ class My_WenXinWorkShop:
                             break
 
                 return {"ret": True}
-            elif self.config_data['type'] == "AppBuilder":
+            elif self.config_data["type"] == "AppBuilder":
                 return {"ret": True}
 
             return {"ret": False}
@@ -221,7 +216,8 @@ class My_WenXinWorkShop:
             logger.error(traceback.format_exc())
             return {"ret": False}
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # 配置日志输出格式
     logger.basicConfig(
         level=logger.DEBUG,  # 设置日志级别，可以根据需求调整

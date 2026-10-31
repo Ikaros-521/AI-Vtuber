@@ -7,6 +7,7 @@ last_liveroom_data = None
 wait_play_audio_num = 0
 wait_synthesis_msg_num = 0
 
+
 # 闲时任务计时自动清零
 def idle_time_auto_clear(config, type: str):
     """闲时任务计时自动清零
@@ -27,6 +28,7 @@ def idle_time_auto_clear(config, type: str):
         return True
 
     return False
+
 
 # 添加用户名到最新的用户名列表
 def add_username_to_last_username_list(data):

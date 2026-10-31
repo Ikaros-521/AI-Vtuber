@@ -30,7 +30,9 @@ def test_queue_predicates_delegate(configure):
     assert handle.is_queue_less_or_greater_than("message_queue", less=5) is True
     assert handle.get_audio_info() == {"message_queue": 0}
     assert [c[0] for c in My_handle.audio.calls] == [
-        "is_playback_busy", "is_queue_less_or_greater_than", "get_audio_info",
+        "is_playback_busy",
+        "is_queue_less_or_greater_than",
+        "get_audio_info",
     ]
 
 
@@ -49,15 +51,19 @@ def test_get_room_id_reads_config(configure):
 
 
 def test_get_interval_maps_each_timer_and_defaults(configure):
-    handle = configure({"filter": {
-        "comment_forget_duration": 1.0,
-        "gift_forget_duration": 5.0,
-        "entrance_forget_duration": 5.0,
-        "follow_forget_duration": 3.0,
-        "talk_forget_duration": 0.1,
-        "schedule_forget_duration": 0.2,
-        "idle_time_task_forget_duration": 0.3,
-    }})
+    handle = configure(
+        {
+            "filter": {
+                "comment_forget_duration": 1.0,
+                "gift_forget_duration": 5.0,
+                "entrance_forget_duration": 5.0,
+                "follow_forget_duration": 3.0,
+                "talk_forget_duration": 0.1,
+                "schedule_forget_duration": 0.2,
+                "idle_time_task_forget_duration": 0.3,
+            }
+        }
+    )
 
     assert handle.get_interval("comment") == 1.0
     assert handle.get_interval("gift") == 5.0

@@ -4,6 +4,7 @@ sitemap 的 24 页是按「配置对象」重切的，而 通用配置 里那 20
 堆在一个 17,000px 的页面上的。所以这里只搬 DOM 归属：控件、闭包、save_common 全留在原文件，
 保存链路一行不动 —— 拆分的风险全在保存路径上，能不碰就不碰。
 """
+
 from nicegui import ui
 from nicegui.elements.card import Card
 from nicegui.elements.expansion import Expansion
@@ -14,28 +15,28 @@ from nicegui.elements.tabs import TabPanel
 # '@row:字段名' 表示把面板里那条没包成卡片的裸 row 搬走——按行里某个字段定位它。
 # 8 大核心工作区挂载计划：将通用配置中的区块分流归入对应的业务域 TabPanel
 PAGE_PLAN = [
-    ('直播接入', ['音频播放', 'web字幕打印机']),
-    ('人设与大脑', ['@row:提示词前缀', '本地问答']),
-    ('弹幕与礼仪', ['念弹幕', '答谢']),
-    ('互动与玩法', ['点歌模式', '定时任务', '闲时任务', '动态配置', '联网搜索', '动态文案', 'Stable Diffusion']),
-    ('外设与联动', ['按键/文案/音频/串口/图片 映射', '自定义命令', '洛曦 直播弹幕助手', '联动程序']),
-    ('运维与系统', ['日志', '数据库', '异常报警']),
+    ("直播接入", ["音频播放", "web字幕打印机"]),
+    ("人设与大脑", ["@row:提示词前缀", "本地问答"]),
+    ("弹幕与礼仪", ["念弹幕", "答谢"]),
+    ("互动与玩法", ["点歌模式", "定时任务", "闲时任务", "动态配置", "联网搜索", "动态文案", "Stable Diffusion"]),
+    ("外设与联动", ["按键/文案/音频/串口/图片 映射", "自定义命令", "洛曦 直播弹幕助手", "联动程序"]),
+    ("运维与系统", ["日志", "数据库", "异常报警"]),
 ]
 
 # 裸 row 搬走后要有个标题，不然在新页面上是悬着的一片输入框
-ROW_TITLES = {'提示词前缀': '对话与回复模板'}
+ROW_TITLES = {"提示词前缀": "对话与回复模板"}
 
 # 就地包一层卡片（不搬走）：平台接入 顶部那排是全页唯一的裸表单，和下面「一功能一卡片」
-WRAP_IN_PLACE = [('平台', '平台与模型')]
+WRAP_IN_PLACE = [("平台", "平台与模型")]
 
 
 def _title_of(section):
     if isinstance(section, Expansion):
-        return str(section._props.get('label') or '').strip()
+        return str(section._props.get("label") or "").strip()
     for child in section:
-        if isinstance(child, Label) and (child.text or '').strip():
+        if isinstance(child, Label) and (child.text or "").strip():
             return child.text.strip()
-    return ''
+    return ""
 
 
 def _blocks(container):
@@ -74,11 +75,16 @@ def _with_following(root, blocks, wanted):
                     break
                 picked.append(blocks[j][1])
             continue
-        shell = next((n for n in root.descendants()
-                      if isinstance(n, Expansion)
-                      and str(n._props.get('label') or '').strip() == want), None)
+        shell = next(
+            (
+                n
+                for n in root.descendants()
+                if isinstance(n, Expansion) and str(n._props.get("label") or "").strip() == want
+            ),
+            None,
+        )
         if shell is None:
-            raise LookupError('源页面里找不到区块：' + want)
+            raise LookupError("源页面里找不到区块：" + want)
         picked.append(shell)
     return picked
 
@@ -98,11 +104,11 @@ def _drop_empty_containers(root):
 def _loose_row(root, label):
     """按行内某个字段，定位面板里那条没包成卡片的裸 row。"""
     for el in root.descendants():
-        if (getattr(el, 'label', '') or '') == label:
+        if (getattr(el, "label", "") or "") == label:
             for a in el.ancestors():
-                if 'nicegui-row' in list(a.classes):
+                if "nicegui-row" in list(a.classes):
                     return a
-    raise LookupError('找不到含「%s」的裸 row' % label)
+    raise LookupError("找不到含「%s」的裸 row" % label)
 
 
 def apply_page_plan(target_panels, source_panel, card_css="", *args, **kwargs):
@@ -114,30 +120,30 @@ def apply_page_plan(target_panels, source_panel, card_css="", *args, **kwargs):
             tab_panels = source_panel
             source_panel = card_css
             card_css = args[1] if len(args) > 1 else ""
-            target_panels = {str(p._props.get('name') or ''): p for p in tab_panels if isinstance(p, TabPanel)}
-        elif hasattr(target_panels, '__iter__'):
-            target_panels = {str(p._props.get('name') or ''): p for p in target_panels if isinstance(p, TabPanel)}
+            target_panels = {str(p._props.get("name") or ""): p for p in tab_panels if isinstance(p, TabPanel)}
+        elif hasattr(target_panels, "__iter__"):
+            target_panels = {str(p._props.get("name") or ""): p for p in target_panels if isinstance(p, TabPanel)}
 
     blocks = _blocks(source_panel)
     made = []
     for name, wanted in PAGE_PLAN:
         panel = target_panels.get(name)
         if panel is None:
-            raise LookupError('找不到目标 TabPanel: ' + name)
-        rows = [w.split(':', 1)[1] for w in wanted if w.startswith('@row:')]
-        picked = _with_following(source_panel, blocks, [w for w in wanted if not w.startswith('@row:')])
+            raise LookupError("找不到目标 TabPanel: " + name)
+        rows = [w.split(":", 1)[1] for w in wanted if w.startswith("@row:")]
+        picked = _with_following(source_panel, blocks, [w for w in wanted if not w.startswith("@row:")])
         for label in rows:
             with panel:
                 shell = ui.card().style(card_css)
             with shell:
                 ui.label(ROW_TITLES.get(label, label))
             _loose_row(source_panel, label).move(shell)
-            if name == '人设与大脑':
+            if name == "人设与大脑":
                 shell.move(panel, 1)
             else:
                 shell.move(panel, 0)
         for block in picked:
-            if name == '人设与大脑' and _title_of(block) == '本地问答':
+            if name == "人设与大脑" and _title_of(block) == "本地问答":
                 block.move(panel, 2)
             else:
                 block.move(panel)
@@ -155,7 +161,7 @@ def order_tabs(tabs, order):
     """
     by_name = {}
     for tab in tabs:
-        by_name.setdefault(str(tab._props.get('name') or ''), tab)
+        by_name.setdefault(str(tab._props.get("name") or ""), tab)
     for index, name in enumerate(order):
         tab = by_name.get(name)
         if tab is not None:

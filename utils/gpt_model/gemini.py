@@ -1,11 +1,13 @@
 from utils.history import total_chars as history_chars
 import google.generativeai as genai
+
 # import vertexai
 # from vertexai.generative_models import GenerativeModel, Part
 import os
 import traceback
 
 from utils.my_log import logger
+
 
 class Gemini:
     def __init__(self, data):
@@ -15,20 +17,20 @@ class Gemini:
             self.history = []
             # 设置代理
             if self.config_data["http_proxy"]:
-                os.environ['http_proxy'] = self.config_data["http_proxy"]
+                os.environ["http_proxy"] = self.config_data["http_proxy"]
             if self.config_data["https_proxy"]:
-                os.environ['https_proxy'] = self.config_data["https_proxy"]
+                os.environ["https_proxy"] = self.config_data["https_proxy"]
 
             genai.configure(api_key=self.config_data["api_key"])
-            self.model = genai.GenerativeModel(model_name = self.config_data["model"])
-            
+            self.model = genai.GenerativeModel(model_name=self.config_data["model"])
+
             # vertexai.init(project=self.config_data["project_id"], location="us-central1")
         except Exception:
             logger.error(traceback.format_exc())
-            
+
     def list_models(self):
         for m in genai.list_models():
-            if 'generateContent' in m.supported_generation_methods:
+            if "generateContent" in m.supported_generation_methods:
                 logger.info(m.name)
 
     def get_resp(self, prompt):
@@ -45,29 +47,19 @@ class Gemini:
 
             # 载入上下文
             for history in self.history:
-                messages.append(
-                    {
-                        'role':history["role"],
-                        'parts': history["parts"]
-                    }
-                )
+                messages.append({"role": history["role"], "parts": history["parts"]})
 
-            messages.append(
-                {
-                    'role': 'user',
-                    'parts': prompt
-                }
-            )
+            messages.append({"role": "user", "parts": prompt})
 
             response = self.model.generate_content(
-                messages, 
-                generation_config = genai.types.GenerationConfig(
-                    max_output_tokens = self.config_data["max_output_tokens"], 
-                    temperature = self.config_data["temperature"], 
-                    top_p = self.config_data["top_p"],
-                    top_k = self.config_data["top_k"])
-                ,
-                stream = False
+                messages,
+                generation_config=genai.types.GenerationConfig(
+                    max_output_tokens=self.config_data["max_output_tokens"],
+                    temperature=self.config_data["temperature"],
+                    top_p=self.config_data["top_p"],
+                    top_k=self.config_data["top_k"],
+                ),
+                stream=False,
             )
             resp_content = response.text
 
@@ -126,7 +118,7 @@ class Gemini:
             logger.error(traceback.format_exc())
             return None
     """
-                    
+
     def get_resp_with_img(self, prompt, img_data):
         try:
             import PIL.Image
@@ -141,27 +133,21 @@ class Gemini:
             else:
                 img = img_data
 
-            model = genai.GenerativeModel('gemini-pro-vision')
+            model = genai.GenerativeModel("gemini-pro-vision")
 
-            response = model.generate_content(
-                [
-                    prompt, 
-                    img
-                ],
-                stream=False
-            )
+            response = model.generate_content([prompt, img], stream=False)
 
             resp_content = response.text.strip()
-        
+
             logger.debug(f"resp_content={resp_content}")
 
             return resp_content
         except Exception:
             logger.error(traceback.format_exc())
             return None
-        
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # 配置日志输出格式
     logger.basicConfig(
         level=logger.DEBUG,  # 设置日志级别，可以根据需求调整
@@ -172,14 +158,14 @@ if __name__ == '__main__':
     data = {
         "api_key": "",
         "model": "gemini-pro",
-        "max_output_tokens": 100, 
-        "temperature": 1.0, 
+        "max_output_tokens": 100,
+        "temperature": 1.0,
         "top_p": 0.7,
         "top_k": 40,
         "http_proxy": "http://127.0.0.1:10809",
         "https_proxy": "http://127.0.0.1:10809",
         "history_enable": True,
-        "history_max_len": 300
+        "history_max_len": 300,
     }
 
     gemini = Gemini(data)
@@ -187,7 +173,5 @@ if __name__ == '__main__':
     logger.info(gemini.get_resp("你可以扮演猫娘吗，每句话后面加个喵"))
     logger.info(gemini.get_resp("早上好"))
     logger.info(gemini.get_resp("我的眼睛好酸"))
-    
+
     logger.info(gemini.get_resp_with_img("根据图片内容，猜猜我吃的什么", "1.png"))
-    
-    

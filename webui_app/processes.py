@@ -61,7 +61,7 @@ def stop_program(name):
         logger.info(f"停止程序和它所有的子进程: {name} with PID {pid}")
 
         try:
-            if os.name == 'nt':  # Windows
+            if os.name == "nt":  # Windows
                 command = ["taskkill", "/F", "/T", "/PID", str(pid)]
                 subprocess.run(command, check=True)
             else:  # POSIX系统，如Linux和macOS
@@ -158,12 +158,12 @@ def restart_application(config, type="webui"):
         return {"code": -1, "msg": f"重启失败！{e}"}
 
 
-def factory(config, src_path='config.json.bak', dst_path='config.json', type="webui"):
+def factory(config, src_path="config.json.bak", dst_path="config.json", type="webui"):
     """用备份配置覆盖当前配置并重启。"""
 
     try:
         with open(src_path, encoding="utf-8") as source:
-            with open(dst_path, 'w', encoding="utf-8") as destination:
+            with open(dst_path, "w", encoding="utf-8") as destination:
                 destination.write(source.read())
         logger.info("恢复出厂配置成功！")
         if type == "webui":
