@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from utils.my_log import logger, file_path as log_file_path
 from webui_server.chat_log import chat_log
 from webui_server.runtime import runtime
+from webui_server.schemas import ChatLogResult, Envelope, RunLogResult
 
 router = APIRouter(prefix="/api")
 
@@ -39,7 +40,7 @@ def tail(path, limit=MAX_LINES):
     return lines, f"共 {len(lines)} 行"
 
 
-@router.get("/logs/run")
+@router.get("/logs/run", response_model=RunLogResult)
 def run_log():
     path = log_file_path
     lines, note = tail(path)
@@ -49,7 +50,7 @@ def run_log():
 # ---------- 聊天记录 ----------
 
 
-@router.get("/chat-log")
+@router.get("/chat-log", response_model=ChatLogResult)
 def chat_log_view(after: int = 0):
     return {"code": 200, "messages": chat_log.since(after)}
 
@@ -63,7 +64,7 @@ class ChatSendRequest(BaseModel):
     content: str
 
 
-@router.post("/chat-log/send")
+@router.post("/chat-log/send", response_model=Envelope)
 async def chat_send(req: ChatSendRequest):
     if not runtime.running_flag:
         return {"code": -1, "message": "核心服务未运行，请先点击「一键运行」"}

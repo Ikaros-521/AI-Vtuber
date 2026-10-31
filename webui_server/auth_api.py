@@ -13,6 +13,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from webui_server.runtime import runtime
+from webui_server.schemas import AuthStatus, Envelope
 
 router = APIRouter(prefix="/api/auth")
 
@@ -55,14 +56,14 @@ def _check_credentials(username: str, password: str) -> bool:
     return secrets.compare_digest(username, expect_user) and secrets.compare_digest(password, expect_pass)
 
 
-@router.get("/status")
+@router.get("/status", response_model=AuthStatus)
 def status(request: Request):
     token = request.cookies.get(COOKIE_NAME, "")
     authed = is_valid_session(token)
     return {"code": 200, "enabled": _login_enabled(), "authed": authed, "username": _session_username(token)}
 
 
-@router.post("/login")
+@router.post("/login", response_model=Envelope)
 def login(request: Request, body: dict):
     if not _login_enabled():
         return {"code": 200, "message": "登录功能未启用"}
@@ -80,7 +81,7 @@ def login(request: Request, body: dict):
     return resp
 
 
-@router.post("/logout")
+@router.post("/logout", response_model=Envelope)
 def logout(request: Request):
     token = request.cookies.get(COOKIE_NAME, "")
     _sessions.pop(token, None)

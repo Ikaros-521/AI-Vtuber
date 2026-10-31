@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from utils.my_log import logger
 from webui_server.runtime import runtime
+from webui_server.schemas import ConfigGetResult, ConfigSaveResult
 
 router = APIRouter(prefix="/api/config")
 
@@ -59,7 +60,7 @@ def validate_config(config_data):
     return None
 
 
-@router.get("")
+@router.get("", response_model=ConfigGetResult)
 def get_config():
     try:
         config_data = runtime.read_config()
@@ -69,7 +70,7 @@ def get_config():
         return {"code": -1, "message": f"读取配置失败：{e}"}
 
 
-@router.post("/save")
+@router.post("/save", response_model=ConfigSaveResult)
 def save_config(req: SaveRequest):
     try:
         current_sha = runtime.file_sha256()
