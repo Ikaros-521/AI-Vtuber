@@ -23,4 +23,5 @@ EXPOSE 8081
 EXPOSE 8082
 
 # 启动应用程序
-CMD ["python", "webui.py"]
+# v3 起 WebUI 入口是 webui_server（v2 的 webui.py 已删除）
+CMD ["python", "-m", "webui_server"]
