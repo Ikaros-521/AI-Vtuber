@@ -30,7 +30,7 @@ class Zhipu:
                 self.zhipuai_ver = zhipuai.__version__
                 from zhipuai import ZhipuAI
                 self.client = ZhipuAI(api_key=data["api_key"])
-        except Exception as e:
+        except Exception:
             self.zhipuai_ver = "1.0.0"
             from zhipuai import ZhipuAI
             self.client = ZhipuAI(api_key=data["api_key"])
@@ -69,7 +69,7 @@ class Zhipu:
                     tmp_content += f"\n应用名：{data['name']}，应用ID：{data['id']}，知识库：{data['knowledge_ids']}"
 
                 logger.info(tmp_content)
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
         elif self.model == "智能体":
             self.assistant_api_conversation_id = None
@@ -109,7 +109,7 @@ class Zhipu:
             else:
                 logger.error(f"获取 智谱AI 智能体 鉴权失败, status_code={status_code}")
                 return None
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -156,7 +156,7 @@ class Zhipu:
         try:
             id, secret = apikey.split(".")
         except Exception as e:
-            raise Exception("invalid apikey", e)
+            raise Exception("invalid apikey", e) from e
 
         payload = {
             "api_key": id,
@@ -192,7 +192,7 @@ class Zhipu:
                 temperature=float(self.config_data["temperature"]),
                 stream=data["stream"],
             )
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -257,7 +257,7 @@ class Zhipu:
                                     break
 
                         return resp_content
-                    except Exception as e:
+                    except Exception:
                         def is_odd(number):
                             # 检查数除以2的余数是否为1
                             return number % 2 != 0
@@ -274,7 +274,7 @@ class Zhipu:
 
                 logger.debug(f"ret={ret}")
 
-                if False == ret['success']:
+                if ret['success'] is False:
                     logger.error(f"请求智谱ai失败，错误代码：{ret['code']}，{ret['msg']}")
                     return None
 
@@ -328,7 +328,7 @@ class Zhipu:
                                     break
 
                         return resp_content
-                    except Exception as e:
+                    except Exception:
                         def is_odd(number):
                             # 检查数除以2的余数是否为1
                             return number % 2 != 0
@@ -381,7 +381,7 @@ class Zhipu:
                                 logger.debug(resp_content)
 
                                 return resp_content
-                            except Exception as e:
+                            except Exception:
                                 logger.error(traceback.format_exc())
                                 return None
                         else:
@@ -474,7 +474,7 @@ class Zhipu:
                                 break
                     
                     return resp_content
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -521,7 +521,7 @@ class Zhipu:
             logger.debug(f"resp_content={resp_content}")
 
             return resp_content
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -545,7 +545,7 @@ class Zhipu:
             logger.debug(f"history={self.history}")
 
             return {"ret": True}
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return {"ret": False}
 

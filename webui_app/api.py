@@ -48,7 +48,7 @@ def register_api(config, common, audio):
             config_data = None
 
             try:
-                with open(data_json["config_path"], 'r', encoding="utf-8") as config_file:
+                with open(data_json["config_path"], encoding="utf-8") as config_file:
                     config_data = json.load(config_file)
             except Exception as e:
                 logger.error(f"无法读取配置文件！\n{e}")

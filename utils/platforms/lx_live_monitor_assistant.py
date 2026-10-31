@@ -112,7 +112,7 @@ def start_listen(config, common, my_handle, platform: str):
                     # 没有对应的 timer_flag、感谢文案和配置项，接进来只能瞎报一句
                     logger.debug(f"助手推来的消息类型暂不处理：{data_json}")
 
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
                 logger.error("数据解析错误！")
                 my_handle.abnormal_alarm_handle("platform")

@@ -129,7 +129,7 @@ class Data_Analysis:
             }
 
             return option
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -294,7 +294,7 @@ class Data_Analysis:
             }
 
             return option
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
         
@@ -378,6 +378,6 @@ class Data_Analysis:
             }
 
             return option
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None

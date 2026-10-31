@@ -99,7 +99,7 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
                     }
                 ).style("width:200px;")
                 textarea_openai_api_key = ui.textarea(label='API密钥', placeholder='API KEY，支持代理', value=textarea_data_change(config.get("openai", "api_key"))).style("width:400px;")
-                button_openai_test = ui.button('测试', on_click=lambda: test_openai_key(), color=button_bottom_color).style(button_bottom_css)
+                ui.button('测试', on_click=lambda: test_openai_key(), color=button_bottom_color).style(button_bottom_css)
             with ui.row():
                 chatgpt_models = [
                     "gpt-3.5-turbo",
@@ -426,7 +426,7 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
                         logger.error(f"读取工作区失败！\n{e}")
                         ui.notify(position="top", type="negative", message=f"读取工作区失败！\n{e}")
 
-                button_anythingllm_get_workspaces_list = ui.button('获取所有工作区slug', on_click=lambda: anythingllm_get_workspaces_list(), color=button_internal_color).style(button_internal_css)
+                ui.button('获取所有工作区slug', on_click=lambda: anythingllm_get_workspaces_list(), color=button_internal_color).style(button_internal_css)
         
 
     if config.get("webui", "show_card", "llm", "tongyi"):           
@@ -507,7 +507,7 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
                 
                 switch_dify_history_enable = ui.switch('上下文记忆', value=config.get("dify", "history_enable")).style(switch_internal_css)
                 textarea_dify_custom_params = ui.textarea(
-                    label=f"工作流自定义参数（JSON）", 
+                    label="工作流自定义参数（JSON）", 
                     value=config.get("dify", "custom_params"), 
                     placeholder='inputs传递的参数，注意JSON格式',
                 ).style("width:200px;").tooltip('发送HTTP请求的API链接')
@@ -531,22 +531,22 @@ def build_llm_tab(config, common, card_css, switch_internal_css,
             show_card_desc("自定义LLM")
             with ui.row():
                 textarea_custom_llm_url = ui.textarea(
-                    label=f"API URL", 
+                    label="API URL", 
                     value=config.get("custom_llm", "url"), 
                     placeholder='发送HTTP请求的API链接', 
                     validation={
                         '请输入正确格式的URL': lambda value: common.is_url_check(value),
                     }
                 ).style("width:200px;").tooltip('发送HTTP请求的API链接')
-                textarea_custom_llm_method = ui.select(label=f"API类型", value=config.get("custom_llm", "method"), options={"GET": "GET", "POST": "POST"}).style("width:100px;").tooltip('API类型')
-                textarea_custom_llm_headers = ui.textarea(label=f"请求头", value=config.get("custom_llm", "headers"), placeholder='换行分隔，例：Content-Type:application/json\nAuthorization:Bearer sk').style("width:300px;").tooltip('换行分隔，例：Content-Type:application/json\nAuthorization:Bearer sk')
-                textarea_custom_llm_proxies = ui.textarea(label=f"代理", value=config.get("custom_llm", "proxies"), placeholder='requests库代理配置方法，json数据用"双引号').style("width:200px;").tooltip('requests库代理配置方法，json数据用"双引号')
+                textarea_custom_llm_method = ui.select(label="API类型", value=config.get("custom_llm", "method"), options={"GET": "GET", "POST": "POST"}).style("width:100px;").tooltip('API类型')
+                textarea_custom_llm_headers = ui.textarea(label="请求头", value=config.get("custom_llm", "headers"), placeholder='换行分隔，例：Content-Type:application/json\nAuthorization:Bearer sk').style("width:300px;").tooltip('换行分隔，例：Content-Type:application/json\nAuthorization:Bearer sk')
+                textarea_custom_llm_proxies = ui.textarea(label="代理", value=config.get("custom_llm", "proxies"), placeholder='requests库代理配置方法，json数据用"双引号').style("width:200px;").tooltip('requests库代理配置方法，json数据用"双引号')
             with ui.row():
-                select_custom_llm_body_type = ui.select(label=f"请求体类型", value=config.get("custom_llm", "body_type"), options={"json": "json", "raw": "raw"}).style("width:150px;").tooltip('请求体类型')
-                textarea_custom_llm_body = ui.textarea(label=f"请求体", value=config.get("custom_llm", "body"), placeholder='请求体，写字符串，注意变量需要两个大括号包裹{{}}，json数据的话用"双引号').style("width:300px;").tooltip('请求体，写字符串，注意变量需要两个大括号包裹{{}}，json数据的话用"双引号')
-                select_custom_llm_resp_data_type = ui.select(label=f"请求返回数据类型", value=config.get("custom_llm", "resp_data_type"), options={"json": "json", "content": "content"}).style("width:150px;").tooltip('请求返回数据类型')
-                textarea_custom_llm_data_analysis = ui.textarea(label=f"数据解析（eval执行）", value=config.get("custom_llm", "data_analysis"), placeholder='数据解析，请不要随意修改resp变量，会被用于最后返回数据内容的解析').style("width:300px;").tooltip('数据解析，请不要随意修改resp变量，会被用于最后返回数据内容的解析')
-                textarea_custom_llm_resp_template = ui.textarea(label=f"返回内容模板", value=config.get("custom_llm", "resp_template"), placeholder='请不要随意删除data变量，支持动态变量，最终会合并成完成内容进行音频合成').style("width:300px;").tooltip('请不要随意删除data变量，支持动态变量，最终会合并成完成内容进行音频合成')
+                select_custom_llm_body_type = ui.select(label="请求体类型", value=config.get("custom_llm", "body_type"), options={"json": "json", "raw": "raw"}).style("width:150px;").tooltip('请求体类型')
+                textarea_custom_llm_body = ui.textarea(label="请求体", value=config.get("custom_llm", "body"), placeholder='请求体，写字符串，注意变量需要两个大括号包裹{{}}，json数据的话用"双引号').style("width:300px;").tooltip('请求体，写字符串，注意变量需要两个大括号包裹{{}}，json数据的话用"双引号')
+                select_custom_llm_resp_data_type = ui.select(label="请求返回数据类型", value=config.get("custom_llm", "resp_data_type"), options={"json": "json", "content": "content"}).style("width:150px;").tooltip('请求返回数据类型')
+                textarea_custom_llm_data_analysis = ui.textarea(label="数据解析（eval执行）", value=config.get("custom_llm", "data_analysis"), placeholder='数据解析，请不要随意修改resp变量，会被用于最后返回数据内容的解析').style("width:300px;").tooltip('数据解析，请不要随意修改resp变量，会被用于最后返回数据内容的解析')
+                textarea_custom_llm_resp_template = ui.textarea(label="返回内容模板", value=config.get("custom_llm", "resp_template"), placeholder='请不要随意删除data变量，支持动态变量，最终会合并成完成内容进行音频合成').style("width:300px;").tooltip('请不要随意删除data变量，支持动态变量，最终会合并成完成内容进行音频合成')
 
     def save_openai(config_data):
         if config.get("webui", "show_card", "llm", "chatgpt"):

@@ -8,7 +8,7 @@ class AUDIO_PLAYER:
     def __init__(self, data):
         try:
             self.api_ip_port = data["api_ip_port"]
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -30,7 +30,7 @@ class AUDIO_PLAYER:
             else:
                 logger.error(response.text)
                 return False
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return False
 
@@ -49,7 +49,7 @@ class AUDIO_PLAYER:
             else:
                 logger.error(response.text)
                 return False
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return False
 
@@ -68,7 +68,7 @@ class AUDIO_PLAYER:
             else:
                 logger.error(response.text)
                 return False
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return False
 
@@ -90,7 +90,7 @@ class AUDIO_PLAYER:
             else:
                 logger.error(response.text)
                 return False
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return False
 
@@ -112,7 +112,7 @@ class AUDIO_PLAYER:
             else:
                 logger.error(response.text)
                 return None
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -134,7 +134,7 @@ class AUDIO_PLAYER:
             else:
                 logger.error(response.text)
                 return False
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return False
         

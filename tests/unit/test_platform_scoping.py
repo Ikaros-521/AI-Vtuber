@@ -10,7 +10,6 @@ import、ks.py 里 `global config, common, my_handle` 遮蔽外层形参）都�
 import ast
 import builtins
 import inspect
-import io
 import os
 import pathlib
 
@@ -36,7 +35,7 @@ LISTENERS = sorted(str(p) for p in (ROOT / 'utils' / 'platforms').glob('*.py'))
 
 
 def read(path):
-    return io.open(path, encoding='utf-8', newline='').read().replace(CRLF, NL)
+    return open(path, encoding='utf-8', newline='').read().replace(CRLF, NL)
 
 
 def add_bindings(tree, bound):

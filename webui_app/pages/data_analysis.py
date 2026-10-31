@@ -10,7 +10,7 @@ def build_data_analysis_tab(config, config_path, echart_css):
 
     data_analysis_comment_word_cloud_card = ui.card()
     with data_analysis_comment_word_cloud_card.style("width:100%;"):
-        echart_comment_word_cloud = ui.echart(data_analysis.get_comment_word_cloud_option(
+        ui.echart(data_analysis.get_comment_word_cloud_option(
             int(config.get("data_analysis", "comment_word_cloud", "top_num")))
         ).style(echart_css)
 
@@ -28,7 +28,7 @@ def build_data_analysis_tab(config, config_path, echart_css):
 
     data_analysis_integral_card = ui.card()
     with data_analysis_integral_card.style("width:100%;"):
-        echart_integral = ui.echart(data_analysis.get_integral_option(
+        ui.echart(data_analysis.get_integral_option(
             "integral", int(config.get("data_analysis", "integral", "top_num")))
         ).style(echart_css)
 
@@ -50,7 +50,7 @@ def build_data_analysis_tab(config, config_path, echart_css):
 
     data_analysis_gift_card = ui.card()
     with data_analysis_gift_card.style("width:100%;"):
-        echart_gift = ui.echart(data_analysis.get_gift_option(int(config.get("data_analysis", "gift", "top_num")))).style(echart_css)
+        ui.echart(data_analysis.get_gift_option(int(config.get("data_analysis", "gift", "top_num")))).style(echart_css)
 
         with ui.row():
             input_data_analysis_gift_top_num = ui.input(label='Top N个数据', value=config.get("data_analysis", "gift", "top_num"), placeholder='筛选Top N个数据')

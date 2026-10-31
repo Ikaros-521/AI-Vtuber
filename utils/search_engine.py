@@ -20,7 +20,7 @@ class SearchEngine:
         self.headers = headers
         self.proxies = proxies
 
-    @lru_cache(maxsize=100)
+    @lru_cache(maxsize=100)  # noqa: B019
     def search(self, query: str, engine: str = 'google', engine_id: int = 1) -> List[Dict[str, str]]:
         """
         执行搜索并返回结果。

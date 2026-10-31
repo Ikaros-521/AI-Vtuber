@@ -122,8 +122,8 @@ def build_serial_tab(config, card_css, switch_internal_css, button_internal_colo
         show_card_desc('串口')
         with ui.row():
             picker_serial = GroupPicker(lambda: serial_config_card, '串口', serial_config_del, lambda: serial_config_var).build()
-            button_serial_config_add = ui.button('增加串口配置组', on_click=lambda: (serial_config_add(), picker_serial.refresh()), color=button_internal_color).style(button_internal_css)
-            button_serial_config_del = delete_button('删除串口配置组', picker_serial.ask_delete).style(button_internal_css)
+            ui.button('增加串口配置组', on_click=lambda: (serial_config_add(), picker_serial.refresh()), color=button_internal_color).style(button_internal_css)
+            delete_button('删除串口配置组', picker_serial.ask_delete).style(button_internal_css)
 
     with serial_config_card:
         for index, serial_config in enumerate(config.get("serial", "config")):

@@ -1,4 +1,5 @@
-import json, traceback
+import json
+import traceback
 import requests
 from urllib.parse import urljoin
 
@@ -35,7 +36,7 @@ class AnythingLLM:
 
             logger.error(f"AnythingLLM API密钥 验证失败: {ret['message']}")
             return False
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return False
 
@@ -58,7 +59,7 @@ class AnythingLLM:
 
             logger.error(f"AnythingLLM 获取工作区列表失败: {ret['message']}")
             return None
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -97,7 +98,7 @@ class AnythingLLM:
 
             logger.error(f"AnythingLLM 对话失败: {ret['message']}")
             return None
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 

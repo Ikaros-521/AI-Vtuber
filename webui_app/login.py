@@ -25,12 +25,12 @@ def check_expiration(config, common):
         API_URL = urljoin(config.get("login", "ums_api"), '/auth/check_expiration')
 
         if user_info is None:
-            ui.notify(position="top", type="negative", message=f"账号登录信息失效，请重新登录")
+            ui.notify(position="top", type="negative", message="账号登录信息失效，请重新登录")
             stop_programs(config)
             return False
 
         if "accessToken" not in user_info:
-            ui.notify(position="top", type="negative", message=f"账号登录信息失效，请重新登录")
+            ui.notify(position="top", type="negative", message="账号登录信息失效，请重新登录")
             stop_programs(config)
             return False
 
@@ -54,7 +54,7 @@ def check_expiration(config, common):
                 stop_programs(config)
                 return False
 
-        logger.error(f"自检异常！")
+        logger.error("自检异常！")
         return False
     except Exception as e:
         ui.notify(position="top", type="negative", message=f"登录请求没走通：{explain(e)}")
@@ -134,7 +134,7 @@ def build_login(config, common, login_card_css, on_success):
             on_success()
 
             return
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return
 

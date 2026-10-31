@@ -16,7 +16,7 @@ class VolcEngine:
 
         try:
             self.client = Ark(api_key=self.config_data["api_key"])
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
     def get_resp(self, data: dict, stream: bool=False):
@@ -98,7 +98,7 @@ class VolcEngine:
             logger.debug(f"history={self.history}")
 
             return {"ret": True}
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return {"ret": False}
 

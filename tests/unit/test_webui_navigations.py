@@ -4,7 +4,6 @@ repage 是按「区块标题」搬东西的，标题一改就会在 webui 启动
 所以这里既测小算法，也用源码扫一遍把 PAGE_PLAN 引用的标题钉住。
 """
 
-import io
 import pathlib
 import re
 
@@ -262,7 +261,7 @@ def test_page_plan_titles_still_exist_in_the_source():
 
     这里直接扫源码把标题钉住：改卡片名的人会在测试里看到是哪一条对不上。
     """
-    source = io.open(ROOT / 'webui_app' / 'pages' / 'common_config.py', encoding='utf-8').read()
+    source = open(ROOT / 'webui_app' / 'pages' / 'common_config.py', encoding='utf-8').read()
     labels = set(re.findall(r'ui\.label\(\s*[\'"]([^\'"]+)[\'"]', source))
     labels |= set(re.findall(r'ui\.expansion\(\s*[\'"]([^\'"]+)[\'"]', source))
     fields = set(re.findall(r'label\s*=\s*[\'"]([^\'"]+)[\'"]', source))

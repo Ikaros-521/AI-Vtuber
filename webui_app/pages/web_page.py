@@ -124,7 +124,7 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
     # 配置模板保存
     def config_template_save(file_path: str):
         try:
-            with open(config_path, 'r', encoding="utf-8") as config_file:
+            with open(config_path, encoding="utf-8") as config_file:
                 config_data = json.load(config_file)
 
             config_data = config_to_dict(config_data)
@@ -135,7 +135,7 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
                 file.flush()  # 刷新缓冲区，确保写入立即生效
 
             logger.info("配置模板保存成功！")
-            ui.notify(position="top", type="positive", message=f"配置模板保存成功！")
+            ui.notify(position="top", type="positive", message="配置模板保存成功！")
 
             return True
         except Exception as e:
@@ -147,7 +147,7 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
     # 配置模板加载
     def config_template_load(file_path: str):
         try:
-            with open(file_path, 'r', encoding="utf-8") as config_file:
+            with open(file_path, encoding="utf-8") as config_file:
                 config_data = json.load(config_file)
 
             # 将JSON数据保存到文件中
@@ -156,7 +156,7 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
                 file.flush()  # 刷新缓冲区，确保写入立即生效
 
             logger.info("配置模板加载成功！重启后读取！想反悔就直接保存下当前配置，然后再重启！！！")
-            ui.notify(position="top", type="positive", message=f"配置模板加载成功！重启后读取！想反悔就直接保存下当前配置，然后再重启！！！")
+            ui.notify(position="top", type="positive", message="配置模板加载成功！重启后读取！想反悔就直接保存下当前配置，然后再重启！！！")
             
             return True
         except Exception as e:
@@ -180,8 +180,8 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
         show_card_desc("本地路径指定URL路径访问")
         with ui.row():
             picker_local_dir = GroupPicker(lambda: webui_local_dir_to_endpoint_config_card, '本地路径映射', webui_local_dir_to_endpoint_del, lambda: webui_local_dir_to_endpoint_config_var).build()
-            button_webui_local_dir_to_endpoint_add = ui.button('增加配置组', on_click=lambda: (webui_local_dir_to_endpoint_add(), picker_local_dir.refresh()), color=button_internal_color).style(button_internal_css)
-            button_webui_local_dir_to_endpoint_del = delete_button('删除配置组', picker_local_dir.ask_delete).style(button_internal_css)
+            ui.button('增加配置组', on_click=lambda: (webui_local_dir_to_endpoint_add(), picker_local_dir.refresh()), color=button_internal_color).style(button_internal_css)
+            delete_button('删除配置组', picker_local_dir.ask_delete).style(button_internal_css)
         
         with ui.row():
             switch_webui_local_dir_to_endpoint_enable = ui.switch('启用', value=config.get("webui", "local_dir_to_endpoint", "enable")).style(switch_internal_css)
@@ -230,9 +230,9 @@ def build_web_page_tab(config, common, config_path, config_to_dict, card_css, sw
                 clearable=True
             )
 
-            button_config_template_save = ui.button('保存webui配置到文件', on_click=lambda: config_template_save(select_config_template_path.value), color=button_internal_color).style(button_internal_css)
+            ui.button('保存webui配置到文件', on_click=lambda: config_template_save(select_config_template_path.value), color=button_internal_color).style(button_internal_css)
             # 这是全站唯一一个不经「保存配置」就写盘的按钮，按危险操作对待：警示色 + 警示图标
-            button_config_template_load = ui.button('读取模板到本地（慎点）', icon='warning', on_click=lambda: confirm.ask(
+            ui.button('读取模板到本地（慎点）', icon='warning', on_click=lambda: confirm.ask(
                 f'确认用「{select_config_template_path.value or "（未填路径）"}」覆盖当前配置？',
                 lambda: config_template_load(select_config_template_path.value),
                 '这一步直接写配置文件，不经过「保存配置」，写完要重启 webui 才生效，也没法撤销。'),

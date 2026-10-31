@@ -1,5 +1,4 @@
 """FastAPI 应用装配：API 路由 + React 构建产物托管。"""
-from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

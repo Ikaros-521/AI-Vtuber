@@ -131,3 +131,38 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 testpaths = ["tests/unit"]
 python_files = ["test_*.py"]
+
+# --- Lint/Format：开发依赖 ruff（requirements/dev.txt），CI 有独立 lint job ---
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+extend-exclude = [
+    # 环境/资源/产物目录
+    "Miniconda3", ".venv", "vendor", "webui_react", "node_modules", ".zcode",
+    "data", "log", "models", "sensevoice", "Live2D", "song", "cookie",
+    "locales", "ui", "out", "output", "tmp", "spark-output", "docs",
+    # 生成代码（protoc/betterproto 产物）
+    "protobuf", "kuaishou_pb2.py",
+    # tests/ 下手工联调脚本（要真实 key，历史遗留）；单测在 tests/unit
+    "tests/test_*",
+]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "B", "UP"]
+ignore = [
+    "E402",   # 大量模块初始化后才 import（历史结构，分层拆解完成前放行）
+    "B008",   # FastAPI Depends() 用作默认参数
+    "UP006",  # typing.List→list 等注解改写保持现状，避免大范围注解 diff
+    "UP007",  # 同上：Optional[X]→X | None
+    "UP035",  # 同上：typing.List 等 import 标记
+    "UP045",  # 同上：implicit Optional
+    "UP031",  # % 格式化写法保持现状（历史代码量大，收益低）
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"] # 包导出视为合法再导出
+"utils/platforms/dy2.py" = ["F403", "F405"] # protobuf 生成模块按上游惯例 star import
+
+[tool.ruff.format]
+quote-style = "double"

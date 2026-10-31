@@ -11,7 +11,7 @@ from utils.my_log import logger
 import utils.my_global as my_global
 
 def start_listen(config, common, my_handle, platform: str):
-    class kslive(object):
+    class kslive:
         def __init__(self):
             # 这里不能写 global：config/common/my_handle 是外层 start_listen 的形参，
             # 声明成全局后读不到闭包里的值，构造第一行就 NameError，监听线程直接死
@@ -28,7 +28,7 @@ def start_listen(config, common, my_handle, platform: str):
                 self.thread = 2
                 # 没什么用的手机号配置，也就方便登录
                 self.phone = "123"
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
                 logger.error("请检查配置文件")
                 my_handle.abnormal_alarm_handle("platform")
@@ -43,7 +43,7 @@ def start_listen(config, common, my_handle, platform: str):
             """
             path = self.path + "\\" + find_path
             data_list = []
-            for root, dirs, files in os.walk(path):
+            for root, _dirs, files in os.walk(path):
                 if root != path:
                     break
                 for file in files:
@@ -123,7 +123,7 @@ def start_listen(config, common, my_handle, platform: str):
                             self.context.close()
                             self.browser.close()
 
-                        except Exception as e:
+                        except Exception:
                             logger.info("当前%s，[%s]正在直播" % (thread_name, lid))
 
                             logger.info(f"跳转直播间：{live_url}")
@@ -158,7 +158,7 @@ def start_listen(config, common, my_handle, platform: str):
                             time.sleep(10)
 
                             self.page.on("websocket", self.web_sockets)
-                            logger.info(f"24h监听直播间等待下播...")
+                            logger.info("24h监听直播间等待下播...")
                             self.page.wait_for_selector(selector, timeout=86400000)
                             logger.error(
                                 "当前%s，[%s]的直播结束了" % (thread_name, lid)
@@ -166,7 +166,7 @@ def start_listen(config, common, my_handle, platform: str):
                             self.context.close()
                             self.browser.close()
 
-                    except Exception as e:
+                    except Exception:
                         logger.error(traceback.format_exc())
                         self.context.close()
                         self.browser.close()
@@ -201,7 +201,6 @@ def start_listen(config, common, my_handle, platform: str):
                         my_global.idle_time_auto_clear(config, "comment")
 
                         username = i["user"]["userName"]
-                        pid = i["user"]["principalId"]
                         content = i["content"]
                         logger.info(f"[📧直播间弹幕消息] [{username}]:{content}")
 
@@ -228,7 +227,6 @@ def start_listen(config, common, my_handle, platform: str):
                     msg_list = obj.get("likeFeeds", "")
                     for i in msg_list:
                         username = i["user"]["userName"]
-                        pid = i["user"]["principalId"]
                         logger.info(f"{username}")
 
     class run(kslive):

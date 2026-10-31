@@ -24,9 +24,9 @@ def start_listen(new_config, common, my_handle, platform: str):
 
     # 支持 wss 连接
     if config.get("dy2", {}).get("use_wss", False):
-        ws_url = "wss://127.0.0.1:5001"
+        pass
     else:
-        ws_url = "ws://127.0.0.1:5001"
+        pass
 
     def generateMsToken(length=107):
         """
@@ -276,7 +276,7 @@ def start_listen(new_config, common, my_handle, platform: str):
                 data_path = "data/抖音礼物价格表.json"
 
                 # 读取JSON文件
-                with open(data_path, "r", encoding="utf-8") as file:
+                with open(data_path, encoding="utf-8") as file:
                     # 解析JSON数据
                     data_json = json.load(file)
 
@@ -288,7 +288,7 @@ def start_listen(new_config, common, my_handle, platform: str):
                         f"数据文件：{data_path} 中，没有 {gift_name} 对应的价值，请手动补充数据"
                     )
                     discount_price = 1
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
                 discount_price = 1
 
@@ -401,7 +401,7 @@ def start_listen(new_config, common, my_handle, platform: str):
                             logger.info(f"切换配置文件：{config_path}")
 
                             break
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
 
             pass

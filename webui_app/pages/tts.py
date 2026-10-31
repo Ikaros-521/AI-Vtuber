@@ -117,8 +117,8 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
             logger.info(f"音频合成成功，存储于：{file_path}")
             ui.notify(position="top", type="positive", message=f"音频合成成功，存储于：{file_path}")
         else:
-            logger.error(f"音频合成失败！请查看日志排查问题")
-            ui.notify(position="top", type="negative", message=f"音频合成失败！请查看日志排查问题")
+            logger.error("音频合成失败！请查看日志排查问题")
+            ui.notify(position="top", type="negative", message="音频合成失败！请查看日志排查问题")
             return
 
         def clear_tts_common_audio_card(file_path):
@@ -148,7 +148,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
                 value=config.get("audio_synthesis_type")
             ).style("width:200px;")
             input_tts_common_text = ui.input(label='待合成音频内容', placeholder='此处填写待合成的音频文本内容', value="此处填写待合成的音频文本内容，用于试听效果，类型切换不需要保存即可生效。").style("width:350px;")
-            button_tts_common_audio_synthesis = ui.button('试听', on_click=lambda: tts_common_audio_synthesis(), color=button_internal_color).style(button_internal_css)
+            ui.button('试听', on_click=lambda: tts_common_audio_synthesis(), color=button_internal_color).style(button_internal_css)
         tts_common_audio_card = ui.card()
         with tts_common_audio_card.style(card_css):
             with ui.row():
@@ -159,7 +159,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
             ui.label("Edge-TTS")
             show_card_desc("Edge-TTS")
             with ui.row():
-                with open('data/edge-tts-voice-list.txt', 'r') as file:
+                with open('data/edge-tts-voice-list.txt') as file:
                     file_content = file.read()
                 # 按行分割内容，并去除每行末尾的换行符
                 lines = file_content.strip().split('\n')
@@ -247,7 +247,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
                 ).style("width:100px;")
                 input_vits_length = ui.input(label='语音长度', placeholder='调节语音长度，相当于调节语速，该数值越大语速越慢', value=config.get("vits", "length")).style("width:200px;")
 
-                button_vits_get_speaker_id = ui.button('检索说话人', on_click=lambda: vits_get_speaker_id(), color=button_internal_color).style(button_internal_css)
+                ui.button('检索说话人', on_click=lambda: vits_get_speaker_id(), color=button_internal_color).style(button_internal_css)
         
             with ui.row():
                 input_vits_noise = ui.input(label='噪声', placeholder='控制感情变化程度', value=config.get("vits", "noise")).style("width:200px;")
@@ -454,7 +454,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
                     placeholder='GPT模型路径，填绝对路径'
                 ).style("width:300px;")
                 input_gpt_sovits_sovits_model_path = ui.input(label='SOVITS模型路径', value=config.get("gpt_sovits", "sovits_model_path"), placeholder='SOVITS模型路径，填绝对路径').style("width:300px;")
-                button_gpt_sovits_set_model = ui.button('加载模型', on_click=lambda: gpt_sovits_set_model(), color=button_internal_color).style(button_internal_css)
+                ui.button('加载模型', on_click=lambda: gpt_sovits_set_model(), color=button_internal_color).style(button_internal_css)
             
             with ui.card().style(card_css):
                 ui.label("api")
@@ -803,7 +803,7 @@ def build_tts_tab(config, common, audio, card_css, switch_internal_css,
                     
                     return None
 
-                button_melotts_load_model = ui.button('加载模型', on_click=lambda: melotts_load_model(config.get("melotts")), color=button_internal_color).style(button_internal_css)
+                ui.button('加载模型', on_click=lambda: melotts_load_model(config.get("melotts")), color=button_internal_color).style(button_internal_css)
             
             with ui.row():
                 input_melotts_speaker_id = ui.input(label='说话人ID', value=config.get("melotts", "speaker_id"), placeholder='从0开始的整数，默认为0').style("width:100px;").tooltip("从0开始的整数，默认为0")

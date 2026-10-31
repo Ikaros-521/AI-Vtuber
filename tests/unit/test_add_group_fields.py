@@ -5,7 +5,6 @@ key_mapping_add 就同时坏了两处——读 tmp_config["serial_name"] 时键�
 界面上什么也不发生），另外两个控件抄错成了「文案」「串口发送内容」的重复项。
 """
 import ast
-import io
 import re
 from pathlib import Path
 
@@ -58,7 +57,7 @@ def test_add_callbacks_only_read_declared_defaults():
     """每个 *_add() 读到的默认值键，必须在它自己的 tmp_config 里声明过。"""
     bad = []
     for path in PAGES:
-        for func in _functions(io.open(path, encoding='utf-8').read()):
+        for func in _functions(open(path, encoding='utf-8').read()):
             if not func.name.endswith('_add'):
                 continue
             declared = _tmp_config_keys(func)
@@ -71,7 +70,7 @@ def test_add_callbacks_only_read_declared_defaults():
 
 def test_key_mapping_group_matches_the_saved_fields():
     """按键映射一组的九个字段：新增出来的要和建页循环、保存读回的是同一批。"""
-    src = io.open(PAGES_DIR / 'common_config.py', encoding='utf-8').read()
+    src = open(PAGES_DIR / 'common_config.py', encoding='utf-8').read()
     func = next(f for f in _functions(src) if f.name == 'key_mapping_add')
     assert _labels(func) == ['关键词', '礼物', '按键', '相似度', '文案', '本地音频', '串口名',
                              '串口发送内容', '图片路径']

@@ -12,7 +12,7 @@ class Config:
 
     def __init__(self, config_file):
         if self.config is None:
-            with open(config_file, 'r', encoding="utf-8") as f:
+            with open(config_file, encoding="utf-8") as f:
                 self.config = json.load(f)
     
     def __getitem__(self, key):

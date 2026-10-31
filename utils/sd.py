@@ -40,7 +40,7 @@ class SD:
             # 在单独的线程中更新虚拟摄像头
             threading.Thread(target=lambda: asyncio.run(self.update_virtual_camera())).start()
             # threading.Thread(target=self.update_virtual_camera).start()
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
     async def update_virtual_camera(self):

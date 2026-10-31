@@ -34,7 +34,7 @@ class Runtime:
 
     def read_config(self):
         """读一份最新配置；文件读不动时抛 OSError，由 API 层翻译。"""
-        with open(self.config_path, "r", encoding="utf-8") as f:
+        with open(self.config_path, encoding="utf-8") as f:
             return json.load(f)
 
     def file_sha256(self):
@@ -142,7 +142,7 @@ class Runtime:
     def factory(self, src_path="config.json.bak", dst_path=None):
         try:
             dst = dst_path or self.config_path
-            with open(src_path, "r", encoding="utf-8") as source, open(dst, "w", encoding="utf-8") as destination:
+            with open(src_path, encoding="utf-8") as source, open(dst, "w", encoding="utf-8") as destination:
                 destination.write(source.read())
             logger.info("恢复出厂配置成功！")
             return True, "恢复出厂配置成功，即将重启"

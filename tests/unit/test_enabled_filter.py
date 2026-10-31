@@ -47,7 +47,7 @@ def test_off_switch_hides_its_own_card_only(in_client):
 def test_switch_belongs_to_the_nearest_expansion_not_the_page_card(in_client):
     """子折叠区里的开关不能把整张父卡带走——实测「过滤」页 60 个字段就是这么被误藏的。"""
     with ui.card() as outer, ui.expansion('弹幕黑名单') as inner:
-        sw = ui.switch('启用弹幕黑名单', value=False)
+        ui.switch('启用弹幕黑名单', value=False)
         ui.input(label='黑名单路径')
     picked = disabled_containers()
     assert inner in picked

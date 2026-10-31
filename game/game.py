@@ -1,10 +1,10 @@
 import pyautogui
 import time
 import importlib
-import traceback, logging
+import traceback
+import logging
 
 from utils.common import Common
-from utils.logger import Configure_logger
 from utils.config import Config
 
 

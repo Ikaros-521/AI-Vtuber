@@ -11,7 +11,7 @@ def start_listen(config, common, my_handle, platform: str):
         try:
             return config.get("room_display_id")
         except Exception as e:
-            logger.error("获取直播间号失败！\n{0}".format(e))
+            logger.error(f"获取直播间号失败！\n{e}")
             return None
 
     def process_chat(live):
@@ -41,7 +41,7 @@ def start_listen(config, common, my_handle, platform: str):
                     # time.sleep(1)
             except Exception as e:
                 logger.error(traceback.format_exc())
-                logger.error("Error receiving chat: {0}".format(e))
+                logger.error(f"Error receiving chat: {e}")
                 my_handle.abnormal_alarm_handle("platform")
                 break  # 退出内部while循环以触发重连机制
 

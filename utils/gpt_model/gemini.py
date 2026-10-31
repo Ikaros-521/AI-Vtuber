@@ -23,7 +23,7 @@ class Gemini:
             self.model = genai.GenerativeModel(model_name = self.config_data["model"])
             
             # vertexai.init(project=self.config_data["project_id"], location="us-central1")
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             
     def list_models(self):
@@ -86,7 +86,7 @@ class Gemini:
                         break
 
             return resp_content
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -156,7 +156,7 @@ class Gemini:
             logger.debug(f"resp_content={resp_content}")
 
             return resp_content
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
         

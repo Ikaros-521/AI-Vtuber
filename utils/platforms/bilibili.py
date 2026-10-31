@@ -92,7 +92,7 @@ def start_listen(config, common, my_handle, platform: str):
 
         # 初始化 Bilibili 直播间
         room = live.LiveDanmaku(my_handle.get_room_id(), credential=credential)
-    except Exception as e:
+    except Exception:
         logger.error(traceback.format_exc())
         my_handle.abnormal_alarm_handle("platform")
         # 连弹幕客户端对象都建不出来，这条线程没有可做的事：只结束线程，别碰进程

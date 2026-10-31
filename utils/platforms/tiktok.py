@@ -52,7 +52,6 @@ def start_listen(config, common, my_handle, platform: str):
             my_global.idle_time_auto_clear(config, "entrance")
 
             username = event.user.nickname
-            unique_id = event.user.unique_id
 
             logger.info(f"[🚹🚺直播间成员加入消息] 欢迎 {username} 进入直播间")
 
@@ -120,7 +119,7 @@ def start_listen(config, common, my_handle, platform: str):
                 data_path = "data/tiktok礼物价格表.json"
 
                 # 读取JSON文件
-                with open(data_path, "r", encoding="utf-8") as file:
+                with open(data_path, encoding="utf-8") as file:
                     # 解析JSON数据
                     data_json = json.load(file)
 
@@ -132,7 +131,7 @@ def start_listen(config, common, my_handle, platform: str):
                         f"数据文件：{data_path} 中，没有 {gift_name} 对应的价值，请手动补充数据"
                     )
                     discount_price = 1
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
                 discount_price = 1
 

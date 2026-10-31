@@ -4,8 +4,6 @@
 最新文件上打补丁后落盘——外部脚本通过 /set_config 改过的配置不会被页面上
 打开时的旧快照覆盖（与 v2 的 update_config 只写映射字段的语义对齐）。
 """
-import hashlib
-import json
 
 from fastapi import APIRouter
 from pydantic import BaseModel

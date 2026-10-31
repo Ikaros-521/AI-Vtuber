@@ -21,7 +21,7 @@ async def set_config(msg: SetConfigMessage):
     """外部脚本改配置：在指定配置文件上做浅合并后写盘。"""
     try:
         try:
-            with open(msg.config_path, "r", encoding="utf-8") as config_file:
+            with open(msg.config_path, encoding="utf-8") as config_file:
                 config_data = json.load(config_file)
         except Exception as e:
             logger.error(f"无法读取配置文件！\n{e}")

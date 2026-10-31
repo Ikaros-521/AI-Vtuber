@@ -108,7 +108,7 @@ def build_image_recognition_tab(config, common, state, card_css, switch_internal
                     value=select_value_or_none(config.get("image_recognition", "screenshot_window_title"), data_json)
                 ).style("width:300px")
                 input_image_recognition_screenshot_delay = ui.input(label='N秒后进行截图', value=config.get("image_recognition", "screenshot_delay"), placeholder='截图延迟，方便用户打开对应窗口').style("width:100px")
-                button_image_recognition_screenshot_and_send = ui.button('截图并发送', on_click=lambda: image_recognition_screenshot_and_send(float(input_image_recognition_screenshot_delay.value)), color=button_internal_color).style(button_internal_css)
+                ui.button('截图并发送', on_click=lambda: image_recognition_screenshot_and_send(float(input_image_recognition_screenshot_delay.value)), color=button_internal_color).style(button_internal_css)
 
                 switch_image_recognition_loop_screenshot_enable = ui.switch('循环截图并发送', value=config.get("image_recognition", "loop_screenshot_enable")).style(switch_internal_css)
                 input_image_recognition_loop_screenshot_delay = ui.input(label='N秒后自动截图', value=config.get("image_recognition", "loop_screenshot_delay"), placeholder='自动截图延迟，用户在玩游戏或者看视频等情况下，可以自动触发图像识别').style("width:100px")
@@ -132,7 +132,7 @@ def build_image_recognition_tab(config, common, state, card_css, switch_internal
                     value=select_value_or_none(config.get("image_recognition", "cam_index"), data_json)
                 ).style("width:100px")
                 input_image_recognition_cam_screenshot_delay = ui.input(label='N秒后进行截图', value=config.get("image_recognition", "cam_screenshot_delay"), placeholder='截图延迟，方便用户调整摄像头').style("width:100px")
-                button_image_recognition_cam_screenshot_and_send = ui.button('截图并发送', on_click=lambda: image_recognition_cam_screenshot_and_send(float(input_image_recognition_cam_screenshot_delay.value)), color=button_internal_color).style(button_internal_css)
+                ui.button('截图并发送', on_click=lambda: image_recognition_cam_screenshot_and_send(float(input_image_recognition_cam_screenshot_delay.value)), color=button_internal_color).style(button_internal_css)
 
                 switch_image_recognition_loop_cam_screenshot_enable = ui.switch('循环截图并发送', value=config.get("image_recognition", "loop_cam_screenshot_enable")).style(switch_internal_css)
                 input_image_recognition_loop_cam_screenshot_delay = ui.input(label='N秒后自动截图', value=config.get("image_recognition", "loop_cam_screenshot_delay"), placeholder='自动截图延迟，可以自动触发图像识别').style("width:100px")

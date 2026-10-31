@@ -130,8 +130,8 @@ def build_copywriting_tab(config, common, audio, card_css, switch_internal_css,
             input_copywriting_switching_interval = ui.input(label='音频切换间隔', value=config.get("copywriting", "switching_interval"), placeholder='文案音频切换到弹幕音频的切换间隔时间（反之一样）。\n就是在播放文案时，有弹幕触发并合成完毕，此时会暂停文案播放，然后等待这个间隔时间后，再播放弹幕回复音频。').tooltip('n就是在播放文案时，有弹幕触发并合成完毕，此时会暂停文案播放，然后等待这个间隔时间后，再播放弹幕回复音频。')
         with ui.row():
             picker_copywriting = GroupPicker(lambda: copywriting_config_card, '文案', copywriting_del, lambda: copywriting_config_var).build()
-            button_copywriting_add = ui.button('增加文案组', on_click=lambda: (copywriting_add(), picker_copywriting.refresh()), color=button_internal_color).style(button_internal_css)
-            button_copywriting_del = delete_button('删除文案组', picker_copywriting.ask_delete).style(button_internal_css)
+            ui.button('增加文案组', on_click=lambda: (copywriting_add(), picker_copywriting.refresh()), color=button_internal_color).style(button_internal_css)
+            delete_button('删除文案组', picker_copywriting.ask_delete).style(button_internal_css)
 
     with copywriting_config_card:
         for index, copywriting_config in enumerate(config.get("copywriting", "config")):
@@ -148,7 +148,7 @@ def build_copywriting_tab(config, common, audio, card_css, switch_internal_css,
         show_card_desc("文案音频合成")
         with ui.row():
             input_copywriting_text_path = ui.input(label='文案文本路径', value=config.get("copywriting", "text_path"), placeholder='待合成的文案文本文件的路径').style("width:250px;").tooltip('待合成的文案文本文件的路径')
-            button_copywriting_text_load = ui.button('加载文本', on_click=copywriting_text_load, color=button_internal_color).style(button_internal_css)
+            ui.button('加载文本', on_click=copywriting_text_load, color=button_internal_color).style(button_internal_css)
             input_copywriting_audio_save_path = ui.input(label='音频存储路径', value=config.get("copywriting", "audio_save_path"), placeholder='音频合成后存储的路径').style("width:250px;").tooltip('音频合成后存储的路径')
             select_copywriting_audio_synthesis_type = ui.select(
                 label='语音合成',
@@ -158,8 +158,8 @@ def build_copywriting_tab(config, common, audio, card_css, switch_internal_css,
         with ui.row():
             textarea_copywriting_text = ui.textarea(label='文案文本', value='', placeholder='此处对需要合成文案音频的文本内容进行编辑。文案会自动根据逻辑进行切分，然后根据配置合成完整的一个音频文件。').style("width:1000px;").tooltip('此处对需要合成文案音频的文本内容进行编辑。文案会自动根据逻辑进行切分，然后根据配置合成完整的一个音频文件。')
         with ui.row():
-            button_copywriting_save_text = ui.button('保存文案', on_click=copywriting_save_text, color=button_internal_color).style(button_internal_css)
-            button_copywriting_audio_synthesis = ui.button('合成音频', on_click=lambda: copywriting_audio_synthesis(), color=button_internal_color).style(button_internal_css)
+            ui.button('保存文案', on_click=copywriting_save_text, color=button_internal_color).style(button_internal_css)
+            ui.button('合成音频', on_click=lambda: copywriting_audio_synthesis(), color=button_internal_color).style(button_internal_css)
         copywriting_audio_card = ui.card()
         with copywriting_audio_card.style(card_css):
             with ui.row():

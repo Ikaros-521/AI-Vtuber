@@ -64,7 +64,7 @@ def build_talk_tab(config, common, state, card_css, switch_internal_css,
                 value=config.get("talk", "type")
             ).style("width:200px;").tooltip('选择使用的STT类型')
 
-            with open('data/keyboard.txt', 'r') as file:
+            with open('data/keyboard.txt') as file:
                 file_content = file.read()
             lines = file_content.strip().split('\n')
             data_json = {}

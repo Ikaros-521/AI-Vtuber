@@ -148,7 +148,7 @@ print('@@FINGERPRINT@@' + json.dumps(
         cwd=str(ROOT), timeout=180,
     )
     marker = "@@FINGERPRINT@@"
-    line = next((l for l in (proc.stdout or "").splitlines() if marker in l), None)
+    line = next((ln for ln in (proc.stdout or "").splitlines() if marker in ln), None)
     if line is None:
         pytest.fail(
             "webui 构建失败（未拿到指纹）\n"

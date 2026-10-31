@@ -6,7 +6,9 @@ v3 起 WebUI 由 webui_server（FastAPI）+ webui_react（React）提供，启�
 后续版本会移除。日常使用请不要再从 webui.py 启动。
 """
 from nicegui import ui, app
-import sys, os, json
+import sys
+import os
+import json
 import traceback
 from pathlib import Path
 
@@ -458,7 +460,7 @@ def goto_func_page():
             return False
 
         try:
-            with open(config_path, 'r', encoding="utf-8") as config_file:
+            with open(config_path, encoding="utf-8") as config_file:
                 config_data = json.load(config_file)
         except Exception as e:
             logger.error(f"无法读取配置文件！\n{e}")
@@ -575,7 +577,7 @@ def goto_func_page():
             build_overview_tab(config, state, dirty_guard, select_tab, save_config, card_css,
                                button_bottom_color)
 
-        with ui.tab_panel(chat_page).style(tab_panel_css) as chat_panel:
+        with ui.tab_panel(chat_page).style(tab_panel_css):
             page_config_mappings.append(build_chat_tab(
                 config, common, state, chat_log, card_css, switch_internal_css, button_internal_color, button_internal_css))
 
@@ -667,19 +669,19 @@ def goto_func_page():
                 'flat no-caps dense').style(PILL_CSS.format('#4b5563')).tooltip('到总览页看开播就绪度')
 
             with ui.row().style("flex-wrap:wrap;justify-content:flex-end;gap:6px;") as ops_row:
-                button_save = ui.button('保存配置', on_click=lambda: save_config(), color=button_bottom_color).style(button_bottom_css).tooltip("保存webui的配置到本地文件，有些配置保存后需要重启生效")
-                button_run = ui.button('一键运行', on_click=lambda: run_external_program(config), color=button_bottom_color).style(button_bottom_css).tooltip("运行main.py")
+                ui.button('保存配置', on_click=lambda: save_config(), color=button_bottom_color).style(button_bottom_css).tooltip("保存webui的配置到本地文件，有些配置保存后需要重启生效")
+                ui.button('一键运行', on_click=lambda: run_external_program(config), color=button_bottom_color).style(button_bottom_css).tooltip("运行main.py")
                 # 创建一个按钮，用于停止正在运行的程序
-                button_stop = ui.button("停止运行", on_click=ask_stop, color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py")
+                ui.button("停止运行", on_click=ask_stop, color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py")
                 # 运行结果原先只有一条会自行消失的 toast，出问题得自己去翻文件（走查 audit-3）
                 ui.button('运行日志', icon='receipt_long', on_click=run_log.open,
                           color=button_bottom_color).style(button_bottom_css).tooltip(
                     '看今天的日志末尾 400 行；日志文件在 log/ 下，按大小滚动')
-                button_restart = ui.button('重启', on_click=ask_restart, color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py并重启webui")
+                ui.button('重启', on_click=ask_restart, color=button_bottom_color).style(button_bottom_css).tooltip("停止运行main.py并重启webui")
             ops_row.set_visibility(False)
 
             with ui.row().style("align-items:center;gap:6px;"):
-                button_top = ui.button('回到顶部', icon='keyboard_arrow_up', on_click=lambda: scroll_to_top(), color=button_bottom_color).style(button_bottom_css).tooltip("平滑滚动到页面顶部")
+                ui.button('回到顶部', icon='keyboard_arrow_up', on_click=lambda: scroll_to_top(), color=button_bottom_color).style(button_bottom_css).tooltip("平滑滚动到页面顶部")
                 button_ops = ui.button('操作', icon='settings', on_click=switch_ops, color=button_bottom_color).style(button_bottom_css)
 
     ui.timer(1.0, paint_run_state)

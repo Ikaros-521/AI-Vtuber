@@ -483,7 +483,7 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                             logger.error(traceback.format_exc())
                             ui.notify(f"读这个路径读不了：{explain(e)}", position="top", type="negative")
 
-                    button_local_qa_text_json_file_reload = ui.button('加载文件', on_click=lambda: local_qa_text_json_file_reload(), color=button_internal_color).style(button_internal_css)
+                    ui.button('加载文件', on_click=lambda: local_qa_text_json_file_reload(), color=button_internal_color).style(button_internal_css)
 
                     textarea_local_qa_text_json_file_content = ui.textarea(label='JSON文件内容', placeholder='注意格式！').style("width:700px;")
 
@@ -594,8 +594,8 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                 show_card_desc('定时任务')
                 with ui.row():
                     picker_schedule = GroupPicker(lambda: schedule_config_card, '定时任务', schedule_del, lambda: schedule_var).build()
-                    button_schedule_add = ui.button('增加任务组', on_click=lambda: (schedule_add(), picker_schedule.refresh()), color=button_internal_color).style(button_internal_css)
-                    button_schedule_del = delete_button('删除任务组', picker_schedule.ask_delete).style(button_internal_css)
+                    ui.button('增加任务组', on_click=lambda: (schedule_add(), picker_schedule.refresh()), color=button_internal_color).style(button_internal_css)
+                    delete_button('删除任务组', picker_schedule.ask_delete).style(button_internal_css)
                 
                 schedule_var = {}
                 schedule_config_card = ui.card()
@@ -751,8 +751,8 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                 
                 with ui.row():
                     picker_trends_copywriting = GroupPicker(lambda: trends_copywriting_config_card, '动态文案', trends_copywriting_del, lambda: trends_copywriting_copywriting_var).build()
-                    button_trends_copywriting_add = ui.button('增加文案组', on_click=lambda: (trends_copywriting_add(), picker_trends_copywriting.refresh()), color=button_internal_color).style(button_internal_css)
-                    button_trends_copywriting_del = delete_button('删除文案组', picker_trends_copywriting.ask_delete).style(button_internal_css)
+                    ui.button('增加文案组', on_click=lambda: (trends_copywriting_add(), picker_trends_copywriting.refresh()), color=button_internal_color).style(button_internal_css)
+                    delete_button('删除文案组', picker_trends_copywriting.ask_delete).style(button_internal_css)
                 
                 trends_copywriting_copywriting_var = {}
                 trends_copywriting_config_card = ui.card()
@@ -814,8 +814,8 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                     
                 with ui.row():
                     picker_key_mapping = GroupPicker(lambda: key_mapping_config_card, '按键/文案映射', key_mapping_del, lambda: key_mapping_config_var).build()
-                    button_key_mapping_add = ui.button('增加配置组', on_click=lambda: (key_mapping_add(), picker_key_mapping.refresh()), color=button_internal_color).style(button_internal_css)
-                    button_key_mapping_del = delete_button('删除配置组', picker_key_mapping.ask_delete).style(button_internal_css)
+                    ui.button('增加配置组', on_click=lambda: (key_mapping_add(), picker_key_mapping.refresh()), color=button_internal_color).style(button_internal_css)
+                    delete_button('删除配置组', picker_key_mapping.ask_delete).style(button_internal_css)
                 
                 
                 key_mapping_config_var = {}
@@ -1020,8 +1020,8 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
                     ).style("width:200px")
                 with ui.row():
                     picker_custom_cmd = GroupPicker(lambda: custom_cmd_config_card, '自定义命令', custom_cmd_del, lambda: custom_cmd_config_var).build()
-                    button_custom_cmd_add = ui.button('增加配置组', on_click=lambda: (custom_cmd_add(), picker_custom_cmd.refresh()), color=button_internal_color).style(button_internal_css)
-                    button_custom_cmd_del = delete_button('删除配置组', picker_custom_cmd.ask_delete).style(button_internal_css)
+                    ui.button('增加配置组', on_click=lambda: (custom_cmd_add(), picker_custom_cmd.refresh()), color=button_internal_color).style(button_internal_css)
+                    delete_button('删除配置组', picker_custom_cmd.ask_delete).style(button_internal_css)
                 
                 custom_cmd_config_var = {}
                 custom_cmd_config_card = ui.card()
@@ -1125,8 +1125,8 @@ def build_common_config_tab(config, common, card_css, switch_internal_css, butto
             with ui.expansion('联动程序', icon="settings", value=True).classes('w-full'):
                 with ui.row():
                     picker_coordination_program = GroupPicker(lambda: coordination_program_config_card, '联动程序', coordination_program_del, lambda: coordination_program_var).build()
-                    button_coordination_program_add = ui.button('增加配置组', on_click=lambda: (coordination_program_add(), picker_coordination_program.refresh()), color=button_internal_color).style(button_internal_css)
-                    button_coordination_program_del = delete_button('删除配置组', picker_coordination_program.ask_delete).style(button_internal_css)
+                    ui.button('增加配置组', on_click=lambda: (coordination_program_add(), picker_coordination_program.refresh()), color=button_internal_color).style(button_internal_css)
+                    delete_button('删除配置组', picker_coordination_program.ask_delete).style(button_internal_css)
                 
                 coordination_program_var = {}
                 coordination_program_config_card = ui.card()

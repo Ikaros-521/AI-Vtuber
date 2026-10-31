@@ -1,5 +1,6 @@
 import json
-import re, requests
+import re
+import requests
 import traceback
 
 from utils.common import Common
@@ -118,7 +119,7 @@ class Custom_LLM:
                 resp_content = resp_template.format(**{var: value for var, value in variables.items() if var in resp_template})
 
             return resp_content
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 

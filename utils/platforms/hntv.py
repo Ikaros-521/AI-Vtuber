@@ -37,7 +37,7 @@ def start_listen(config, common, my_handle, platform: str):
                         my_handle.process_data(data, "comment")
             else:
                 logger.error("获取弹幕数据失败。。。")
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             my_handle.abnormal_alarm_handle("platform")
 

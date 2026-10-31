@@ -1,4 +1,5 @@
-import json, copy
+import json
+import copy
 import traceback
 
 from utils.common import Common
@@ -29,7 +30,7 @@ class TongYi:
                 # 非流式模式
                 import revTongYi.qianwen as qwen
                 
-                with open(self.cookie_path, "r") as f:
+                with open(self.cookie_path) as f:
                     self.cookies_dict = convert_cookies(json.load(f))
                 self.chatbot = qwen.Chatbot(
                     cookies=self.cookies_dict  # 以dict形式提供cookies
@@ -39,7 +40,7 @@ class TongYi:
                 import dashscope
                 
                 dashscope.api_key = self.config_data["api_key"]
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
     def get_resp(self, prompt, stream=False):
@@ -127,7 +128,7 @@ class TongYi:
                 else:
                     logger.error(f'出错，请查看message信息排查问题，已知问题有：输入数据可能包含不适当的内容\nRequest id: {response.request_id}, Status code: {response.status_code}, error code: {response.code}, error message: {response.message}')
                     return None
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -156,7 +157,7 @@ class TongYi:
                 return {"ret": True}
             
             return {"ret": False}
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return {"ret": False}
 

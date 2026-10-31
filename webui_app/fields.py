@@ -6,7 +6,7 @@ NiceGUI 3.18 不给普通元素渲染 DOM id，Quasar 的 tab 面板又只挂当
 """
 import json
 
-from nicegui import context, ui
+from nicegui import context
 from nicegui.elements.card import Card
 from nicegui.elements.checkbox import Checkbox
 from nicegui.elements.input import Input

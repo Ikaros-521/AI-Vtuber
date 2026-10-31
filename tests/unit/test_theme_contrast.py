@@ -3,7 +3,6 @@
 主题色是用户在 config 里可换的，5 套里有 3 套是高饱和亮色；导航芯片原先一律配白字，
 在亮色主题上根本看不清。区块芯片/「去配置」原先吃的是 Quasar 默认 primary（3.06:1）。
 """
-import pytest
 
 from webui_app.theme import (INK, LINK, background_of, declarations, internal_button_color,
                           preview_css, readable_on)

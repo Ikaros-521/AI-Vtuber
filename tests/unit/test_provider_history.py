@@ -1,10 +1,8 @@
 """历史长度统计，和「别把观众输入交给 re.sub 当替换模板」的静态检查。"""
 
 import ast
-import io
 import pathlib
 
-import pytest
 
 from utils.history import total_chars
 
@@ -46,7 +44,7 @@ def _no_variable_replacement_templates():
     for path in sorted((ROOT / 'utils').rglob('*.py')):
         if '__pycache__' in str(path):
             continue
-        tree = ast.parse(io.open(path, encoding='utf-8', newline='').read().replace(CRLF, NL))
+        tree = ast.parse(open(path, encoding='utf-8', newline='').read().replace(CRLF, NL))
         for node in ast.walk(tree):
             if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
                     and node.func.attr == 'sub'):

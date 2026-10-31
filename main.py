@@ -139,7 +139,7 @@ def start_server():
             threading.Thread(
                 target=lambda: asyncio.run(web_server_thread(web_server_port))
             ).start()
-    except Exception as e:
+    except Exception:
         logger.error(traceback.format_exc())
         os._exit(0)
 
@@ -587,7 +587,7 @@ def start_server():
                             data["content"] = resp_json["content"]
                             data["insert_index"] = -1
                             my_handle.reread_handle(data)
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
     # 执行录音、识别&提交
@@ -806,11 +806,11 @@ def start_server():
 
                     if not status:
                         return
-                except Exception as e:
+                except Exception:
                     logger.error(traceback.format_exc())
                     is_recording = False
                     return
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             is_recording = False
             return
@@ -1018,7 +1018,7 @@ def start_server():
                         ).tag(index)
 
                     schedule_random_task(index, min_seconds, max_seconds)
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
         while True:
@@ -1105,7 +1105,7 @@ def start_server():
                             await asyncio.sleep(
                                 config.get("trends_copywriting", "play_interval")
                             )
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
     if config.get("trends_copywriting", "enable"):
@@ -1516,7 +1516,7 @@ def start_server():
                                 local_audio_path_list,
                             )
 
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
     if config.get("idle_time_task", "enable"):
@@ -1545,7 +1545,7 @@ def start_server():
             schedule.every(interval).seconds.do(
                 partial(image_recognition_schedule_task, type)
             )
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
         while True:
@@ -1589,7 +1589,7 @@ def start_server():
                         logger.debug("LiveTalking没有音频在播放")
                         my_global.wait_play_audio_num = 0
                         
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
                 logger.error("请求LiveTalking is_speaking接口失败")
 
@@ -1600,7 +1600,7 @@ def start_server():
                 schedule.every(interval).seconds.do(
                     partial(metahuman_stream_is_speaking)
                 )
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
 
             while True:

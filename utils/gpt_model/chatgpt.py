@@ -77,7 +77,7 @@ class Chatgpt:
             return message
 
         # 捕获异常并打印堆栈跟踪信息
-        except Exception as error:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -120,13 +120,13 @@ class Chatgpt:
             openai.api_base = self.data_openai['api']
 
             if not self.data_openai['api_key']:
-                logger.error(f"请设置openai Api Key")
+                logger.error("请设置openai Api Key")
                 return None
             else:
                 # 判断是否所有 API key 均已达到速率限制
                 if self.current_key_index > max_length:
                     self.current_key_index = 0
-                    logger.warning(f"全部Key均已达到速率限制,请等待一分钟后再尝试")
+                    logger.warning("全部Key均已达到速率限制,请等待一分钟后再尝试")
                     return None
                 openai.api_key = self.data_openai['api_key'][self.current_key_index]
 
@@ -206,13 +206,13 @@ class Chatgpt:
             openai.api_base = self.data_openai['api']
 
             if not self.data_openai['api_key']:
-                logger.error(f"请设置openai Api Key")
+                logger.error("请设置openai Api Key")
                 return None
             else:
                 # 判断是否所有 API key 均已达到速率限制
                 if self.current_key_index > max_length:
                     self.current_key_index = 0
-                    logger.warning(f"全部Key均已达到速率限制,请等待一分钟后再尝试")
+                    logger.warning("全部Key均已达到速率限制,请等待一分钟后再尝试")
                     return None
                 openai.api_key = self.data_openai['api_key'][self.current_key_index]
 
@@ -242,7 +242,7 @@ class Chatgpt:
 
             return resp
 
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -257,7 +257,7 @@ class Chatgpt:
                 resp_content = self.chat_stream(prompt, username)
 
             return resp_content
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
     
@@ -273,7 +273,7 @@ class Chatgpt:
             # logger.warning(session)
 
             return {"ret": True}
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return {"ret": False}
 

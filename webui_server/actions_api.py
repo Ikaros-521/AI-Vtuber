@@ -27,7 +27,7 @@ class FileWriteRequest(BaseModel):
 @router.get("/file")
 def read_file(path: str):
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             text = f.read()
         return {"code": 200, "content": text}
     except Exception as e:
@@ -146,7 +146,7 @@ class TemplateRequest(BaseModel):
 def config_template_save(req: TemplateRequest):
     """把当前 config.json 原样存为模板。注意：未保存的界面改动不含在内（先点「保存配置」）。"""
     try:
-        with open(runtime.config_path, "r", encoding="utf-8") as f:
+        with open(runtime.config_path, encoding="utf-8") as f:
             config_data = json.load(f)
         with open(req.path, "w", encoding="utf-8") as f:
             json.dump(config_data, f, indent=2, ensure_ascii=False)
@@ -160,7 +160,7 @@ def config_template_save(req: TemplateRequest):
 def config_template_load(req: TemplateRequest):
     """用模板覆盖当前 config.json，需重启 webui 生效。"""
     try:
-        with open(req.path, "r", encoding="utf-8") as f:
+        with open(req.path, encoding="utf-8") as f:
             config_data = json.load(f)
         with open(runtime.config_path, "w", encoding="utf-8") as f:
             json.dump(config_data, f, indent=2, ensure_ascii=False)

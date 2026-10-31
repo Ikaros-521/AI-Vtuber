@@ -3,7 +3,8 @@ import threading
 import asyncio
 from copy import deepcopy
 import aiohttp
-import os, random
+import os
+import random
 import copy
 import traceback
 
@@ -82,7 +83,7 @@ class Audio:
         # self.only_play_audio_thread.start()
 
         # 文案单独一个线程排队播放
-        if self.only_play_copywriting_thread == None:
+        if self.only_play_copywriting_thread is None:
             # self.only_play_copywriting_thread = threading.Thread(target=lambda: asyncio.run(self.only_play_copywriting()))
             self.only_play_copywriting_thread = threading.Thread(target=self.start_only_play_copywriting)
             self.only_play_copywriting_thread.start()
@@ -196,7 +197,7 @@ class Audio:
         # 如果忽略扩展名，只取目标文件的基本名
         target_for_comparison = os.path.splitext(target_file)[0] if ignore_extension else target_file
 
-        for root, dirs, files in os.walk(root_dir):
+        for root, _dirs, files in os.walk(root_dir):
             for file in files:
                 # 根据 ignore_extension 判断是否要去除扩展名后再比较
                 file_to_compare = os.path.splitext(file)[0] if ignore_extension else file
@@ -224,7 +225,7 @@ class Audio:
         try:
             # 使用 os.walk 遍历文件夹及其子文件夹
             audio_files = []
-            for root, dirs, files in os.walk(audio_path):
+            for root, _dirs, files in os.walk(audio_path):
                 for file in files:
                     if file.lower().endswith(SUPPORTED_AUDIO_EXTENSIONS):
                         audio_files.append(os.path.join(root, file))
@@ -243,7 +244,7 @@ class Audio:
             logger.debug(file_names)
 
             return file_names
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -286,7 +287,7 @@ class Audio:
 
                 # 加个延时 降低点edge-tts的压力
                 # await asyncio.sleep(0.5)
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
 
 
@@ -321,7 +322,7 @@ class Audio:
                         logger.error(await response.text())
 
                         return None
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -360,7 +361,7 @@ class Audio:
                         logger.error(f"请求ddsp-svc失败，状态码：{response.status}")
                         return None
 
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
         
@@ -374,14 +375,14 @@ class Audio:
                 async with session.get(url) as response:
                     # 检查响应状态
                     if response.status == 200:
-                        logger.info(f"xuniren合成完成")
+                        logger.info("xuniren合成完成")
 
                         return True
                     else:
                         logger.error(f"xuniren合成失败，状态码：{response.status}")
                         return False
 
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return False
 
@@ -410,7 +411,7 @@ class Audio:
                         logger.error(f"EasyAIVtuber发送失败，状态码：{response.status}")
                         return False
 
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return False
 
@@ -435,7 +436,7 @@ class Audio:
                         logger.error(f"metahuman发送失败，状态码：{response.status}")
                         return False
 
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return False
     
@@ -466,7 +467,7 @@ class Audio:
                         logger.error(f"digital_human_video_player发送失败，状态码：{response.status}")
                         return False
 
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return False
 
@@ -503,7 +504,7 @@ class Audio:
                         logger.error(f"live2d_TTS_LLM_GPT_SoVITS_Vtuber发送失败，状态码：{response.status}")
                         return False
 
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return False
 
@@ -712,7 +713,7 @@ class Audio:
 
             # 单独开线程播放
             # threading.Thread(target=self.my_play_voice, args=(type, data, config, content,)).start()
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return
 
@@ -731,12 +732,12 @@ class Audio:
         voice_tmp_path = os.path.abspath(voice_tmp_path)
 
         # 是否启用ddsp-svc来变声
-        if True == self.config.get("ddsp_svc", "enable"):
+        if self.config.get("ddsp_svc", "enable") is True:
             voice_tmp_path = await self.ddsp_svc_api(audio_path=voice_tmp_path)
             if voice_tmp_path:
                 logger.info(f"ddsp-svc合成成功，输出到={voice_tmp_path}")
             else:
-                logger.error(f"ddsp-svc合成失败，请检查配置")
+                logger.error("ddsp-svc合成失败，请检查配置")
                 self.abnormal_alarm_handle("svc")
                 return None
 
@@ -744,12 +745,12 @@ class Audio:
         voice_tmp_path = os.path.abspath(voice_tmp_path)
 
         # 是否启用so-vits-svc来变声
-        if True == self.config.get("so_vits_svc", "enable"):
+        if self.config.get("so_vits_svc", "enable") is True:
             voice_tmp_path = await self.so_vits_svc_api(audio_path=voice_tmp_path)
             if voice_tmp_path:
                 logger.info(f"so_vits_svc合成成功，输出到={voice_tmp_path}")
             else:
-                logger.error(f"so_vits_svc合成失败，请检查配置")
+                logger.error("so_vits_svc合成失败，请检查配置")
                 self.abnormal_alarm_handle("svc")
                 
                 return None
@@ -1071,7 +1072,7 @@ class Audio:
             data (dict): 音频播放信息
         """
         try:
-            if False == self.config.get("play_audio", "info_to_callback"):
+            if self.config.get("play_audio", "info_to_callback") is False:
                 return None
 
             if data is None:
@@ -1091,7 +1092,7 @@ class Audio:
             resp = await self.common.send_async_request(f'http://{main_api_ip}:{self.config.get("api_port")}/callback', "POST", data)
 
             return resp
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -1113,7 +1114,7 @@ class Audio:
             if message["tts_type"] == "none":
                 self.data_priority_insert("待播放音频列表", message)
                 return
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return
 
@@ -1127,7 +1128,7 @@ class Audio:
             # 空数据就散了吧
             if message["content"] == "":
                 return
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return
         
@@ -1255,7 +1256,7 @@ class Audio:
             try:
                 if self.config.get("play_audio", "player") in ["pygame"]:
                     Audio.mixer_normal.init()
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
                 logger.error("pygame mixer_normal初始化失败，普通音频将无法正常播放，请检查声卡是否正常！")
 
@@ -1280,7 +1281,7 @@ class Audio:
                         Audio.copywriting_play_flag = 1
                         # 等待一个切换时间
                         await asyncio.sleep(float(self.config.get("copywriting", "switching_interval")))
-                        logger.debug(f"切换间隔结束，准备播放普通音频")
+                        logger.debug("切换间隔结束，准备播放普通音频")
 
                     # 是否启用字幕输出
                     # 每轮重读，与旁边的 web_captions_printer 一致；
@@ -1326,7 +1327,7 @@ class Audio:
                     interval_num_max = float(self.config.get("play_audio", "interval_num_max"))
                     interval_num = int(self.common.get_random_value(interval_num_min, interval_num_max))
 
-                    for i in range(interval_num):
+                    for _ in range(interval_num):
                         # 不仅仅是说话间隔，还是等待文本捕获刷新数据
                         await asyncio.sleep(normal_interval)
 
@@ -1390,7 +1391,7 @@ class Audio:
                                 Audio.mixer_normal.music.stop()
                                 
                                 await self.send_audio_play_info_to_callback()
-                            except Exception as e:
+                            except Exception:
                                 # 以前这里只捕 pygame.error，因为 mixer.music.load 读不到
                                 # 文件时抛的就是它；换成 channel 后文件缺失是
                                 # FileNotFoundError，只捕 pygame.error 会漏掉最常见的那种
@@ -1403,7 +1404,7 @@ class Audio:
                         # 清空字幕文件
                         # self.common.write_content_to_file(captions_config["file_path"], "")
 
-                except Exception as e:
+                except Exception:
                     logger.error(traceback.format_exc())
                 finally:
                     # 恢复文案这一步必须放在 finally。两条流各占一个 channel 之后，
@@ -1414,7 +1415,7 @@ class Audio:
                         # 延时执行恢复文案播放
                         self.delayed_execution_unpause_copywriting_play()
             Audio.mixer_normal.quit()
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
 
@@ -1456,7 +1457,7 @@ class Audio:
 
     # 只进行文案播放 正经版
     def start_only_play_copywriting(self):
-        logger.info(f"文案播放线程运行中...")
+        logger.info("文案播放线程运行中...")
         asyncio.run(self.only_play_copywriting())
 
 
@@ -1467,7 +1468,7 @@ class Audio:
             try:
                 if self.config.get("play_audio", "player") in ["pygame"]:
                     Audio.mixer_copywriting.init()
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
                 logger.error("pygame mixer_copywriting初始化失败，文案音频将无法正常播放，请检查声卡是否正常！")
 
@@ -1515,7 +1516,7 @@ class Audio:
                             Audio.mixer_copywriting.music.stop()
 
                             await self.send_audio_play_info_to_callback()
-                        except Exception as e:
+                        except Exception:
                             logger.error(traceback.format_exc())
                             # 同普通音频：文件缺失现在抛的是 FileNotFoundError，不是 pygame.error
                             logger.error(f"无法加载音频文件:{audio_path}。请确保文件格式正确且文件未损坏。可能原因是TTS配置有误或者TTS服务端有问题，可以去服务端排查一下问题")
@@ -1618,7 +1619,7 @@ class Audio:
                         start_time = float(self.common.get_bj_time(3))
 
                         # 根据连续播放的文案数量进行循环
-                        for i in range(0, continuous_play_num_arr[index]):
+                        for _ in range(0, continuous_play_num_arr[index]):
                             # print(f"continuous_play_num_arr[index]={continuous_play_num_arr[index]}")
                             # 判断播放标志位 防止播放过程中无法暂停
                             if Audio.copywriting_play_flag in [0, 1, -1]:
@@ -1648,12 +1649,12 @@ class Audio:
 
                         # 放在这一级别，只有这一索引的播放列表的音频播放完后才会记录最后一次的播放索引位置
                         last_index = index if index < (len(play_list_arr) - 1) else -1
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
             
             if self.config.get("play_audio", "player") in ["pygame"]:
                 Audio.mixer_copywriting.quit()
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
 
@@ -2055,7 +2056,7 @@ class Audio:
 
                         break
                     
-                    except Exception as e:
+                    except Exception:
                         logger.error(f"尝试失败，剩余重试次数：{retry_count - 1}")
                         logger.error(traceback.format_exc())
                         retry_count -= 1  # 减少重试次数
@@ -2077,7 +2078,7 @@ class Audio:
             file_path = os.path.join(out_audio_path, file_name + ".wav")
 
             return file_path
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
         

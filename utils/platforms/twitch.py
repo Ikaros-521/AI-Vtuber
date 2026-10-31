@@ -28,7 +28,7 @@ def start_listen(config, common, my_handle, platform: str):
             proxy_port = int(config.get("twitch", "proxy_port"))
         except Exception as e:
             logger.error(traceback.format_exc())
-            logger.error("获取Twitch配置失败！\n{0}".format(e))
+            logger.error(f"获取Twitch配置失败！\n{e}")
             my_handle.abnormal_alarm_handle("platform")
 
         # 配置代理服务器
@@ -45,9 +45,9 @@ def start_listen(config, common, my_handle, platform: str):
             logger.error(f"连接 Twitch IRC server 失败: {e}")
             my_handle.abnormal_alarm_handle("platform")
 
-        sock.send(f"PASS {token}\n".encode("utf-8"))
-        sock.send(f"NICK {nickname}\n".encode("utf-8"))
-        sock.send(f"JOIN {channel}\n".encode("utf-8"))
+        sock.send(f"PASS {token}\n".encode())
+        sock.send(f"NICK {nickname}\n".encode())
+        sock.send(f"JOIN {channel}\n".encode())
 
         regex = r":(\w+)!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :(.+)"
 
@@ -62,9 +62,9 @@ def start_listen(config, common, my_handle, platform: str):
                 # logger.info(resp)
 
                 if resp.startswith("PING"):
-                    sock.send("PONG\n".encode("utf-8"))
+                    sock.send(b"PONG\n")
 
-                elif not user in resp:
+                elif user not in resp:
                     # 闲时计数清零
                     my_global.idle_time_auto_clear(config, "comment")
 
@@ -94,7 +94,7 @@ def start_listen(config, common, my_handle, platform: str):
                 my_handle.abnormal_alarm_handle("platform")
 
                 if retry_count >= 3:
-                    logger.error(f"多次重连失败，程序结束！")
+                    logger.error("多次重连失败，程序结束！")
                     return
 
                 retry_count += 1
@@ -113,13 +113,13 @@ def start_listen(config, common, my_handle, platform: str):
                 except Exception as e:
                     logger.error(f"连接 Twitch IRC server 失败: {e}")
 
-                sock.send(f"PASS {token}\n".encode("utf-8"))
-                sock.send(f"NICK {nickname}\n".encode("utf-8"))
-                sock.send(f"JOIN {channel}\n".encode("utf-8"))
+                sock.send(f"PASS {token}\n".encode())
+                sock.send(f"NICK {nickname}\n".encode())
+                sock.send(f"JOIN {channel}\n".encode())
             except Exception as e:
                 logger.error(traceback.format_exc())
-                logger.error("Error receiving chat: {0}".format(e))
+                logger.error(f"Error receiving chat: {e}")
                 my_handle.abnormal_alarm_handle("platform")
-    except Exception as e:
+    except Exception:
         logger.error(traceback.format_exc())
         my_handle.abnormal_alarm_handle("platform")

@@ -104,7 +104,7 @@ class My_Translate:
             return translation
             # Show response
             # print(json.dumps(result, indent=4, ensure_ascii=False))
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
             return None
@@ -136,7 +136,7 @@ class My_Translate:
             logger.debug(ret)
 
             return ret.translatedText
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
             return None

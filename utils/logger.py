@@ -2,7 +2,6 @@ import logging
 import colorlog
 
 def Configure_logger(log_file):
-    log_format = '%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'
     color_format = '%(log_color)s%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s%(reset)s'
 
     logger = logging.getLogger()

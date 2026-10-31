@@ -1,4 +1,6 @@
-import json, traceback, requests
+import json
+import traceback
+import requests
 from wenxinworkshop import LLMAPI
 from wenxinworkshop import Message, Messages
 
@@ -35,16 +37,14 @@ class My_WenXinWorkShop:
                     "LLAMA_2_7B": LLMAPI.LLAMA_2_7B,
                     "LLAMA_2_13B": LLMAPI.LLAMA_2_13B,
                     "LLAMA_2_70B": LLMAPI.LLAMA_2_70B,
-                    "ERNIEBot_4_0": LLMAPI.ERNIEBot_4_0,
-                    "QIANFAN_BLOOMZ_7B_COMPRESSED": LLMAPI.QIANFAN_BLOOMZ_7B_COMPRESSED,
                     "QIANFAN_CHINESE_LLAMA_2_7B": LLMAPI.QIANFAN_CHINESE_LLAMA_2_7B,
                     "CHATGLM2_6B_32K": LLMAPI.CHATGLM2_6B_32K,
                     "AQUILACHAT_7B": LLMAPI.AQUILACHAT_7B,
                     "ERNIE_BOT_8K": LLMAPI.ERNIE_BOT_8K,
                     "CODELLAMA_7B_INSTRUCT": LLMAPI.CODELLAMA_7B_INSTRUCT,
                     "XUANYUAN_70B_CHAT": LLMAPI.XUANYUAN_70B_CHAT,
-                    "CHATLAW": LLMAPI.QIANFAN_BLOOMZ_7B_COMPRESSED,
-                    "QIANFAN_BLOOMZ_7B_COMPRESSED": LLMAPI.CHATLAW,
+                    "CHATLAW": LLMAPI.CHATLAW,
+                    "QIANFAN_BLOOMZ_7B_COMPRESSED": LLMAPI.QIANFAN_BLOOMZ_7B_COMPRESSED,
                 }
 
                 selected_model = self.config_data["model"]
@@ -188,7 +188,7 @@ class My_WenXinWorkShop:
 
             return resp_content
             
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
         return None
@@ -217,7 +217,7 @@ class My_WenXinWorkShop:
                 return {"ret": True}
 
             return {"ret": False}
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return {"ret": False}
 

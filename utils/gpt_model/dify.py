@@ -148,7 +148,7 @@ class Dify:
                     return None
 
                 return resp_content
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
         return None
@@ -160,7 +160,7 @@ class Dify:
             if self.config_data['history_enable']:
                 self.conversation_id = conversation_id
             return {"ret": True}
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return {"ret": False}
 

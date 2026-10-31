@@ -50,7 +50,7 @@ def start_listen(config, common, my_handle, platform: str):
                 "bilibili", "open_live", "ROOM_OWNER_AUTH_CODE"
             )
 
-    except Exception as e:
+    except Exception:
         logger.error(traceback.format_exc())
         my_handle.abnormal_alarm_handle("platform")
 

@@ -67,11 +67,11 @@ def build_chat_tab(config, common, state, chat_log, card_css, switch_internal_cs
                         ui.badge(f'录音热键: {trigger_key}', color='grey-6').props('outline').tooltip('若未开启直接拾音，可在后台按此快捷键触发录音')
 
                 with ui.row().classes('items-center gap-2'):
-                    btn_reread = ui.button('直接复读', on_click=lambda: do_reread()).props(
+                    ui.button('直接复读', on_click=lambda: do_reread()).props(
                         'outline dense no-caps'
                     ).style('font-size:12px;padding:2px 10px;color:#4b5563;').tooltip('跳过大模型思考，让当前 TTS 语音引擎直接朗读输入框文字（声音调试）')
 
-                    btn_tuning = ui.button('调教', on_click=lambda: do_tuning()).props(
+                    ui.button('调教', on_click=lambda: do_tuning()).props(
                         'outline dense no-caps'
                     ).style('font-size:12px;padding:2px 10px;color:#4b5563;').tooltip('向 LLM 注入提示词或指导信息，不触发语音播放')
 
@@ -82,7 +82,7 @@ def build_chat_tab(config, common, state, chat_log, card_css, switch_internal_cs
                 ).props('outlined dense').classes('flex-grow').style('font-size:14px;')
                 input_text.is_config_field = False
 
-                btn_send = ui.button('发送', on_click=lambda: do_send()).props('unelevated').style(
+                ui.button('发送', on_click=lambda: do_send()).props('unelevated').style(
                     'padding:0 22px;height:40px;background:#6366f1;color:#ffffff;font-weight:600;border-radius:6px;'
                 ).tooltip('发送消息给 AI，模拟弹幕互动并触发语音回复')
 

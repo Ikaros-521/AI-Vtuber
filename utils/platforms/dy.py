@@ -96,7 +96,7 @@ def start_listen(new_config, common, my_handle, platform: str, schedule_thread):
                     data_path = "data/抖音礼物价格表.json"
 
                     # 读取JSON文件
-                    with open(data_path, "r", encoding="utf-8") as file:
+                    with open(data_path, encoding="utf-8") as file:
                         # 解析JSON数据
                         data_json = json.load(file)
 
@@ -108,7 +108,7 @@ def start_listen(new_config, common, my_handle, platform: str, schedule_thread):
                             f"数据文件：{data_path} 中，没有 {gift_name} 对应的价值，请手动补充数据"
                         )
                         discount_price = 1
-                except Exception as e:
+                except Exception:
                     logger.error(traceback.format_exc())
                     discount_price = 1
 
@@ -170,7 +170,7 @@ def start_listen(new_config, common, my_handle, platform: str, schedule_thread):
                                 logger.info(f"切换配置文件：{config_path}")
 
                                 break
-                except Exception as e:
+                except Exception:
                     logger.error(traceback.format_exc())
 
                 pass

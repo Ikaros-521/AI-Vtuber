@@ -1,9 +1,14 @@
-import json, os
-import aiohttp, requests, ssl, asyncio
+import json
+import os
+import aiohttp
+import requests
+import ssl
+import asyncio
 from urllib.parse import urlencode
 import traceback
 from urllib.parse import urljoin
-import random, copy
+import random
+import copy
 
 from utils.common import Common
 from utils.my_log import logger
@@ -38,7 +43,7 @@ class MY_TTS:
             if not os.path.isabs(self.audio_out_path):
                 if not self.audio_out_path.startswith('./'):
                     self.audio_out_path = './' + self.audio_out_path
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             logger.error("请检查播放音频的音频输出路径配置！！！这将影响程序使用！")
 
@@ -422,7 +427,7 @@ class MY_TTS:
 
                 # data是一个字典，包含了所有需要的参数
                 data_values = list(data.values())
-                result = client.predict(fn_index=fn_index, *data_values)
+                result = client.predict(*data_values, fn_index=fn_index)
 
                 logger.debug(result)
 
@@ -439,7 +444,7 @@ class MY_TTS:
                 else:
                     logger.error("数据解析失败！Invalid index or response format.")
                     return None
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
                 # 索引超出范围
                 return None

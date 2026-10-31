@@ -50,8 +50,8 @@ def test_none_response_is_passed_through_without_touching_history(chatgpt):
 def test_sessions_are_keyed_by_str_and_reused(chatgpt):
     chatgpt.chat_with_gpt = lambda messages: "回复"
 
-    first = chatgpt.chat("一", 7)
-    second = chatgpt.chat("二", 7)
+    chatgpt.chat("一", 7)
+    chatgpt.chat("二", 7)
 
     assert list(Chatgpt.sessions) == ["7"]
     assert [m["role"] for m in Chatgpt.sessions["7"]["msg"]].count("assistant") == 2

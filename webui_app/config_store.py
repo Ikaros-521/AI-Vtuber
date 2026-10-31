@@ -43,7 +43,8 @@ def update_nested_dict(target, keys, value):
 
 def process_config_mapping(config_data, mapping, show_card_check=None):
     """处理配置映射，支持不同层级的嵌套"""
-    def recurse_mapping(current_mapping, current_path=[]):
+    def recurse_mapping(current_mapping, current_path=None):
+        current_path = [] if current_path is None else current_path
         for key, value in current_mapping.items():
             new_path = current_path + [key]
             if isinstance(value, dict):

@@ -1,7 +1,11 @@
 # 导入所需的库
-import re, random, requests, json
+import re
+import random
+import requests
+import json
 import time
-import os, glob
+import os
+import glob
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -357,7 +361,7 @@ class Common:
 
     # 本地敏感词检测 传入敏感词库文件路径和待检查的文本
     def check_sensitive_words(self, file_path, text):
-        with open(file_path, 'r', encoding='utf-8') as file:
+        with open(file_path, encoding='utf-8') as file:
             sensitive_words = [line.strip() for line in file.readlines()]
 
         for word in sensitive_words:
@@ -369,7 +373,7 @@ class Common:
 
     # 本地敏感词检测 Aho-Corasick 算法 传入敏感词库文件路径和待检查的文本
     def check_sensitive_words2(self, file_path, text):
-        with open(file_path, 'r', encoding='utf-8') as file:
+        with open(file_path, encoding='utf-8') as file:
             sensitive_words = [line.strip() for line in file.readlines()]
 
         # 创建 Aho-Corasick 自动机
@@ -392,7 +396,7 @@ class Common:
 
     # 本地敏感词转拼音检测 传入敏感词库文件路径和待检查的文本
     def check_sensitive_words3(self, file_path, text):
-        with open(file_path, 'r', encoding='utf-8') as file:
+        with open(file_path, encoding='utf-8') as file:
             sensitive_words = [line.strip() for line in file.readlines()]
 
         pinyin_text = self.text2pinyin(text)
@@ -668,7 +672,7 @@ class Common:
             logger.debug(f"template={template}")
 
             return template
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -818,10 +822,10 @@ class Common:
                     content = ""
                 return content
         
-            with open(file_path, 'r', encoding='utf-8') as file:
+            with open(file_path, encoding='utf-8') as file:
                 content = file.read()
             return content
-        except IOError as e:
+        except OSError as e:
             logger.error(f"无法写入文件:{file_path}\n{e}")
             return None
 
@@ -875,7 +879,7 @@ class Common:
         file_paths = []  # 用于存储文件绝对路径的列表
 
         # 使用 os.walk 遍历文件夹内所有文件和子文件夹
-        for root, directories, files in os.walk(folder_path):
+        for root, _directories, files in os.walk(folder_path):
             for filename in files:
                 file_path = os.path.join(root, filename)  # 获取文件的绝对路径
                 file_paths.append(file_path)
@@ -940,7 +944,7 @@ class Common:
         """
         audio_files = []
 
-        for root, dirs, files in os.walk(root_dir):
+        for root, _dirs, files in os.walk(root_dir):
             for file in files:
                 file_path = os.path.join(root, file)
                 relative_path = os.path.relpath(file_path, root_dir)
@@ -982,7 +986,7 @@ class Common:
     # 读取文件内容 它接受文件路径和返回类型参数，并根据参数返回文件内容作为字典或纯文本。如果读取文件过程中出现异常，则返回 None。
     def read_file(self, file_path: str, return_type: str):
         try:
-            with open(file_path, 'r', encoding='utf-8') as file:
+            with open(file_path, encoding='utf-8') as file:
                 content = file.read()
             
             if return_type == 'dict':
@@ -992,7 +996,7 @@ class Common:
             else:
                 logger.error("Invalid return type. Use 'dict' or 'text'.")
                 return None
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
         
@@ -1013,10 +1017,10 @@ class Common:
                 logger.info(f"写入文件:{file_path}，内容：【{content}】")
 
             return True
-        except IOError as e:
+        except OSError as e:
             logger.error(f"无法写入 【{content}】 到文件:{file_path}\n{e}")
             return False
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return False
 
@@ -1080,7 +1084,7 @@ class Common:
             
             logger.error(f"文件不存在：{file_path}")
             return False
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return False
 
@@ -1324,7 +1328,7 @@ class Common:
         try:
             pass
             # await self.send_async_request("http://124.221.164.49:8001/heartbeat", "POST", None)
-        except Exception as e:
+        except Exception:
             # logger.error(traceback.format_exc())
             # logger.error(f"请求出错: {e}")
             return None
@@ -1379,7 +1383,7 @@ class Common:
             else:
                 logger.error(ret['message'])
                 return False
-        except Exception as e:
+        except Exception:
             logger.error('web字幕打印机请求失败！请确认配置是否正确或者服务端是否运行！')
             logger.error(traceback.format_exc())
             return False
@@ -1420,7 +1424,8 @@ class Common:
 
                     logger.debug(response_data)
 
-                    resp = response_data["choices"][0]["message"]["content"]
+                    # 结构探针：响应缺少 choices[0].message.content 时抛异常，走 except 判定 key 不可用
+                    response_data["choices"][0]["message"]["content"]
 
                     logger.info("OpenAI API key 可用")
 
@@ -1633,7 +1638,7 @@ class Common:
                 return None
         except IndexError:
             logger.error(f"未找到指定的窗口：{window_title}")
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
         return None
@@ -1664,7 +1669,7 @@ class Common:
                 else:
                     break  # 如果一个摄像头索引打不开，假设后面的都不可用
             return available_cameras
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
         return []
@@ -1672,7 +1677,8 @@ class Common:
 
     def capture_image(self, img_save_path="./out/图像识别", camera_index=0):
         try:
-            import tempfile, cv2
+            import tempfile
+            import cv2
 
             cap = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
             
@@ -1717,7 +1723,7 @@ class Common:
             final_path = self.move_file(temp_path, destination_path, f"camera_{camera_index}_{cv2.getTickCount()}", "png")
             
             return final_path
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
         return None

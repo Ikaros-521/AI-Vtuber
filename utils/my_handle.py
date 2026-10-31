@@ -1,4 +1,7 @@
-import os, threading, json, random
+import os
+import threading
+import json
+import random
 import difflib
 from datetime import datetime
 import traceback
@@ -37,7 +40,7 @@ class SingletonMeta(type):
     def __call__(cls, *args, **kwargs):
         with cls._lock:
             if cls not in cls._instances:
-                cls._instances[cls] = super(SingletonMeta, cls).__call__(*args, **kwargs)
+                cls._instances[cls] = super().__call__(*args, **kwargs)
             return cls._instances[cls]
 
 
@@ -145,11 +148,11 @@ class My_handle(metaclass=SingletonMeta):
             # 配置加载
             self.config_load()
 
-            logger.info(f"配置数据加载成功。")
+            logger.info("配置数据加载成功。")
 
             # 启动定时器
             self.start_timers()
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())     
 
     # 清空 待合成消息队列|待播放音频队列
@@ -565,7 +568,7 @@ class My_handle(metaclass=SingletonMeta):
             '''
             self.db.execute(create_table_sql)
             logger.debug('创建integral（积分）表')
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             logger.error(f'数据库 {My_handle.config.get("database", "path")} 创建失败，请查看日志排查问题！！！')
 
@@ -589,7 +592,7 @@ class My_handle(metaclass=SingletonMeta):
             resp_content (str): 显示的聊天内容的文本
         """
         try:
-            if My_handle.config.get("talk", "show_chat_log") == True: 
+            if My_handle.config.get("talk", "show_chat_log") is True: 
                 if "ori_username" not in data:
                     data["ori_username"] = data["username"]
                 if "ori_content" not in data:
@@ -608,8 +611,8 @@ class My_handle(metaclass=SingletonMeta):
                 }
 
                 webui_ip = "127.0.0.1" if My_handle.config.get("webui", "ip") == "0.0.0.0" else My_handle.config.get("webui", "ip")
-                tmp_json = My_handle.common.send_request(f'http://{webui_ip}:{My_handle.config.get("webui", "port")}/callback', "POST", return_webui_json, timeout=30)
-        except Exception as e:
+                My_handle.common.send_request(f'http://{webui_ip}:{My_handle.config.get("webui", "port")}/callback', "POST", return_webui_json, timeout=30)
+        except Exception:
             logger.error(traceback.format_exc())
 
     # 获取房间号
@@ -775,7 +778,7 @@ class My_handle(metaclass=SingletonMeta):
             str: 答案文本 或 None
         """
 
-        with open(qa_file_path, 'r', encoding='utf-8') as file:
+        with open(qa_file_path, encoding='utf-8') as file:
             lines = file.readlines()
 
         q_list = [lines[i].strip() for i in range(0, len(lines), 2)]
@@ -807,7 +810,7 @@ class My_handle(metaclass=SingletonMeta):
         """
         def load_data_from_file(file_path):
             try:
-                with open(file_path, 'r', encoding='utf-8') as file:
+                with open(file_path, encoding='utf-8') as file:
                     data = json.load(file)
                     return data
             except json.JSONDecodeError:
@@ -998,7 +1001,7 @@ class My_handle(metaclass=SingletonMeta):
         # 合并字符串末尾连续的*  主要针对获取不到用户名的情况
         username = My_handle.common.merge_consecutive_asterisks(username)
 
-        if My_handle.config.get("choose_song")["enable"] == True:
+        if My_handle.config.get("choose_song")["enable"] is True:
             start_cmd = My_handle.common.starts_with_any(content, My_handle.config.get("choose_song", "start_cmd"))
             stop_cmd = My_handle.common.starts_with_any(content, My_handle.config.get("choose_song", "stop_cmd"))
             random_cmd = My_handle.common.starts_with_any(content, My_handle.config.get("choose_song", "random_cmd"))
@@ -1119,7 +1122,7 @@ class My_handle(metaclass=SingletonMeta):
             if content is None:
                 return
         
-            if My_handle.config.get("sd", "enable") == False:
+            if My_handle.config.get("sd", "enable") is False:
                 logger.info("您还未启用SD模式，无法使用画画功能")
                 return True
             else:
@@ -1326,7 +1329,7 @@ class My_handle(metaclass=SingletonMeta):
                 asyncio.run(send_msg_to_live_comment_assistant(My_handle.config.get("luoxi_project", "Live_Comment_Assistant"), content))
 
             self.audio_synthesis_handle(message)
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
     # 调教
@@ -1354,7 +1357,7 @@ class My_handle(metaclass=SingletonMeta):
                     logger.info(f"[AI回复{My_handle.config.get('talk', 'username')}]：{resp_content}")
                 else:
                     logger.warning(f"警告：{chat_type}无返回")
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
     # 弹幕日志记录
@@ -1378,7 +1381,7 @@ class My_handle(metaclass=SingletonMeta):
                     f.write(f"[{data['username']} 提问]:\n{data['content']}\n" + tmp_content)
                 elif My_handle.config.get("comment_log_type") == "回答":
                     f.write(f"[AI回复{data['username']}]:\n{resp_content_joined}\n" + tmp_content)
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
     """
@@ -1512,7 +1515,7 @@ class My_handle(metaclass=SingletonMeta):
                 self.webui_show_chat_log_callback(chat_type, data, resp_content)
 
             return resp_content
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
         return None
@@ -1884,7 +1887,7 @@ class My_handle(metaclass=SingletonMeta):
                 pass
 
             return resp_content
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
         return None
@@ -2336,7 +2339,7 @@ class My_handle(metaclass=SingletonMeta):
 
                 # TODO: 播放时的转发没有实现，因为类型定义没有这么细化
                 self.audio_synthesis_handle(message)
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
 
         # 获取一个本地音频并传递给音频合成函数进行音频播放
@@ -2354,7 +2357,7 @@ class My_handle(metaclass=SingletonMeta):
                 logger.info(f'【触发映射】播放本地音频：{tmp}')
 
                 self.audio_synthesis_handle(message)
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
 
         # 随机获取一个串口发送数据 内容
@@ -2411,7 +2414,7 @@ class My_handle(metaclass=SingletonMeta):
                 logger.error(f"获取串口名：{serial_name} 的配置信息失败，请到 串口 页面检查配置是否正确！")
             
                 return None
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
                 return None
 
@@ -2425,7 +2428,7 @@ class My_handle(metaclass=SingletonMeta):
                 tmp = random.choice(key_mapping_config["img_path"])
 
                 self.sd.set_new_img(tmp)
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
 
 
@@ -2589,7 +2592,7 @@ class My_handle(metaclass=SingletonMeta):
                                 # 判断相似度
                                 ratio = difflib.SequenceMatcher(None, content, keyword).ratio()
                                 if ratio >= similarity:
-                                    resp = My_handle.common.send_request(
+                                    My_handle.common.send_request(
                                         custom_cmd_config["api_url"], 
                                         custom_cmd_config["api_type"],
                                         resp_data_type=custom_cmd_config["resp_data_type"]
@@ -2663,7 +2666,7 @@ class My_handle(metaclass=SingletonMeta):
                     return True
                 
             return False
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return False
 
@@ -2841,7 +2844,7 @@ class My_handle(metaclass=SingletonMeta):
                     }
                 }
                 webui_ip = "127.0.0.1" if My_handle.config.get("webui", "ip") == "0.0.0.0" else My_handle.config.get("webui", "ip")
-                tmp_json = My_handle.common.send_request(f'http://{webui_ip}:{My_handle.config.get("webui", "port")}/callback', "POST", return_webui_json, timeout=10)
+                My_handle.common.send_request(f'http://{webui_ip}:{My_handle.config.get("webui", "port")}/callback', "POST", return_webui_json, timeout=10)
             
 
             # 记录数据库
@@ -2925,7 +2928,7 @@ class My_handle(metaclass=SingletonMeta):
                         My_handle.task_data["read_comment"]["data"].append(message)
                     else:
                         self.audio_synthesis_handle(message)
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
 
             # 1、本地问答库 处理
@@ -3062,7 +3065,7 @@ class My_handle(metaclass=SingletonMeta):
             self.audio_synthesis_handle(message)
 
             return message
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -3165,7 +3168,7 @@ class My_handle(metaclass=SingletonMeta):
                 self.audio_synthesis_handle(message)
 
             return message
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -3237,7 +3240,7 @@ class My_handle(metaclass=SingletonMeta):
                 self.audio_synthesis_handle(message)
 
             return message
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -3296,7 +3299,7 @@ class My_handle(metaclass=SingletonMeta):
                 self.audio_synthesis_handle(message)
 
             return message
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -3317,7 +3320,7 @@ class My_handle(metaclass=SingletonMeta):
             self.audio_synthesis_handle(message)
 
             return message
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -3505,7 +3508,7 @@ class My_handle(metaclass=SingletonMeta):
                 self.audio_synthesis_handle(message)
 
                 return message
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 
@@ -3583,7 +3586,7 @@ class My_handle(metaclass=SingletonMeta):
 
             
             self.audio_synthesis_handle(message)
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
 
 
@@ -3626,7 +3629,7 @@ class My_handle(metaclass=SingletonMeta):
                     }
                 }
                 webui_ip = "127.0.0.1" if My_handle.config.get("webui", "ip") == "0.0.0.0" else My_handle.config.get("webui", "ip")
-                tmp_json = My_handle.common.send_request(f'http://{webui_ip}:{My_handle.config.get("webui", "port")}/callback', "POST", return_webui_json, timeout=10)
+                My_handle.common.send_request(f'http://{webui_ip}:{My_handle.config.get("webui", "port")}/callback', "POST", return_webui_json, timeout=10)
             
 
             # 记录数据库
@@ -3697,7 +3700,7 @@ class My_handle(metaclass=SingletonMeta):
 
                     
                     self.audio_synthesis_handle(message)
-            except Exception as e:
+            except Exception:
                 logger.error(traceback.format_exc())
 
             # 1、本地问答库 处理
@@ -3829,7 +3832,7 @@ class My_handle(metaclass=SingletonMeta):
             self.audio_synthesis_handle(message)
 
             return message
-        except Exception as e:
+        except Exception:
             logger.error(traceback.format_exc())
             return None
 

@@ -148,9 +148,9 @@ def restart_application(config, type="webui"):
         # 先停止运行
         stop_external_program(config, type)
 
-        logger.info(f"重启webui")
+        logger.info("重启webui")
         if type == "webui":
-            ui.notify(position="top", type="ongoing", message=f"重启中...")
+            ui.notify(position="top", type="ongoing", message="重启中...")
         python = sys.executable
         os.execl(python, python, *sys.argv)  # Start a new instance of the application
     except Exception as e:
@@ -162,12 +162,12 @@ def factory(config, src_path='config.json.bak', dst_path='config.json', type="we
     """用备份配置覆盖当前配置并重启。"""
 
     try:
-        with open(src_path, 'r', encoding="utf-8") as source:
+        with open(src_path, encoding="utf-8") as source:
             with open(dst_path, 'w', encoding="utf-8") as destination:
                 destination.write(source.read())
         logger.info("恢复出厂配置成功！")
         if type == "webui":
-            ui.notify(position="top", type="positive", message=f"恢复出厂配置成功！")
+            ui.notify(position="top", type="positive", message="恢复出厂配置成功！")
 
         # 重启
         restart_application(config)
