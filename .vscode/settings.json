@@ -1,0 +1,4 @@
+{
+  // lint/format 规则统一收在 pyproject.toml [tool.ruff]，编辑器与 CLI 共用
+  "ruff.enable": true
+}
