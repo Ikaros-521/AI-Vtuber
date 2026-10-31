@@ -56,7 +56,14 @@
 
 ### 交互流水线（utils/my_handle.py）
 - `comment_handle` / `talk_handle` 统一为 `_interaction_pipeline(data, source)`，差异全部 source 门控（去重/黑名单/洛曦转发/用户名处理/念弹幕仅弹幕；build_message 类型参数化）。
+- 积分系统拆分至 `utils/integral.py`、过滤器四件套拆分至 `utils/filters.py`，My_handle 同名方法保留一行委托门面；依赖经 `handle` 实例注入，模块不反向 import my_handle。
 - My_handle 仍是单例门面，13 个平台监听器以参数注入方式调用，接口不变。
+
+### 共享状态与锁
+- `My_handle.data_lock`：护 process_data 的 timers/last_data 缓冲（短临界区）。
+- `My_handle.handle_lock`：串行化各 timer_flag 的处理器执行。
+- `My_handle.state_lock`（RLock）：护类级共享可变状态的复合操作——live_data 去重遍历+append、clear_live_data 换新、task_data 计时/切片/清空、thanks_* 轮转判空+pop。访问路径不都经过 handle_lock（周期触发定时器、/send 直调 gift/entrance/follow 都会绕开），故在状态自身加锁。**锁序约定：handle_lock → state_lock，不得反向嵌套**。
+- `Audio` 队列自带 Condition 线程安全；`copywriting_play_flag` 为 GIL 原子的纯流程控制标志，刻意不加锁（见类属性注释）。
 
 ### TTS / LLM provider 注册表
 - LLM：`utils/gpt_model/gpt.py` 的 `PROVIDERS = {name: (module, class)}` + importlib 懒加载。
@@ -90,8 +97,8 @@
 
 ## 已知的缓办项（按需推进）
 
-1. `My_handle` 类属性共享状态（live_data/task_data/thanks_* 轮转表）的多线程无锁访问——需结合播放流程设计锁序，盲目加锁有死锁风险。
-2. `Audio` 类属性共享队列/标志位同上（webui 会建第二个 `Audio(type=2)` 实例共享同一批类属性）。
-3. `my_handle` 中 integral(~400 行)/filters 物理拆分到独立模块——核心重复已由统一流水线消除，物理拆分属锦上添花。
-4. v2（webui.py/webui_app）仍在仓库中作为回退，待 v3 稳定后删除（连同其 ~114 个单测）。
-5. webui_server 响应体尚无 `response_model` 声明（信封结构由测试锁定）。
+1. v2（webui.py/webui_app）仍在仓库中作为回退，待 v3 稳定后删除（连同其 ~114 个单测）。
+2. webui_server 响应体尚无 `response_model` 声明（信封结构由测试锁定）。
+3. `Audio` 多实例共享类属性（webui 同进程建第二个 `Audio(type=2)` 时共享队列/标志位）——当前 main 与 webui 分进程运行，实际不触发；若未来同进程嵌入需改造为实例属性。
+
+> 已完成：~~共享状态加锁~~（state_lock，2026-10-31）、~~integral/filters 拆分~~（utils/integral.py + utils/filters.py）。
