@@ -26,39 +26,40 @@ _TTS_EARLY_EXIT = object()
 
 
 class Audio:
-    # 文案播放标志 0手动暂停 1临时暂停  2循环播放
-    # 线程模型说明：int 的读/写在 CPython GIL 下原子，且该标志只作播放流程控制
-    # （早到/晚到一个周期最多影响一次播报节奏，不影响数据正确性），刻意不加锁；
-    # 队列类共享状态（message_queue / voice_tmp_path_queue）自带 Condition 线程安全。
-    copywriting_play_flag = -1
+    """音频合成与播放编排。
 
-    # pygame.mixer实例
-    mixer_normal = None
-    mixer_copywriting = None
+    线程模型说明：队列（message_queue / voice_tmp_path_queue）与 Condition、
+    mixer、播放标志等全部是实例属性（2026-10-31 起从类属性改造而来——
+    以前同进程建第二个实例（如 webui 的文案试听 Audio(type=2)）会与前一个
+    实例共享队列/标志位互相污染；现在每个实例各持一份）。
+    copywriting_play_flag 的读写在 CPython GIL 下原子，且只作播放流程控制，
+    刻意不加锁。
+    """
 
-    # 全局变量用于保存恢复文案播放计时器对象
-    unpause_copywriting_play_timer = None
-
-    audio_player = None
-
-    # 消息列表，存储待合成音频的json数据
-    message_queue = []
-    message_queue_lock = threading.Lock()
-    message_queue_not_empty = threading.Condition(lock=message_queue_lock)
-    # 创建待播放音频路径队列
-    voice_tmp_path_queue = []
-    voice_tmp_path_queue_lock = threading.Lock()
-    voice_tmp_path_queue_not_empty = threading.Condition(lock=voice_tmp_path_queue_lock)
-    # # 文案单独一个线程排队播放
-    # only_play_copywriting_thread = None
-
-    # 第一次触发voice_tmp_path_queue_not_empty标志
-    voice_tmp_path_queue_not_empty_flag = False
-
-    # 异常报警数据
-    abnormal_alarm_data = alarm.new_state()
+    def _init_state(self):
+        # 文案播放标志 0手动暂停 1临时暂停  2循环播放
+        self.copywriting_play_flag = -1
+        # pygame.mixer实例
+        self.mixer_normal = None
+        self.mixer_copywriting = None
+        # 保存恢复文案播放计时器对象
+        self.unpause_copywriting_play_timer = None
+        self.audio_player = None
+        # 消息列表，存储待合成音频的json数据
+        self.message_queue = []
+        self.message_queue_lock = threading.Lock()
+        self.message_queue_not_empty = threading.Condition(lock=self.message_queue_lock)
+        # 待播放音频路径队列
+        self.voice_tmp_path_queue = []
+        self.voice_tmp_path_queue_lock = threading.Lock()
+        self.voice_tmp_path_queue_not_empty = threading.Condition(lock=self.voice_tmp_path_queue_lock)
+        # 第一次触发voice_tmp_path_queue_not_empty标志
+        self.voice_tmp_path_queue_not_empty_flag = False
+        # 异常报警数据
+        self.abnormal_alarm_data = alarm.new_state()
 
     def __init__(self, config_path, type=1):
+        self._init_state()
         self.config_path = config_path
         self.config = Config(config_path)
         self.common = Common()
@@ -76,8 +77,8 @@ class Audio:
             # 弹幕音频和文案音频各占一个 channel。以前这两个都指向 pygame.mixer 模块
             # 本身，也就是共用 mixer.music 那一条全局流，"暂停文案"会连正在播的
             # 弹幕回复一起暂停。
-            Audio.mixer_normal = PlaybackStream(0)
-            Audio.mixer_copywriting = PlaybackStream(1)
+            self.mixer_normal = PlaybackStream(0)
+            self.mixer_copywriting = PlaybackStream(1)
 
         # 旧版同步写法
         # threading.Thread(target=self.message_queue_thread).start()
@@ -95,7 +96,7 @@ class Audio:
             self.only_play_copywriting_thread = threading.Thread(target=self.start_only_play_copywriting)
             self.only_play_copywriting_thread.start()
 
-        Audio.audio_player = AUDIO_PLAYER(self.config.get("audio_player"))
+        self.audio_player = AUDIO_PLAYER(self.config.get("audio_player"))
 
     # 清空 待合成消息队列|待播放音频队列
     def clear_queue(self, type: str = "message_queue"):
@@ -109,16 +110,16 @@ class Audio:
         """
         try:
             if type == "voice_tmp_path_queue":
-                if len(Audio.voice_tmp_path_queue) == 0:
+                if len(self.voice_tmp_path_queue) == 0:
                     return True
                 with self.voice_tmp_path_queue_lock:
-                    Audio.voice_tmp_path_queue.clear()
+                    self.voice_tmp_path_queue.clear()
                 return True
             elif type == "message_queue":
-                if len(Audio.message_queue) == 0:
+                if len(self.message_queue) == 0:
                     return True
                 with self.message_queue_lock:
-                    Audio.message_queue.clear()
+                    self.message_queue.clear()
                 return True
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -130,10 +131,10 @@ class Audio:
         try:
             if type == "pygame":
                 if mixer_normal:
-                    Audio.mixer_normal.music.stop()
+                    self.mixer_normal.music.stop()
                     logger.info("停止普通音频播放")
                 if mixer_copywriting:
-                    Audio.mixer_copywriting.music.stop()
+                    self.mixer_copywriting.music.stop()
                     logger.info("停止文案音频播放")
                 return True
         except Exception as e:
@@ -146,9 +147,9 @@ class Audio:
         # 阈值按「有没有传」判断，不能按真值判断：传 0 是有意义的，greater=0 就是
         # 「队列非空」，写成 if greater 会把 0 当成没传，整条判断被跳过
         if type == "voice_tmp_path_queue":
-            queue = Audio.voice_tmp_path_queue
+            queue = self.voice_tmp_path_queue
         elif type == "message_queue":
-            queue = Audio.message_queue
+            queue = self.message_queue
         else:
             return False
 
@@ -162,8 +163,8 @@ class Audio:
 
     def get_audio_info(self):
         return {
-            "wait_play_audio_num": len(Audio.voice_tmp_path_queue),
-            "wait_synthesis_msg_num": len(Audio.message_queue),
+            "wait_play_audio_num": len(self.voice_tmp_path_queue),
+            "wait_synthesis_msg_num": len(self.message_queue),
         }
 
     # 判断等待合成和已经合成的队列是否为空
@@ -179,11 +180,11 @@ class Audio:
           那个服务只暴露 play/pause/resume/skip/get_list/clear，没有「在不在播」，
           所以只能退化成看队列（外加外接项目报回来的 wait_play_audio_num）。
         """
-        if len(Audio.message_queue) or len(Audio.voice_tmp_path_queue):
+        if len(self.message_queue) or len(self.voice_tmp_path_queue):
             return True
 
         if self.config.get("play_audio", "player") in ["pygame"]:
-            return bool(Audio.mixer_normal.music.get_busy() or Audio.mixer_copywriting.music.get_busy())
+            return bool(self.mixer_normal.music.get_busy() or self.mixer_copywriting.music.get_busy())
 
         return my_global.wait_play_audio_num > 0
 
@@ -256,11 +257,11 @@ class Audio:
         while True:  # 无限循环，直到队列为空时退出
             try:
                 # 获取线程锁，避免同时操作
-                with Audio.message_queue_lock:
-                    while not Audio.message_queue:
+                with self.message_queue_lock:
+                    while not self.message_queue:
                         # 消费者在消费完一个消息后，如果列表为空，则调用wait()方法阻塞自己，直到有新消息到来
-                        Audio.message_queue_not_empty.wait()  # 阻塞直到列表非空
-                    message = Audio.message_queue.pop(0)
+                        self.message_queue_not_empty.wait()  # 阻塞直到列表非空
+                    message = self.message_queue.pop(0)
                 logger.debug(message)
 
                 # 此处的message数据，是等待合成音频的数据，此数据经过了优先级排队在此线程中被取出，即将进行音频合成。
@@ -283,10 +284,10 @@ class Audio:
                     # 合成音频并插入待播放队列
                     await self.my_play_voice(message)
 
-                # message = Audio.message_queue.get(block=True)
+                # message = self.message_queue.get(block=True)
                 # logger.debug(message)
                 # await self.my_play_voice(message)
-                # Audio.message_queue.task_done()
+                # self.message_queue.task_done()
 
                 # 加个延时 降低点edge-tts的压力
                 # await asyncio.sleep(0.5)
@@ -533,7 +534,7 @@ class Audio:
             assistant_anchor_text 助播-文本
             assistant_anchor_audio 助播-音频
         """
-        logger.debug(f"message_queue: {Audio.message_queue}")
+        logger.debug(f"message_queue: {self.message_queue}")
         logger.debug(f"data_json: {data_json}")
 
         # 定义 type 到优先级的映射，相同优先级的 type 映射到相同的值，值越大优先级越高
@@ -553,12 +554,12 @@ class Audio:
 
             # 如果新数据没有 'type' 键或其类型不在 priority_mapping 中，直接插入到末尾
             if new_data_priority is None:
-                insert_position = len(Audio.message_queue)
+                insert_position = len(self.message_queue)
             else:
                 insert_position = 0  # 默认插入到列表开头
                 # 从列表的最后一个元素开始，向前遍历列表，直到第一个元素
-                for i in range(len(Audio.message_queue) - 1, -1, -1):
-                    priority_level = get_priority_level(Audio.message_queue[i])
+                for i in range(len(self.message_queue) - 1, -1, -1):
+                    priority_level = get_priority_level(self.message_queue[i])
                     if priority_level is not None:
                         item_priority = int(priority_level)
                         # 确保比较时排除未定义类型的元素
@@ -575,11 +576,11 @@ class Audio:
                 return {"code": 1, "msg": f"message_queue 已满，数据丢弃：【{data_json['content']}】"}
 
             # 获取线程锁，避免同时操作
-            with Audio.message_queue_lock:
+            with self.message_queue_lock:
                 # 在计算出的位置插入新数据
-                Audio.message_queue.insert(insert_position, data_json)
+                self.message_queue.insert(insert_position, data_json)
                 # 生产者通过notify()通知消费者列表中有新的消息
-                Audio.message_queue_not_empty.notify()
+                self.message_queue_not_empty.notify()
 
             return {"code": 200, "msg": f"数据已插入到位置 {insert_position}"}
         else:
@@ -587,12 +588,12 @@ class Audio:
 
             # 如果新数据没有 'type' 键或其类型不在 priority_mapping 中，直接插入到末尾
             if new_data_priority is None:
-                insert_position = len(Audio.voice_tmp_path_queue)
+                insert_position = len(self.voice_tmp_path_queue)
             else:
                 insert_position = 0  # 默认插入到列表开头
                 # 从列表的最后一个元素开始，向前遍历列表，直到第一个元素
-                for i in range(len(Audio.voice_tmp_path_queue) - 1, -1, -1):
-                    priority_level = get_priority_level(Audio.voice_tmp_path_queue[i])
+                for i in range(len(self.voice_tmp_path_queue) - 1, -1, -1):
+                    priority_level = get_priority_level(self.voice_tmp_path_queue[i])
                     if priority_level is not None:
                         item_priority = int(priority_level)
                         # 确保比较时排除未定义类型的元素
@@ -609,23 +610,23 @@ class Audio:
                 return {"code": 1, "msg": f"voice_tmp_path_queue 已满，音频丢弃：【{data_json['voice_path']}】"}
 
             # 获取线程锁，避免同时操作
-            with Audio.voice_tmp_path_queue_lock:
+            with self.voice_tmp_path_queue_lock:
                 # 在计算出的位置插入新数据
-                Audio.voice_tmp_path_queue.insert(insert_position, data_json)
+                self.voice_tmp_path_queue.insert(insert_position, data_json)
 
                 # 待播放音频数量大于首次播放阈值 且 处于首次播放情况下：
                 if (
-                    len(Audio.voice_tmp_path_queue)
+                    len(self.voice_tmp_path_queue)
                     >= int(self.config.get("filter", "voice_tmp_path_queue_min_start_play"))
-                    and Audio.voice_tmp_path_queue_not_empty_flag is False
+                    and self.voice_tmp_path_queue_not_empty_flag is False
                 ):
-                    Audio.voice_tmp_path_queue_not_empty_flag = True
+                    self.voice_tmp_path_queue_not_empty_flag = True
                     # 生产者通过notify()通知消费者列表中有新的消息
-                    Audio.voice_tmp_path_queue_not_empty.notify()
+                    self.voice_tmp_path_queue_not_empty.notify()
                 # 非首次触发情况下，有数据就触发消费者播放
-                elif Audio.voice_tmp_path_queue_not_empty_flag:
+                elif self.voice_tmp_path_queue_not_empty_flag:
                     # 生产者通过notify()通知消费者列表中有新的消息
-                    Audio.voice_tmp_path_queue_not_empty.notify()
+                    self.voice_tmp_path_queue_not_empty.notify()
 
             return {"code": 200, "msg": f"音频已插入到位置 {insert_position}"}
 
@@ -1066,7 +1067,7 @@ class Audio:
         return voice_tmp_path
 
     async def _tts_none(self, message):
-        # Audio.voice_tmp_path_queue.put(message)
+        # self.voice_tmp_path_queue.put(message)
         return None
 
     # TTS 分发注册表：tts_type → 处理方法（对齐 gpt_model 的 PROVIDERS 注册表模式）。
@@ -1105,9 +1106,9 @@ class Audio:
                     "type": "audio_playback_completed",
                     "data": {
                         # 待播放音频数量
-                        "wait_play_audio_num": len(Audio.voice_tmp_path_queue),
+                        "wait_play_audio_num": len(self.voice_tmp_path_queue),
                         # 待合成音频的消息数量
-                        "wait_synthesis_msg_num": len(Audio.message_queue),
+                        "wait_synthesis_msg_num": len(self.message_queue),
                     },
                 }
 
@@ -1279,7 +1280,7 @@ class Audio:
         try:
             try:
                 if self.config.get("play_audio", "player") in ["pygame"]:
-                    Audio.mixer_normal.init()
+                    self.mixer_normal.init()
             except Exception:
                 logger.error(traceback.format_exc())
                 logger.error("pygame mixer_normal初始化失败，普通音频将无法正常播放，请检查声卡是否正常！")
@@ -1287,22 +1288,22 @@ class Audio:
             while True:
                 try:
                     # 获取线程锁，避免同时操作
-                    with Audio.voice_tmp_path_queue_lock:
-                        while not Audio.voice_tmp_path_queue:
+                    with self.voice_tmp_path_queue_lock:
+                        while not self.voice_tmp_path_queue:
                             # 消费者在消费完一个消息后，如果列表为空，则调用wait()方法阻塞自己，直到有新消息到来
-                            Audio.voice_tmp_path_queue_not_empty.wait()  # 阻塞直到列表非空
-                        data_json = Audio.voice_tmp_path_queue.pop(0)
+                            self.voice_tmp_path_queue_not_empty.wait()  # 阻塞直到列表非空
+                        data_json = self.voice_tmp_path_queue.pop(0)
 
                     logger.debug(f"普通音频播放队列 即将播放音频 data_json={data_json}")
 
                     voice_tmp_path = data_json["voice_path"]
 
                     # 如果文案标志位为2，则说明在播放中，需要暂停
-                    if Audio.copywriting_play_flag == 2:
+                    if self.copywriting_play_flag == 2:
                         logger.debug("暂停文案播放，等待一个切换间隔")
                         # 文案暂停
                         self.pause_copywriting_play()
-                        Audio.copywriting_play_flag = 1
+                        self.copywriting_play_flag = 1
                         # 等待一个切换时间
                         await asyncio.sleep(float(self.config.get("copywriting", "switching_interval")))
                         logger.debug("切换间隔结束，准备播放普通音频")
@@ -1402,18 +1403,18 @@ class Audio:
                                     "random_speed": {"enable": False, "max": 1.3, "min": 0.8},
                                     "speed": 1,
                                 }
-                            Audio.audio_player.play(data_json)
+                            self.audio_player.play(data_json)
                         else:
                             logger.debug(f"voice_tmp_path={voice_tmp_path}")
                             import pygame
 
                             try:
                                 # 使用pygame播放音频
-                                Audio.mixer_normal.music.load(voice_tmp_path)
-                                Audio.mixer_normal.music.play()
-                                while Audio.mixer_normal.music.get_busy():
+                                self.mixer_normal.music.load(voice_tmp_path)
+                                self.mixer_normal.music.play()
+                                while self.mixer_normal.music.get_busy():
                                     pygame.time.Clock().tick(10)
-                                Audio.mixer_normal.music.stop()
+                                self.mixer_normal.music.stop()
 
                                 await self.send_audio_play_info_to_callback()
                             except Exception:
@@ -1438,19 +1439,19 @@ class Audio:
                     # 文案被暂停时 get_busy() 仍为真，文案线程会一直在 while 里等，
                     # 录音闸门也跟着一直关着；以前共用一条 music 流时"暂停"会被当成
                     # 播完、自动往下走，所以漏排一次不明显。现在漏排就是永久静音。
-                    if Audio.copywriting_play_flag == 1:
+                    if self.copywriting_play_flag == 1:
                         # 延时执行恢复文案播放
                         self.delayed_execution_unpause_copywriting_play()
-            Audio.mixer_normal.quit()
+            self.mixer_normal.quit()
         except Exception:
             logger.error(traceback.format_exc())
 
     # 停止当前播放的音频
     def stop_current_audio(self):
         if self.config.get("play_audio", "player") == "audio_player":
-            Audio.audio_player.skip_current_stream()
+            self.audio_player.skip_current_stream()
         else:
-            Audio.mixer_normal.music.fadeout(1000)
+            self.mixer_normal.music.fadeout(1000)
 
     r"""
                                                      ./@\]                    
@@ -1473,14 +1474,14 @@ class Audio:
     # 延时执行恢复文案播放
     def delayed_execution_unpause_copywriting_play(self):
         # 如果已经有计时器在运行，则取消之前的计时器
-        if Audio.unpause_copywriting_play_timer is not None and Audio.unpause_copywriting_play_timer.is_alive():
-            Audio.unpause_copywriting_play_timer.cancel()
+        if self.unpause_copywriting_play_timer is not None and self.unpause_copywriting_play_timer.is_alive():
+            self.unpause_copywriting_play_timer.cancel()
 
         # 创建新的计时器并启动
-        Audio.unpause_copywriting_play_timer = threading.Timer(
+        self.unpause_copywriting_play_timer = threading.Timer(
             float(self.config.get("copywriting", "switching_interval")), self.unpause_copywriting_play
         )
-        Audio.unpause_copywriting_play_timer.start()
+        self.unpause_copywriting_play_timer.start()
 
     # 只进行文案播放 正经版
     def start_only_play_copywriting(self):
@@ -1493,7 +1494,7 @@ class Audio:
         try:
             try:
                 if self.config.get("play_audio", "player") in ["pygame"]:
-                    Audio.mixer_copywriting.init()
+                    self.mixer_copywriting.init()
             except Exception:
                 logger.error(traceback.format_exc())
                 logger.error("pygame mixer_copywriting初始化失败，文案音频将无法正常播放，请检查声卡是否正常！")
@@ -1527,17 +1528,17 @@ class Audio:
                             "random_speed": {"enable": False, "max": 1.3, "min": 0.8},
                             "speed": 1,
                         }
-                        Audio.audio_player.play(data_json)
+                        self.audio_player.play(data_json)
                     else:
                         import pygame
 
                         try:
                             # 使用pygame播放音频
-                            Audio.mixer_copywriting.music.load(audio_path)
-                            Audio.mixer_copywriting.music.play()
-                            while Audio.mixer_copywriting.music.get_busy():
+                            self.mixer_copywriting.music.load(audio_path)
+                            self.mixer_copywriting.music.play()
+                            while self.mixer_copywriting.music.get_busy():
                                 pygame.time.Clock().tick(10)
-                            Audio.mixer_copywriting.music.stop()
+                            self.mixer_copywriting.music.stop()
 
                             await self.send_audio_play_info_to_callback()
                         except Exception:
@@ -1620,10 +1621,10 @@ class Audio:
                 )
 
                 while True:
-                    # print(f"Audio.copywriting_play_flag={Audio.copywriting_play_flag}")
+                    # print(f"self.copywriting_play_flag={self.copywriting_play_flag}")
 
                     # 判断播放标志位
-                    if Audio.copywriting_play_flag in [0, 1, -1]:
+                    if self.copywriting_play_flag in [0, 1, -1]:
                         await asyncio.sleep(
                             float(self.config.get("copywriting", "audio_interval"))
                         )  # 添加延迟减少循环频率
@@ -1636,8 +1637,8 @@ class Audio:
                         # print(f"play_list_arr={play_list_arr}")
 
                         # 判断播放标志位 防止播放过程中无法暂停
-                        if Audio.copywriting_play_flag in [0, 1, -1]:
-                            # print(f"Audio.copywriting_play_flag={Audio.copywriting_play_flag}")
+                        if self.copywriting_play_flag in [0, 1, -1]:
+                            # print(f"self.copywriting_play_flag={self.copywriting_play_flag}")
                             file_path_arr, audio_path_arr, play_list_arr, continuous_play_num_arr, max_play_time_arr = (
                                 all_data_reload(
                                     file_path_arr,
@@ -1660,7 +1661,7 @@ class Audio:
                         for _ in range(0, continuous_play_num_arr[index]):
                             # print(f"continuous_play_num_arr[index]={continuous_play_num_arr[index]}")
                             # 判断播放标志位 防止播放过程中无法暂停
-                            if Audio.copywriting_play_flag in [0, 1, -1]:
+                            if self.copywriting_play_flag in [0, 1, -1]:
                                 (
                                     file_path_arr,
                                     audio_path_arr,
@@ -1703,34 +1704,34 @@ class Audio:
                 logger.error(traceback.format_exc())
 
             if self.config.get("play_audio", "player") in ["pygame"]:
-                Audio.mixer_copywriting.quit()
+                self.mixer_copywriting.quit()
         except Exception:
             logger.error(traceback.format_exc())
 
     # 暂停文案播放
     def pause_copywriting_play(self):
         logger.info("暂停文案播放")
-        Audio.copywriting_play_flag = 0
+        self.copywriting_play_flag = 0
         if self.config.get("play_audio", "player") == "audio_player":
             pass
-            Audio.audio_player.pause_stream()
+            self.audio_player.pause_stream()
         # 由于v2的暂停不会更换音频，所以这个只暂停文案就没有意义了
         elif self.config.get("play_audio", "player") == "audio_player_v2":
             pass
-            # Audio.audio_player.pause_stream()
+            # self.audio_player.pause_stream()
         else:
-            Audio.mixer_copywriting.music.pause()
+            self.mixer_copywriting.music.pause()
 
     # 恢复暂停文案播放
     def unpause_copywriting_play(self):
         logger.info("恢复文案播放")
-        Audio.copywriting_play_flag = 2
-        # print(f"Audio.copywriting_play_flag={Audio.copywriting_play_flag}")
+        self.copywriting_play_flag = 2
+        # print(f"self.copywriting_play_flag={self.copywriting_play_flag}")
         if self.config.get("play_audio", "player") in ["audio_player", "audio_player_v2"]:
             pass
-            Audio.audio_player.resume_stream()
+            self.audio_player.resume_stream()
         else:
-            Audio.mixer_copywriting.music.unpause()
+            self.mixer_copywriting.music.unpause()
 
     # 合并文案音频文件
     def merge_audio_files(self, directory, base_filename, last_index, pause_duration=1, format="wav"):
@@ -2127,4 +2128,4 @@ class Audio:
     def abnormal_alarm_handle(self, type):
         """异常报警，判定与播报逻辑在 utils/alarm.py（与 My_handle 共用）"""
 
-        return alarm.report_error(Audio.abnormal_alarm_data, type, self.config, self.common, self.audio_synthesis)
+        return alarm.report_error(self.abnormal_alarm_data, type, self.config, self.common, self.audio_synthesis)

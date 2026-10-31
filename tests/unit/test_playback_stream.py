@@ -31,13 +31,6 @@ def _tone(path, seconds, rate=8000):
     return str(path)
 
 
-@pytest.fixture(autouse=True)
-def restore_audio_mixers():
-    normal, copywriting = Audio.mixer_normal, Audio.mixer_copywriting
-    yield
-    Audio.mixer_normal, Audio.mixer_copywriting = normal, copywriting
-
-
 @pytest.fixture(scope="module")
 def mixer_ready():
     pygame.mixer.init()
@@ -83,13 +76,13 @@ def test_the_two_streams_are_different_objects(tmp_path, monkeypatch):
 
     # 只验证构造时的接线，别真把播放线程拉起来
     monkeypatch.setattr("utils.audio.threading.Thread", _NoThread)
-    Audio(str(path), type=1)
+    audio = Audio(str(path), type=1)
 
-    assert Audio.mixer_normal is not Audio.mixer_copywriting
-    assert Audio.mixer_normal is not pygame.mixer
-    assert Audio.mixer_copywriting is not pygame.mixer
-    assert Audio.mixer_normal._channel_index == 0
-    assert Audio.mixer_copywriting._channel_index == 1
+    assert audio.mixer_normal is not audio.mixer_copywriting
+    assert audio.mixer_normal is not pygame.mixer
+    assert audio.mixer_copywriting is not pygame.mixer
+    assert audio.mixer_normal._channel_index == 0
+    assert audio.mixer_copywriting._channel_index == 1
 
 
 def test_pausing_copywriting_leaves_the_reply_stream_playing(streams):
