@@ -21,6 +21,10 @@ from utils.audio_handle.playback_stream import PlaybackStream
 import utils.my_global as my_global
 
 
+# TTS 处理器提前退出的哨兵：tts_handle 立即返回 None（elevenlabs 本地直接播放的场景）
+_TTS_EARLY_EXIT = object()
+
+
 class Audio:
     # 文案播放标志 0手动暂停 1临时暂停  2循环播放
     copywriting_play_flag = -1
@@ -776,255 +780,14 @@ class Audio:
         """
 
         try:
-            if message["tts_type"] == "vits":
-                # 语言检测
-                language = self.common.lang_check(message["content"])
-
-                logger.debug(f"message['content']={message['content']}")
-
-                # 自定义语言名称（需要匹配请求解析）
-                language_name_dict = {"en": "英文", "zh": "中文", "jp": "日文"}
-
-                if language in language_name_dict:
-                    language = language_name_dict[language]
-                else:
-                    language = "自动"  # 无法识别出语言代码时的默认值
-
-                # logger.info("language=" + language)
-
-                data = {
-                    "type": message["data"]["type"],
-                    "api_ip_port": message["data"]["api_ip_port"],
-                    "id": message["data"]["id"],
-                    "format": message["data"]["format"],
-                    "lang": language,
-                    "length": message["data"]["length"],
-                    "noise": message["data"]["noise"],
-                    "noisew": message["data"]["noisew"],
-                    "max": message["data"]["max"],
-                    "sdp_radio": message["data"]["sdp_radio"],
-                    "content": message["content"],
-                    "gpt_sovits": message["data"]["gpt_sovits"],
-                }
-
-                # 调用接口合成语音
-                voice_tmp_path = await self.my_tts.vits_api(data)
-
-            elif message["tts_type"] == "bert_vits2":
-                if message["data"]["language"] == "auto":
-                    # 自动检测语言
-                    language = self.common.lang_check(message["content"])
-
-                    logger.debug(f"language={language}")
-
-                    # 自定义语言名称（需要匹配请求解析）
-                    language_name_dict = {"en": "EN", "zh": "ZH", "ja": "JP"}
-
-                    if language in language_name_dict:
-                        language = language_name_dict[language]
-                    else:
-                        language = "ZH"  # 无法识别出语言代码时的默认值
-                else:
-                    language = message["data"]["language"]
-
-                data = {
-                    "api_ip_port": message["data"]["api_ip_port"],
-                    "type": message["data"]["type"],
-                    "model_id": message["data"]["model_id"],
-                    "speaker_name": message["data"]["speaker_name"],
-                    "speaker_id": message["data"]["speaker_id"],
-                    "language": language,
-                    "length": message["data"]["length"],
-                    "noise": message["data"]["noise"],
-                    "noisew": message["data"]["noisew"],
-                    "sdp_radio": message["data"]["sdp_radio"],
-                    "auto_translate": message["data"]["auto_translate"],
-                    "auto_split": message["data"]["auto_split"],
-                    "emotion": message["data"]["emotion"],
-                    "style_text": message["data"]["style_text"],
-                    "style_weight": message["data"]["style_weight"],
-                    "刘悦-中文特化API": message["data"]["刘悦-中文特化API"],
-                    "content": message["content"],
-                }
-
-                # 调用接口合成语音
-                voice_tmp_path = await self.my_tts.bert_vits2_api(data)
-
-            elif message["tts_type"] == "vits_fast":
-                if message["data"]["language"] == "自动识别":
-                    # 自动检测语言
-                    language = self.common.lang_check(message["content"])
-
-                    logger.debug(f"language={language}")
-
-                    # 自定义语言名称（需要匹配请求解析）
-                    language_name_dict = {"en": "English", "zh": "简体中文", "ja": "日本語"}
-
-                    if language in language_name_dict:
-                        language = language_name_dict[language]
-                    else:
-                        language = "简体中文"  # 无法识别出语言代码时的默认值
-                else:
-                    language = message["data"]["language"]
-
-                # logger.info("language=" + language)
-
-                data = {
-                    "api_ip_port": message["data"]["api_ip_port"],
-                    "character": message["data"]["character"],
-                    "speed": message["data"]["speed"],
-                    "language": language,
-                    "content": message["content"],
-                }
-
-                # 调用接口合成语音
-                voice_tmp_path = self.my_tts.vits_fast_api(data)
-                # logger.info(data_json)
-            elif message["tts_type"] == "edge-tts":
-                data = {"content": message["content"], "edge-tts": message["data"]}
-
-                # 调用接口合成语音
-                voice_tmp_path = await self.my_tts.edge_tts_api(data)
-            elif message["tts_type"] == "elevenlabs":
-                from elevenlabs import generate, play, set_api_key
-
-                # 如果配置了密钥就设置上0.0
-                if message["data"]["api_key"] != "":
-                    set_api_key(message["data"]["api_key"])
-
-                audio = generate(
-                    text=message["content"], voice=message["data"]["voice"], model=message["data"]["model"]
-                )
-
-                play(audio)
-                logger.info(f"elevenlabs合成内容：【{message['content']}】")
-
-                return
-
-            elif message["tts_type"] == "openai_tts":
-                data = {
-                    "type": message["data"]["type"],
-                    "api_ip_port": message["data"]["api_ip_port"],
-                    "model": message["data"]["model"],
-                    "voice": message["data"]["voice"],
-                    "api_key": message["data"]["api_key"],
-                    "content": message["content"],
-                }
-
-                # 调用接口合成语音
-                voice_tmp_path = self.my_tts.openai_tts_api(data)
-
-            elif message["tts_type"] == "gradio_tts":
-                data = {"request_parameters": message["data"]["request_parameters"], "content": message["content"]}
-
-                voice_tmp_path = self.my_tts.gradio_tts_api(data)
-            elif message["tts_type"] == "gpt_sovits":
-                if message["data"]["language"] == "自动识别":
-                    # 自动检测语言
-                    language = self.common.lang_check(message["content"])
-
-                    logger.debug(f"language={language}")
-
-                    # 自定义语言名称（需要匹配请求解析）
-                    language_name_dict = {"en": "英文", "zh": "中文", "ja": "日文"}
-
-                    if language in language_name_dict:
-                        language = language_name_dict[language]
-                    else:
-                        language = "中文"  # 无法识别出语言代码时的默认值
-                else:
-                    language = message["data"]["language"]
-
-                if message["data"]["api_0322"]["text_lang"] == "自动识别":
-                    # 自动检测语言
-                    language = self.common.lang_check(message["content"])
-
-                    logger.debug(f"language={language}")
-
-                    # 自定义语言名称（需要匹配请求解析）
-                    language_name_dict = {"en": "英文", "zh": "中文", "ja": "日文"}
-
-                    if language in language_name_dict:
-                        message["data"]["api_0322"]["text_lang"] = language_name_dict[language]
-                    else:
-                        message["data"]["api_0322"]["text_lang"] = "中文"  # 无法识别出语言代码时的默认值
-
-                if message["data"]["api_0706"]["text_language"] == "自动识别":
-                    message["data"]["api_0706"]["text_language"] = "auto"
-
-                data = {
-                    "type": message["data"]["type"],
-                    "gradio_ip_port": message["data"]["gradio_ip_port"],
-                    "api_ip_port": message["data"]["api_ip_port"],
-                    "ref_audio_path": message["data"]["ref_audio_path"],
-                    "prompt_text": message["data"]["prompt_text"],
-                    "prompt_language": message["data"]["prompt_language"],
-                    "language": language,
-                    "cut": message["data"]["cut"],
-                    "api_0322": message["data"]["api_0322"],
-                    "api_0706": message["data"]["api_0706"],
-                    "v2_api_0821": message["data"]["v2_api_0821"],
-                    "webtts": message["data"]["webtts"],
-                    "content": message["content"],
-                }
-
-                voice_tmp_path = await self.my_tts.gpt_sovits_api(data)
-
-            elif message["tts_type"] == "azure_tts":
-                data = {
-                    "subscription_key": message["data"]["subscription_key"],
-                    "region": message["data"]["region"],
-                    "voice_name": message["data"]["voice_name"],
-                    "content": message["content"],
-                }
-
-                voice_tmp_path = self.my_tts.azure_tts_api(data)
-
-            elif message["tts_type"] == "cosyvoice":
-                logger.debug(message)
-                data = {
-                    "type": message["data"]["type"],
-                    "gradio_ip_port": message["data"]["gradio_ip_port"],
-                    "api_ip_port": message["data"]["api_ip_port"],
-                    "gradio_0707": message["data"]["gradio_0707"],
-                    "api_0819": message["data"]["api_0819"],
-                    "content": message["content"],
-                }
-
-                voice_tmp_path = await self.my_tts.cosyvoice_api(data)
-            elif message["tts_type"] == "f5_tts":
-                logger.debug(message)
-                data = {
-                    "type": message["data"]["type"],
-                    "gradio_ip_port": message["data"]["gradio_ip_port"],
-                    "ref_audio_orig": message["data"]["ref_audio_orig"],
-                    "ref_text": message["data"]["ref_text"],
-                    "model": message["data"]["model"],
-                    "remove_silence": message["data"]["remove_silence"],
-                    "cross_fade_duration": message["data"]["cross_fade_duration"],
-                    "speed": message["data"]["speed"],
-                    "content": message["content"],
-                }
-
-                voice_tmp_path = await self.my_tts.f5_tts_api(data)
-            elif message["tts_type"] == "multitts":
-                data = {"content": message["content"], "multitts": message["data"]}
-
-                voice_tmp_path = await self.my_tts.multitts_api(data)
-            elif message["tts_type"] == "melotts":
-                data = {"content": message["content"], "melotts": message["data"]}
-
-                voice_tmp_path = await self.my_tts.melotts_api(data)
-            elif message["tts_type"] == "index_tts":
-                data = {
-                    "content": message["content"],
-                    "index_tts": message["data"],
-                }
-
-                voice_tmp_path = await self.my_tts.index_tts_api(data)
-            elif message["tts_type"] == "none":
-                # Audio.voice_tmp_path_queue.put(message)
-                voice_tmp_path = None
+            handler = self._TTS_HANDLERS.get(message["tts_type"])
+            if handler is None:
+                # 未知类型：老实现里 voice_tmp_path 未定义会 NameError 进 except，等价
+                raise ValueError(f"未知的TTS类型: {message['tts_type']}")
+            ret = await handler(self, message)
+            if ret is _TTS_EARLY_EXIT:
+                return None
+            voice_tmp_path = ret
 
             message["result"] = {"code": 200, "msg": "合成成功", "audio_path": voice_tmp_path}
         except Exception as e:
@@ -1032,6 +795,296 @@ class Audio:
             message["result"] = {"code": -1, "msg": f"合成失败，{e}", "audio_path": None}
 
         return message
+
+    async def _tts_vits(self, message):
+        # 语言检测
+        language = self.common.lang_check(message["content"])
+
+        logger.debug(f"message['content']={message['content']}")
+
+        # 自定义语言名称（需要匹配请求解析）
+        language_name_dict = {"en": "英文", "zh": "中文", "jp": "日文"}
+
+        if language in language_name_dict:
+            language = language_name_dict[language]
+        else:
+            language = "自动"  # 无法识别出语言代码时的默认值
+
+        # logger.info("language=" + language)
+
+        data = {
+            "type": message["data"]["type"],
+            "api_ip_port": message["data"]["api_ip_port"],
+            "id": message["data"]["id"],
+            "format": message["data"]["format"],
+            "lang": language,
+            "length": message["data"]["length"],
+            "noise": message["data"]["noise"],
+            "noisew": message["data"]["noisew"],
+            "max": message["data"]["max"],
+            "sdp_radio": message["data"]["sdp_radio"],
+            "content": message["content"],
+            "gpt_sovits": message["data"]["gpt_sovits"],
+        }
+
+        # 调用接口合成语音
+        voice_tmp_path = await self.my_tts.vits_api(data)
+        return voice_tmp_path
+
+    async def _tts_bert_vits2(self, message):
+        if message["data"]["language"] == "auto":
+            # 自动检测语言
+            language = self.common.lang_check(message["content"])
+
+            logger.debug(f"language={language}")
+
+            # 自定义语言名称（需要匹配请求解析）
+            language_name_dict = {"en": "EN", "zh": "ZH", "ja": "JP"}
+
+            if language in language_name_dict:
+                language = language_name_dict[language]
+            else:
+                language = "ZH"  # 无法识别出语言代码时的默认值
+        else:
+            language = message["data"]["language"]
+
+        data = {
+            "api_ip_port": message["data"]["api_ip_port"],
+            "type": message["data"]["type"],
+            "model_id": message["data"]["model_id"],
+            "speaker_name": message["data"]["speaker_name"],
+            "speaker_id": message["data"]["speaker_id"],
+            "language": language,
+            "length": message["data"]["length"],
+            "noise": message["data"]["noise"],
+            "noisew": message["data"]["noisew"],
+            "sdp_radio": message["data"]["sdp_radio"],
+            "auto_translate": message["data"]["auto_translate"],
+            "auto_split": message["data"]["auto_split"],
+            "emotion": message["data"]["emotion"],
+            "style_text": message["data"]["style_text"],
+            "style_weight": message["data"]["style_weight"],
+            "刘悦-中文特化API": message["data"]["刘悦-中文特化API"],
+            "content": message["content"],
+        }
+
+        # 调用接口合成语音
+        voice_tmp_path = await self.my_tts.bert_vits2_api(data)
+        return voice_tmp_path
+
+    async def _tts_vits_fast(self, message):
+        if message["data"]["language"] == "自动识别":
+            # 自动检测语言
+            language = self.common.lang_check(message["content"])
+
+            logger.debug(f"language={language}")
+
+            # 自定义语言名称（需要匹配请求解析）
+            language_name_dict = {"en": "English", "zh": "简体中文", "ja": "日本語"}
+
+            if language in language_name_dict:
+                language = language_name_dict[language]
+            else:
+                language = "简体中文"  # 无法识别出语言代码时的默认值
+        else:
+            language = message["data"]["language"]
+
+        # logger.info("language=" + language)
+
+        data = {
+            "api_ip_port": message["data"]["api_ip_port"],
+            "character": message["data"]["character"],
+            "speed": message["data"]["speed"],
+            "language": language,
+            "content": message["content"],
+        }
+
+        # 调用接口合成语音
+        voice_tmp_path = self.my_tts.vits_fast_api(data)
+        # logger.info(data_json)
+        return voice_tmp_path
+
+    async def _tts_edge_tts(self, message):
+        data = {"content": message["content"], "edge-tts": message["data"]}
+
+        # 调用接口合成语音
+        voice_tmp_path = await self.my_tts.edge_tts_api(data)
+        return voice_tmp_path
+
+    async def _tts_elevenlabs(self, message):
+        from elevenlabs import generate, play, set_api_key
+
+        # 如果配置了密钥就设置上0.0
+        if message["data"]["api_key"] != "":
+            set_api_key(message["data"]["api_key"])
+
+        audio = generate(text=message["content"], voice=message["data"]["voice"], model=message["data"]["model"])
+
+        play(audio)
+        logger.info(f"elevenlabs合成内容：【{message['content']}】")
+
+        # 原实现此处直接裸 return：tts_handle 立即返回 None，不设置 result
+        return _TTS_EARLY_EXIT
+
+    async def _tts_openai_tts(self, message):
+        data = {
+            "type": message["data"]["type"],
+            "api_ip_port": message["data"]["api_ip_port"],
+            "model": message["data"]["model"],
+            "voice": message["data"]["voice"],
+            "api_key": message["data"]["api_key"],
+            "content": message["content"],
+        }
+
+        # 调用接口合成语音
+        voice_tmp_path = self.my_tts.openai_tts_api(data)
+        return voice_tmp_path
+
+    async def _tts_gradio_tts(self, message):
+        data = {"request_parameters": message["data"]["request_parameters"], "content": message["content"]}
+
+        voice_tmp_path = self.my_tts.gradio_tts_api(data)
+        return voice_tmp_path
+
+    async def _tts_gpt_sovits(self, message):
+        if message["data"]["language"] == "自动识别":
+            # 自动检测语言
+            language = self.common.lang_check(message["content"])
+
+            logger.debug(f"language={language}")
+
+            # 自定义语言名称（需要匹配请求解析）
+            language_name_dict = {"en": "英文", "zh": "中文", "ja": "日文"}
+
+            if language in language_name_dict:
+                language = language_name_dict[language]
+            else:
+                language = "中文"  # 无法识别出语言代码时的默认值
+        else:
+            language = message["data"]["language"]
+
+        if message["data"]["api_0322"]["text_lang"] == "自动识别":
+            # 自动检测语言
+            language = self.common.lang_check(message["content"])
+
+            logger.debug(f"language={language}")
+
+            # 自定义语言名称（需要匹配请求解析）
+            language_name_dict = {"en": "英文", "zh": "中文", "ja": "日文"}
+
+            if language in language_name_dict:
+                message["data"]["api_0322"]["text_lang"] = language_name_dict[language]
+            else:
+                message["data"]["api_0322"]["text_lang"] = "中文"  # 无法识别出语言代码时的默认值
+
+        if message["data"]["api_0706"]["text_language"] == "自动识别":
+            message["data"]["api_0706"]["text_language"] = "auto"
+
+        data = {
+            "type": message["data"]["type"],
+            "gradio_ip_port": message["data"]["gradio_ip_port"],
+            "api_ip_port": message["data"]["api_ip_port"],
+            "ref_audio_path": message["data"]["ref_audio_path"],
+            "prompt_text": message["data"]["prompt_text"],
+            "prompt_language": message["data"]["prompt_language"],
+            "language": language,
+            "cut": message["data"]["cut"],
+            "api_0322": message["data"]["api_0322"],
+            "api_0706": message["data"]["api_0706"],
+            "v2_api_0821": message["data"]["v2_api_0821"],
+            "webtts": message["data"]["webtts"],
+            "content": message["content"],
+        }
+
+        voice_tmp_path = await self.my_tts.gpt_sovits_api(data)
+        return voice_tmp_path
+
+    async def _tts_azure_tts(self, message):
+        data = {
+            "subscription_key": message["data"]["subscription_key"],
+            "region": message["data"]["region"],
+            "voice_name": message["data"]["voice_name"],
+            "content": message["content"],
+        }
+
+        voice_tmp_path = self.my_tts.azure_tts_api(data)
+        return voice_tmp_path
+
+    async def _tts_cosyvoice(self, message):
+        logger.debug(message)
+        data = {
+            "type": message["data"]["type"],
+            "gradio_ip_port": message["data"]["gradio_ip_port"],
+            "api_ip_port": message["data"]["api_ip_port"],
+            "gradio_0707": message["data"]["gradio_0707"],
+            "api_0819": message["data"]["api_0819"],
+            "content": message["content"],
+        }
+
+        voice_tmp_path = await self.my_tts.cosyvoice_api(data)
+        return voice_tmp_path
+
+    async def _tts_f5_tts(self, message):
+        logger.debug(message)
+        data = {
+            "type": message["data"]["type"],
+            "gradio_ip_port": message["data"]["gradio_ip_port"],
+            "ref_audio_orig": message["data"]["ref_audio_orig"],
+            "ref_text": message["data"]["ref_text"],
+            "model": message["data"]["model"],
+            "remove_silence": message["data"]["remove_silence"],
+            "cross_fade_duration": message["data"]["cross_fade_duration"],
+            "speed": message["data"]["speed"],
+            "content": message["content"],
+        }
+
+        voice_tmp_path = await self.my_tts.f5_tts_api(data)
+        return voice_tmp_path
+
+    async def _tts_multitts(self, message):
+        data = {"content": message["content"], "multitts": message["data"]}
+
+        voice_tmp_path = await self.my_tts.multitts_api(data)
+        return voice_tmp_path
+
+    async def _tts_melotts(self, message):
+        data = {"content": message["content"], "melotts": message["data"]}
+
+        voice_tmp_path = await self.my_tts.melotts_api(data)
+        return voice_tmp_path
+
+    async def _tts_index_tts(self, message):
+        data = {
+            "content": message["content"],
+            "index_tts": message["data"],
+        }
+
+        voice_tmp_path = await self.my_tts.index_tts_api(data)
+        return voice_tmp_path
+
+    async def _tts_none(self, message):
+        # Audio.voice_tmp_path_queue.put(message)
+        return None
+
+    # TTS 分发注册表：tts_type → 处理方法（对齐 gpt_model 的 PROVIDERS 注册表模式）。
+    # 新增 TTS 时实现 _tts_<name>(self, message) -> voice_tmp_path 并在此登记。
+    _TTS_HANDLERS = {
+        "vits": _tts_vits,
+        "bert_vits2": _tts_bert_vits2,
+        "vits_fast": _tts_vits_fast,
+        "edge-tts": _tts_edge_tts,
+        "elevenlabs": _tts_elevenlabs,
+        "openai_tts": _tts_openai_tts,
+        "gradio_tts": _tts_gradio_tts,
+        "gpt_sovits": _tts_gpt_sovits,
+        "azure_tts": _tts_azure_tts,
+        "cosyvoice": _tts_cosyvoice,
+        "f5_tts": _tts_f5_tts,
+        "multitts": _tts_multitts,
+        "melotts": _tts_melotts,
+        "index_tts": _tts_index_tts,
+        "none": _tts_none,
+    }
 
     # 发送音频播放信息给main内部的http服务端
     async def send_audio_play_info_to_callback(self, data: dict = None):
