@@ -20,6 +20,7 @@ from .gpt_model.gpt import GPT_MODEL
 from .my_log import logger
 from . import alarm
 from . import integral as integral_module
+from . import filters
 from .message import build as build_message
 from .db import SQLiteDB
 from .my_translate import My_Translate
@@ -1264,116 +1265,13 @@ class My_handle(metaclass=SingletonMeta):
 
     # 弹幕格式检查和特殊字符替换和指定语言过滤
     def comment_check_and_replace(self, content):
-        """弹幕格式检查和特殊字符替换和指定语言过滤
-
-        Args:
-            content (str): 待处理的弹幕内容
-
-        Returns:
-            str: 处理完毕后的弹幕内容/None
-        """
-        # 判断弹幕是否以xx起始，如果是则返回None
-        if My_handle.config.get("filter", "before_filter_str") and any(
-            content.startswith(prefix) for prefix in My_handle.config.get("filter", "before_filter_str")
-        ):
-            return None
-
-        # 判断弹幕是否以xx结尾，如果是则返回None
-        if My_handle.config.get("filter", "after_filter_str") and any(
-            content.endswith(prefix) for prefix in My_handle.config.get("filter", "after_filter_str")
-        ):
-            return None
-
-        # 判断弹幕是否以xx起始，如果不是则返回None
-        if My_handle.config.get("filter", "before_must_str") and not any(
-            content.startswith(prefix) for prefix in My_handle.config.get("filter", "before_must_str")
-        ):
-            return None
-        else:
-            for prefix in My_handle.config.get("filter", "before_must_str"):
-                if content.startswith(prefix):
-                    content = content[len(prefix) :]  # 删除匹配的开头
-                    break
-
-        # 判断弹幕是否以xx结尾，如果不是则返回None
-        if My_handle.config.get("filter", "after_must_str") and not any(
-            content.endswith(prefix) for prefix in My_handle.config.get("filter", "after_must_str")
-        ):
-            return None
-        else:
-            for prefix in My_handle.config.get("filter", "after_must_str"):
-                if content.endswith(prefix):
-                    content = content[: -len(prefix)]  # 删除匹配的结尾
-                    break
-
-        # 全为标点符号
-        if My_handle.common.is_punctuation_string(content):
-            return None
-
-        # 换行转为,
-        content = content.replace("\n", ",")
-
-        # 表情弹幕过滤
-        if My_handle.config.get("filter", "emoji"):
-            # 如b站的表情弹幕就是[表情名]的这种格式，采用正则表达式进行过滤
-            content = re.sub(r"\[.*?\]", "", content)
-            logger.info(f"表情弹幕过滤后：{content}")
-
-        # 语言检测
-        if My_handle.common.lang_check(content, My_handle.config.get("need_lang")) is None:
-            logger.warning("语言检测不通过，已过滤")
-            return None
-
-        return content
+        # 实现已拆分到 utils/filters.py，这里保留委托门面
+        return filters.comment_check_and_replace(self, content)
 
     # 违禁处理
     def prohibitions_handle(self, content):
-        """违禁处理
-
-        Args:
-            content (str): 带判断的字符串内容
-
-        Returns:
-            str: 是：None 否返回：content
-        """
-        # 含有链接
-        if My_handle.common.is_url_check(content):
-            logger.warning(f"链接：{content}")
-            return None
-
-        # 违禁词检测
-        if My_handle.config.get("filter", "badwords", "enable"):
-            if My_handle.common.profanity_content(content):
-                logger.warning(f"违禁词：{content}")
-                return None
-
-            bad_word = My_handle.common.check_sensitive_words2(
-                My_handle.config.get("filter", "badwords", "path"), content
-            )
-            if bad_word is not None:
-                logger.warning(f"命中本地违禁词：{bad_word}")
-
-                # 是否丢弃
-                if My_handle.config.get("filter", "badwords", "discard"):
-                    return None
-
-                # 进行违禁词替换
-                content = content.replace(bad_word, My_handle.config.get("filter", "badwords", "replace"))
-
-                logger.info(f"违禁词替换后：{content}")
-
-                # 回调，多次进行违禁词过滤替换
-                return self.prohibitions_handle(content)
-
-            # 同拼音违禁词过滤
-            if My_handle.config.get("filter", "badwords", "bad_pinyin_path") != "":
-                if My_handle.common.check_sensitive_words3(
-                    My_handle.config.get("filter", "badwords", "bad_pinyin_path"), content
-                ):
-                    logger.warning(f"同音违禁词：{content}")
-                    return None
-
-        return content
+        # 实现已拆分到 utils/filters.py，这里保留委托门面
+        return filters.prohibitions_handle(self, content)
 
     # 直接复读
     def reread_handle(self, data, filter=False, type="reread"):
@@ -2426,66 +2324,13 @@ class My_handle(metaclass=SingletonMeta):
 
     # 黑名单处理
     def blacklist_handle(self, data):
-        """黑名单处理
-
-        Args:
-            data (dict): 包含用户名,弹幕内容
-
-        Returns:
-            bool: True是黑名单用户，False不是黑名单用户
-        """
-        try:
-            if My_handle.config.get("filter", "blacklist", "enable"):
-                username_blacklist = My_handle.config.get("filter", "blacklist", "username")
-                if len(username_blacklist) == 0:
-                    return False
-
-                if data["username"] in username_blacklist:
-                    logger.info(f"弹幕黑名单 过滤 用户名：{data['username']}")
-                    return True
-
-            return False
-        except Exception:
-            logger.error(traceback.format_exc())
-            return False
+        # 实现已拆分到 utils/filters.py，这里保留委托门面
+        return filters.blacklist_handle(self, data)
 
     # 判断限定时间段内数据是否重复
     def is_data_repeat_in_limited_time(self, type: str = None, data: dict = None):
-        """判断限定时间段内数据是否重复
-
-        Args:
-            type (str): 判断的数据类型（comment|gift|entrance)
-            data (dict): 包含用户名,弹幕内容
-
-        Returns:
-            dict: 传递给音频合成的JSON数据
-        """
-        if My_handle.config.get("filter", "limited_time_deduplication", "enable"):
-            logger.debug(f"限定时间段内数据重复 My_handle.live_data={My_handle.live_data}")
-
-            if type is not None and type != "" and data is not None:
-                if type == "comment":
-                    # 如果存在重复数据，返回True
-                    for tmp in My_handle.live_data[type]:
-                        if tmp["username"] == data["username"] and tmp["content"] == data["content"]:
-                            logger.debug(f"限定时间段内数据重复 type={type},data={data}")
-                            return True
-                elif type == "gift":
-                    # 如果存在重复数据，返回True
-                    for tmp in My_handle.live_data[type]:
-                        if tmp["username"] == data["username"]:
-                            logger.debug(f"限定时间段内数据重复 type={type},data={data}")
-                            return True
-                elif type == "entrance":
-                    # 如果存在重复数据，返回True
-                    for tmp in My_handle.live_data[type]:
-                        if tmp["username"] == data["username"]:
-                            logger.debug(f"限定时间段内数据重复 type={type},data={data}")
-                            return True
-
-                # 不存在则插入，返回False
-                My_handle.live_data[type].append(data)
-        return False
+        # 实现已拆分到 utils/filters.py，这里保留委托门面
+        return filters.is_data_repeat_in_limited_time(self, type, data)
 
     # 判断是否进行联网搜索，返回处理后的结果
     def search_online_handle(self, content: str):
