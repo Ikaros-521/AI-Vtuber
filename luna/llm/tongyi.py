@@ -167,32 +167,3 @@ class TongYi:
         except Exception:
             logger.error(traceback.format_exc())
             return {"ret": False}
-
-
-if __name__ == "__main__":
-    # 配置日志输出格式
-    logger.basicConfig(
-        level=logger.INFO,  # 设置日志级别，可以根据需求调整
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-    data = {
-        "cookie_path": "cookies.json",
-        "type": "api",
-        "model": "qwen-max",
-        "preset": "你是一个专业的虚拟主播",
-        "api_key": "sk-",
-        "temperature": 0.9,
-        "top_p": 0.9,
-        "top_k": 3,
-        "enable_search": True,
-        "max_tokens": 1024,
-        "history_enable": True,
-        "history_max_len": 20,
-    }
-
-    tongyi = TongYi(data)
-
-    logger.info(tongyi.get_resp("你现在叫小伊，是个猫娘，每句话后面加个喵"))
-    logger.info(tongyi.get_resp("早上好，你叫什么"))

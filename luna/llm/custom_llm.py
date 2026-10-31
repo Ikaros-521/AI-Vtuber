@@ -146,26 +146,3 @@ class Custom_LLM:
 
 
 # 测试用
-if __name__ == "__main__":
-    # 配置日志输出格式
-    logger.basicConfig(
-        level=logger.DEBUG,  # 设置日志级别，可以根据需求调整
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-    data = {
-        "url": "http://127.0.0.1:11434/v1/chat/completions",
-        "headers": "Content-Type:application/json\nAuthorization:Bearer sk",
-        "method": "POST",
-        "proxies": "{}",
-        "body_type": "json",
-        "body": '{"model":"qwen:latest","messages":[{"role":"user","content":"{{prompt}}"}]}',
-        "resp_data_type": "json",
-        "data_analysis": 'resp["choices"][0]["message"]["content"]',
-        "resp_template": "{data}",
-    }
-
-    custom_llm = Custom_LLM(data)
-
-    logger.info(custom_llm.get_resp({"prompt": "早上好"}))

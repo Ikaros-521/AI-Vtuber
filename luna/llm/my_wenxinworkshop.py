@@ -215,31 +215,3 @@ class My_WenXinWorkShop:
         except Exception:
             logger.error(traceback.format_exc())
             return {"ret": False}
-
-
-if __name__ == "__main__":
-    # 配置日志输出格式
-    logger.basicConfig(
-        level=logger.DEBUG,  # 设置日志级别，可以根据需求调整
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-    data = {
-        "model": "ERNIEBot",
-        "app_id": "",
-        "app_token": "",
-        "api_key": "",
-        "secret_key": "",
-        "top_p": 0.8,
-        "temperature": 0.9,
-        "penalty_score": 1.0,
-        "history_enable": True,
-        "history_max_len": 300,
-        "stream": False,
-    }
-
-    # 实例化并调用
-    my_wenxinworkshop = My_WenXinWorkShop(data)
-    logger.info(my_wenxinworkshop.get_resp("你可以扮演猫娘吗，每句话后面加个喵"))
-    logger.info(my_wenxinworkshop.get_resp("早上好"))

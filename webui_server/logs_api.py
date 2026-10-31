@@ -72,7 +72,7 @@ async def chat_send(req: ChatSendRequest):
     if not content:
         return {"code": -1, "message": "内容为空"}
 
-    data = {
+    data: dict = {
         "type": req.mode,
         "data": {
             "type": req.mode,

@@ -142,7 +142,9 @@ class Audio:
             return False
 
     # 判断 等待合成消息队列|待播放音频队列 数是否小于或大于某个值，就返回True
-    def is_queue_less_or_greater_than(self, type: str = "message_queue", less: int = None, greater: int = None):
+    def is_queue_less_or_greater_than(
+        self, type: str = "message_queue", less: int | None = None, greater: int | None = None
+    ):
         # 阈值按「有没有传」判断，不能按真值判断：传 0 是有意义的，greater=0 就是
         # 「队列非空」，写成 if greater 会把 0 当成没传，整条判断被跳过
         if type == "voice_tmp_path_queue":
@@ -508,7 +510,8 @@ class Audio:
             return False
 
     # 数据根据优先级排队插入待合成音频队列
-    def data_priority_insert(self, type: str = "等待合成消息", data_json: dict = None):
+    def data_priority_insert(self, type: str = "等待合成消息", data_json: dict | None = None):
+        assert data_json is not None  # 调用方必传；原本 None 也会在取 content 时崩溃
         """
         数据根据优先级排队插入待合成音频队列
 
@@ -1090,7 +1093,7 @@ class Audio:
     }
 
     # 发送音频播放信息给main内部的http服务端
-    async def send_audio_play_info_to_callback(self, data: dict = None):
+    async def send_audio_play_info_to_callback(self, data: dict | None = None):
         """发送音频播放信息给main内部的http服务端
 
         Args:

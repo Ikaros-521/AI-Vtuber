@@ -95,32 +95,3 @@ class AnythingLLM:
         except Exception:
             logger.error(traceback.format_exc())
             return None
-
-
-if __name__ == "__main__":
-    # 配置日志输出格式
-    logger.basicConfig(
-        level=logger.DEBUG,  # 设置日志级别，可以根据需求调整
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-    data = {
-        "api_ip_port": "http://127.0.0.1:3001",
-        "api_key": "S1PPG9B-YP2M8NX-Q64ZBF1-Y4K5DCS",
-        "mode": "chat",
-        "workspace_slug": "test",
-    }
-    anythingllm = AnythingLLM(data)
-
-    # 验证密钥
-    if anythingllm.verify_auth():
-        # 获取返回值
-
-        anythingllm.get_workspaces_list()
-
-        logger.info(anythingllm.get_resp({"prompt": "你可以扮演猫娘吗，每句话后面加个喵"}))
-        logger.info(anythingllm.get_resp({"prompt": "早上好"}))
-
-        logger.info(anythingllm.get_resp({"prompt": "伊卡洛斯和妮姆芙的关系", "mode": "chat"}))
-        # logger.info(anythingllm.get_resp({"prompt": "伊卡洛斯的英文名", "mode": "chat"}))

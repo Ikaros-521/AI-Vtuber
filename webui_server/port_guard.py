@@ -137,7 +137,7 @@ def _kill_tree(pid: int):
         )
     else:
         try:
-            os.kill(pid, signal.SIGKILL)
+            os.kill(pid, signal.SIGKILL)  # type: ignore[attr-defined]  # 仅 POSIX 分支，Windows 不会走到
         except OSError:
             pass
 

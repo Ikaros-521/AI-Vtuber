@@ -1,7 +1,9 @@
 # 空闲时间计数器
 global_idle_time = 0
-last_username_list = None
-last_liveroom_data = None
+# main 启动时会被 start_server 重新播种；默认给空容器而非 None，
+# 让 my_global 的类型自洽（读取方 [-1]/["OnlineUserCount"] 无需判空）
+last_username_list: list = []
+last_liveroom_data: dict = {}
 
 # 待播放音频数量（在使用 音频播放器 或者 metahuman-stream等不通过AI Vtuber播放音频的对接项目时，使用此变量记录是是否还有音频没有播放完）
 wait_play_audio_num = 0

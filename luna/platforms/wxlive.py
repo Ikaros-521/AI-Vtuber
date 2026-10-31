@@ -12,7 +12,7 @@ import luna.infra.my_global as my_global
 def start_listen(config, common, my_handle, platform: str):
     # 定义FastAPI应用
     app = FastAPI()
-    seq_list = []
+    seq_list: list = []
 
     # 允许跨域
     app.add_middleware(

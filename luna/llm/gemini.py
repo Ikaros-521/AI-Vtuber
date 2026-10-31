@@ -145,33 +145,3 @@ class Gemini:
         except Exception:
             logger.error(traceback.format_exc())
             return None
-
-
-if __name__ == "__main__":
-    # 配置日志输出格式
-    logger.basicConfig(
-        level=logger.DEBUG,  # 设置日志级别，可以根据需求调整
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-    data = {
-        "api_key": "",
-        "model": "gemini-pro",
-        "max_output_tokens": 100,
-        "temperature": 1.0,
-        "top_p": 0.7,
-        "top_k": 40,
-        "http_proxy": "http://127.0.0.1:10809",
-        "https_proxy": "http://127.0.0.1:10809",
-        "history_enable": True,
-        "history_max_len": 300,
-    }
-
-    gemini = Gemini(data)
-
-    logger.info(gemini.get_resp("你可以扮演猫娘吗，每句话后面加个喵"))
-    logger.info(gemini.get_resp("早上好"))
-    logger.info(gemini.get_resp("我的眼睛好酸"))
-
-    logger.info(gemini.get_resp_with_img("根据图片内容，猜猜我吃的什么", "1.png"))

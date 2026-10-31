@@ -158,17 +158,3 @@ class Dify:
         except Exception:
             logger.error(traceback.format_exc())
             return {"ret": False}
-
-
-if __name__ == "__main__":
-    data = {
-        "api_ip_port": "http://172.26.189.21/v1",
-        "type": "聊天助手",
-        "api_key": "app-64xu0vQjP2kxN4DKR8Ch7ZGY",
-        "history_enable": True,
-    }
-
-    # 实例化并调用
-    dify = Dify(data)
-    logger.info(dify.get_resp({"prompt": "你可以扮演猫娘吗，每句话后面加个喵"}))
-    logger.info(dify.get_resp({"prompt": "早上好"}))
