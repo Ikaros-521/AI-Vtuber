@@ -265,3 +265,6 @@ docs/redesign/shots-v3/
 
 # ZCode 会话产物
 .zcode/
+
+# lock 再生成用的干净解析环境
+.venv-res/

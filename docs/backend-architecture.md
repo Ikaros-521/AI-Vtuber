@@ -97,8 +97,6 @@
 
 ## 已知的缓办项（按需推进）
 
-1. `Audio` 多实例共享类属性（webui 同进程建第二个 `Audio(type=2)` 时共享队列/标志位）——当前 main 与 webui 分进程运行，实际不触发；若未来同进程嵌入需改造为实例属性。
-2. requirements/*.lock.txt 仍含 nicegui（v2 遗留，再生成 lock 时自然消失，装出来无害）。
-3. actions_api / compat_api 未声明 response_model（见 schemas.py 注释的取舍理由）。
+1. actions_api / compat_api 未声明 response_model（见 schemas.py 注释的取舍理由）。
 
-> 已完成：~~共享状态加锁~~（state_lock）、~~integral/filters 拆分~~（utils/integral.py + utils/filters.py）、~~v2 删除~~（webui.py/webui_app 及其单测/nicegui 依赖）、~~核心路由 response_model~~（webui_server/schemas.py）。以上均为 2026-10-31。
+> 已完成（2026-10-31）：~~共享状态加锁~~（state_lock）、~~integral/filters 拆分~~（utils/integral.py + utils/filters.py）、~~v2 删除~~（webui.py/webui_app 及其单测/nicegui 依赖）、~~核心路由 response_model~~（webui_server/schemas.py）、~~Audio 实例属性化~~（多实例不再共享队列/标志位）、~~lock 再生成~~（7 个 lock 甩掉 nicegui 闭包，新环境 405 passed 验证）。
