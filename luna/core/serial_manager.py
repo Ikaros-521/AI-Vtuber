@@ -8,7 +8,7 @@ from luna.infra.my_log import logger
 
 class SerialManager:
     def __init__(self):
-        self.connections: Dict[str, Tuple[serial.Serial, asyncio.Task]] = {}
+        self.connections: Dict[str, Tuple[serial.Serial, asyncio.Task | None]] = {}
         self.buffers: Dict[str, bytearray] = {}
 
     async def list_ports(self) -> List[str]:
@@ -25,7 +25,7 @@ class SerialManager:
         try:
             # loop = asyncio.get_running_loop()
             serial_conn = serial.Serial(port, baudrate, timeout=timeout)
-            task = None
+            task: asyncio.Task | None = None
             self.connections[port] = (serial_conn, task)
             self.buffers[port] = bytearray()
             logger.info(f"已连接到 {port}")
@@ -47,7 +47,7 @@ class SerialManager:
         logger.info(f"已断开与 {port} 的连接")
         return {"ret": True, "msg": f"已断开与 {port} 的连接"}
 
-    async def send_data(self, port: str, data: str, data_type: str = "ascii", timeout: float = 1.0) -> str:
+    async def send_data(self, port: str, data: str, data_type: str = "ascii", timeout: float = 1.0) -> dict:
         # 发送数据并等待返回，带超时机制
         if port not in self.connections:
             logger.warning(f"{port} 未连接")

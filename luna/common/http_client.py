@@ -37,22 +37,17 @@ def send_request(
     """
     headers = {"Content-Type": "application/json"}
 
+    # requests 的 proxies 参数要 dict；配置里存的是单个代理地址(str)。
+    # 历史代码直接把 str 传给 requests（代理实际不生效），这里规范化修复。
+    proxies: dict | None = None
+    if isinstance(proxy, str) and proxy:
+        proxies = {"http": proxy, "https": proxy}
+
     try:
         if method in ["GET", "get"]:
-            response = requests.get(
-                url,
-                headers=headers,
-                timeout=timeout,
-                proxies=proxy,  # type: ignore[arg-type]  # 历史行为：str 代理直传
-            )
+            response = requests.get(url, headers=headers, timeout=timeout, proxies=proxies)
         elif method in ["POST", "post"]:
-            response = requests.post(
-                url,
-                headers=headers,
-                data=json.dumps(json_data),
-                timeout=timeout,
-                proxies=proxy,  # type: ignore[arg-type]  # 历史行为：str 代理直传
-            )
+            response = requests.post(url, headers=headers, data=json.dumps(json_data), timeout=timeout, proxies=proxies)
         else:
             raise ValueError("无效 method. 支持的 methods 为 GET 和 POST.")
 

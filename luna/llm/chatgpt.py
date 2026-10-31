@@ -12,15 +12,15 @@ from luna.infra.my_log import logger
 class Chatgpt:
     # 设置会话初始值
     # session_config = {'msg': [{"role": "system", "content": config_data['chatgpt']['preset']}]}
-    session_config = {}
+    session_config: dict = {}
     # sessionid 用的是观众名，一场直播下来会有几万个不同的 key，每个 key 还挂着
     # 一条只会变长的 msg 历史。装不下时按「最久没开口」丢一条，不掉线的观众不受影响。
     MAX_SESSIONS = 10000
-    sessions = OrderedDict()
+    sessions: OrderedDict = OrderedDict()
     sessions_lock = threading.Lock()
     current_key_index = 0
-    data_openai = {}
-    data_chatgpt = {}
+    data_openai: dict = {}
+    data_chatgpt: dict = {}
 
     def __init__(self, data_openai, data_chatgpt):
         self.common = Common()

@@ -458,7 +458,7 @@ async def img_screenshot(req: ImgScreenshotRequest):
 
             zhipu = Zhipu(runtime.get("image_recognition", "zhipu") or {})
             content = zhipu.get_resp_with_img(req.prompt, screenshot_path)
-            data = {
+            data: dict = {
                 "type": "reread",
                 "data": {"username": runtime.get("talk", "username") or "主播", "content": content, "insert_index": -1},
             }

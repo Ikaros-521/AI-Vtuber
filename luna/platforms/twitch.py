@@ -70,6 +70,7 @@ def start_listen(config, common, my_handle, platform: str):
                     logger.debug(resp)
 
                     match = re.match(regex, resp)
+                    assert match is not None  # 正则失配时原本也是 None.group 崩溃，行为不变
 
                     username = match.group(1)
                     content = match.group(2)

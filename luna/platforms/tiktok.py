@@ -25,12 +25,12 @@ def start_listen(config, common, my_handle, platform: str):
     # 比如直播间是 https://www.tiktok.com/@username/live 那么room_id就是 username，其实就是用户唯一ID
     room_id = my_handle.get_room_id()
 
-    proxys = {
+    proxys: dict[str, str] | None = {
         "http://": "http://127.0.0.1:10809",
         "https://": "http://127.0.0.1:10809",
     }
 
-    proxys = None
+    # 置 None 关闭代理
 
     # 代理软件开启TUN模式进行代理，由于库的ws不走传入的代理参数，只能靠代理软件全代理了
     client: TikTokLiveClient = TikTokLiveClient(unique_id=f"@{room_id}", web_proxy=proxys, ws_proxy=proxys)

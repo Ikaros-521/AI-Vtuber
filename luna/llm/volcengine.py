@@ -99,26 +99,3 @@ class VolcEngine:
         except Exception:
             logger.error(traceback.format_exc())
             return {"ret": False}
-
-
-if __name__ == "__main__":
-    # 配置日志输出格式
-    logger.basicConfig(
-        level=logger.INFO,  # 设置日志级别，可以根据需求调整
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-    data = {
-        "model": "ep-20240904192312-r4rkc",
-        "preset": "你是一个专业的虚拟主播",
-        "api_key": "408a2af4-1669-440a-a141-90850e1c615e",
-        "history_enable": True,
-        "history_max_len": 1024,
-        "stream": False,
-    }
-
-    volcengine = VolcEngine(data)
-
-    logger.info(volcengine.get_resp("你现在叫小伊，是个猫娘，每句话后面加个喵"))
-    logger.info(volcengine.get_resp("早上好，你叫什么"))
