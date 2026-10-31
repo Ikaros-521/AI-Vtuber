@@ -16,10 +16,10 @@ from luna.infra.my_log import logger
 def send_request(
     url: str,
     method: str = "GET",
-    json_data: dict = None,
+    json_data: dict | None = None,
     resp_data_type: str = "json",
     timeout: int = 60,
-    proxy: str = None,
+    proxy: str | None = None,
 ):
     """
     发送 HTTP 请求并返回结果
@@ -39,9 +39,20 @@ def send_request(
 
     try:
         if method in ["GET", "get"]:
-            response = requests.get(url, headers=headers, timeout=timeout, proxies=proxy)
+            response = requests.get(
+                url,
+                headers=headers,
+                timeout=timeout,
+                proxies=proxy,  # type: ignore[arg-type]  # 历史行为：str 代理直传
+            )
         elif method in ["POST", "post"]:
-            response = requests.post(url, headers=headers, data=json.dumps(json_data), timeout=timeout, proxies=proxy)
+            response = requests.post(
+                url,
+                headers=headers,
+                data=json.dumps(json_data),
+                timeout=timeout,
+                proxies=proxy,  # type: ignore[arg-type]  # 历史行为：str 代理直传
+            )
         else:
             raise ValueError("无效 method. 支持的 methods 为 GET 和 POST.")
 
@@ -71,10 +82,10 @@ def send_request(
 async def send_async_request(
     url: str,
     method: str = "GET",
-    json_data: dict = None,
+    json_data: dict | None = None,
     resp_data_type: str = "json",
     timeout: int = 60,
-    proxy: str = None,
+    proxy: str | None = None,
 ):
     """
     发送异步 HTTP 请求并返回结果
@@ -130,37 +141,6 @@ async def send_async_request(
         logger.error(traceback.format_exc())
         logger.error(f"请求出错: {e}")
         return None
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        logger.error(f"请求出错: {e}")
-        return None
-
-
-async def send_heartbeat():
-    """
-    发送异步 HTTP 请求并返回结果
-
-    Returns:
-        dict|str: 包含响应的 JSON数据 | 字符串数据
-    """
-    try:
-        pass
-        # await send_async_request("http://124.221.164.49:8001/heartbeat", "POST", None)
-    except Exception:
-        # logger.error(traceback.format_exc())
-        # logger.error(f"请求出错: {e}")
-        return None
-
-
-def check_login(api_url: str, username: str, password: str):
-    try:
-        data_json = {"username": username, "password": password}
-
-        resp_json = send_request(api_url, "POST", data_json, resp_data_type="json")
-        if resp_json is None:
-            return {"code": 500, "msg": "请求失败"}
-        else:
-            return resp_json
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"请求出错: {e}")
@@ -353,6 +333,7 @@ def get_openai_models(base_url: str, api_keys: str):
 
         models = []
         for item in items:
+            name: str | None
             if isinstance(item, str):
                 name = item
             elif isinstance(item, dict):

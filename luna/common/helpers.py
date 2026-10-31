@@ -1,7 +1,6 @@
 # 导入所需的库
 import re
 import random
-import json
 import time
 import os
 import glob
@@ -304,18 +303,6 @@ class Common:
             return True
         except json.JSONDecodeError:
             return False
-
-    # 生成hash字符串 用于gradio请求
-    def generate_session_hash(self, length: int = 11):
-        import hashlib
-        import string
-
-        characters = string.ascii_letters + string.digits
-        random_string = "".join(random.choice(characters) for i in range(length))
-        hash_object = hashlib.sha1(random_string.encode())
-        session_hash = hash_object.hexdigest()[:length]
-
-        return session_hash
 
     # 将字符串中的数字转换成中文
     def convert_digits_to_chinese(self, input_str: str):
@@ -631,7 +618,7 @@ class Common:
         return ""
 
     # 动态变量替换
-    def dynamic_variable_replacement(self, template: str, data_json: dict = None):
+    def dynamic_variable_replacement(self, template: str, data_json: dict | None = None):
         """动态变量替换
 
         Args:
@@ -687,7 +674,7 @@ class Common:
 
     # 从列表中随机获取一个字符串，并进行变量语法转换。如果列表为空，使用单个字符串进行转换。
     def get_random_str_in_list_and_format(
-        self, ori_content: str = None, ori_list: list = None, var_json: dict = None
+        self, ori_content: str | None = None, ori_list: list | None = None, var_json: dict | None = None
     ) -> dict:
         """
         从列表中随机获取一个字符串，并进行变量语法转换。如果列表为空，使用单个字符串进行转换。
@@ -959,23 +946,6 @@ class Common:
 
     """
 
-    # 读取文件内容 它接受文件路径和返回类型参数，并根据参数返回文件内容作为字典或纯文本。如果读取文件过程中出现异常，则返回 None。
-    def read_file(self, file_path: str, return_type: str):
-        try:
-            with open(file_path, encoding="utf-8") as file:
-                content = file.read()
-
-            if return_type == "dict":
-                return json.loads(content)
-            elif return_type == "text":
-                return content
-            else:
-                logger.error("Invalid return type. Use 'dict' or 'text'.")
-                return None
-        except Exception:
-            logger.error(traceback.format_exc())
-            return None
-
     def ensure_directory_exists(self, path):
         # 检查路径是否存在
         if not os.path.exists(path):
@@ -1037,30 +1007,6 @@ class Common:
         logger.info(f"文件移动成功：{source_path} -> {destination_path}")
 
         return destination_path
-
-    # 删除文件
-    def del_file(self, file_path) -> bool:
-        """
-        删除文件
-
-        Args:
-            file_path (str): 文件路径
-
-        Returns:
-            bool：True/False
-        """
-        try:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                logger.info(f"文件删除成功：{file_path}")
-
-                return True
-
-            logger.error(f"文件不存在：{file_path}")
-            return False
-        except Exception:
-            logger.error(traceback.format_exc())
-            return False
 
     # 从给定的文件路径中提取文件名及其扩展名
     def get_filename_from_path(self, file_path):
@@ -1199,12 +1145,6 @@ class Common:
 
     async def send_async_request(self, *args, **kwargs):
         return await http_client.send_async_request(*args, **kwargs)
-
-    async def send_heartbeat(self):
-        return await http_client.send_heartbeat()
-
-    def check_login(self, api_url: str, username: str, password: str):
-        return http_client.check_login(api_url, username, password)
 
     async def send_to_web_captions_printer(self, api_ip_port, data):
         return await http_client.send_to_web_captions_printer(api_ip_port, data)

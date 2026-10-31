@@ -16,7 +16,7 @@ class Config:
     因此原先依靠"重新实例化"来刷新配置的调用点，现均改为显式 reload()。
     """
 
-    _instances = {}
+    _instances: dict[str, "Config"] = {}
     _class_lock = threading.Lock()
 
     def __new__(cls, config_file="config.json"):
