@@ -1,0 +1,10 @@
+# pre-commit 钩子：提交前自动跑 ruff lint 与 format。
+# 安装：pip install pre-commit && pre-commit install
+# 规则本体在 pyproject.toml [tool.ruff]，本地与 CI 完全一致。
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.3
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format

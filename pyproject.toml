@@ -165,3 +165,8 @@ ignore = [
 
 [tool.ruff.format]
 quote-style = "double"
+
+# 类型检查：从最稳定的 infra/common 两包起步，逐步扩大 files 范围
+[tool.mypy]
+ignore_missing_imports = true
+files = ["luna/infra", "luna/common"]

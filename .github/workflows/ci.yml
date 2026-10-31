@@ -26,6 +26,9 @@ jobs:
       - name: Ruff format check
         run: python -m ruff format --check .
 
+      - name: Mypy (infra+common 基线)
+        run: python -m mypy
+
   core:
     name: 单元测试 + WebUI 冒烟（仅 core 依赖）
     runs-on: ubuntu-latest
