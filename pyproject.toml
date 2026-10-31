@@ -166,13 +166,8 @@ ignore = [
 [tool.ruff.format]
 quote-style = "double"
 
-# 类型检查：全仓基线（my_handle 单模块豁免，见 overrides 说明）
+# 类型检查：全仓基线
 [tool.mypy]
 ignore_missing_imports = true
 files = ["luna", "app", "webui_server", "main.py"]
 
-[[tool.mypy.overrides]]
-# my_handle 103 处报错全部源于 God object 的类属性动态模式（config=None 占位+
-# 类属性重绑+self/My_handle 混用），修法是结构重构而非补注解——待专项处理。
-module = "luna.core.my_handle"
-ignore_errors = true

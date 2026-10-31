@@ -8,7 +8,6 @@ insert_index 决定回复插回待合成队列的位置。两处守卫写成了
 import pytest
 
 from fakes import FakeAudio
-from luna.core.my_handle import My_handle
 
 
 class AnchorAudio(FakeAudio):
@@ -57,7 +56,7 @@ def text_anchor(configure):
             }
         )
     )
-    My_handle.audio = AnchorAudio()
+    handle.audio = AnchorAudio()
     handle.find_answer = lambda content, path, similarity: f"晴天:{content}"
     handle.write_to_comment_log = lambda *args: None
     return handle
@@ -66,7 +65,7 @@ def text_anchor(configure):
 def test_text_answer_keeps_the_queue_position(text_anchor):
     text_anchor.audio_synthesis_handle(comment_message(insert_index=0))
 
-    message = last_synthesis(My_handle.audio)
+    message = last_synthesis(text_anchor.audio)
     assert message["type"] == "assistant_anchor_text"
     assert message["insert_index"] == 0
 
@@ -74,7 +73,7 @@ def test_text_answer_keeps_the_queue_position(text_anchor):
 def test_text_answer_without_a_queue_position_stays_silent_on_the_key(text_anchor):
     text_anchor.audio_synthesis_handle(comment_message())
 
-    assert "insert_index" not in last_synthesis(My_handle.audio)
+    assert "insert_index" not in last_synthesis(text_anchor.audio)
 
 
 @pytest.fixture
@@ -86,7 +85,7 @@ def audio_anchor(configure):
             }
         )
     )
-    My_handle.audio = AnchorAudio()
+    handle.audio = AnchorAudio()
     # 命中问答库这件事本身不是被测点，直接让它必定命中
     handle.common.find_best_match = lambda text, lst, similarity=0.5: lst[0] if lst else None
     return handle
@@ -95,6 +94,6 @@ def audio_anchor(configure):
 def test_audio_answer_keeps_the_queue_position(audio_anchor):
     audio_anchor.audio_synthesis_handle(comment_message(insert_index=2))
 
-    message = last_synthesis(My_handle.audio)
+    message = last_synthesis(audio_anchor.audio)
     assert message["type"] == "assistant_anchor_audio"
     assert message["insert_index"] == 2

@@ -8,7 +8,6 @@
 import pytest
 
 from luna.core import my_handle as my_handle_module
-from luna.core.my_handle import My_handle
 
 
 class FakeTimer:
@@ -33,7 +32,7 @@ def timers(monkeypatch):
 def test_body_exception_still_rearms_the_timer(configure, timers):
     # 开了念弹幕周期触发但没配 periodic_time_min，函数体会在 int(None) 上炸
     handle = configure({"read_comment": {"periodic_trigger": {"enable": True}}})
-    My_handle.task_data = {"read_comment": {"time": 0, "data": []}}
+    handle.task_data = {"read_comment": {"time": 0, "data": []}}
 
     handle.periodic_trigger_data_handle()
 
