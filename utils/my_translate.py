@@ -21,6 +21,7 @@ class My_Translate:
     # 重载config
     def reload_config(self, config_path):
         self.config = Config(config_path)
+        self.config.reload()
 
     def trans(self, text, type=None) -> str:
         """通用翻译调用此函数

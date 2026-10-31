@@ -583,7 +583,9 @@ class My_handle(metaclass=SingletonMeta):
 
     # 重载config
     def reload_config(self, config_path):
+        # Config 按路径单例：先重读磁盘，My_handle/Audio/Translate 共享同一视图
         My_handle.config = Config(config_path)
+        My_handle.config.reload()
         My_handle.audio.reload_config(config_path)
         My_handle.my_translate.reload_config(config_path)
 

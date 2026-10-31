@@ -43,9 +43,22 @@ class Runtime:
             return hashlib.sha256(f.read()).hexdigest()
 
     def write_config(self, data):
-        with open(self.config_path, "w", encoding="utf-8") as f:
+        """原子写当前配置文件（见 write_config_file）。"""
+        self.write_config_file(self.config_path, data)
+
+    @staticmethod
+    def write_config_file(path, data):
+        """原子写配置：先写同目录临时文件再 os.replace。
+
+        直接 open(w) 写到底，进程中途被读（main.py 的 /set_config、前端保存的
+        sha256 校验）会读到半份 JSON；os.replace 在 Windows/POSIX 上都是原子替换。
+        """
+        tmp_path = f"{path}.tmp"
+        with open(tmp_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
             f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, path)
 
     def get(self, *keys, default=None):
         result = self.read_config()

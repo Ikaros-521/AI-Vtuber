@@ -573,7 +573,8 @@ def start_server():
         try:
             is_recording = True
 
-            config = Config(config_path)
+            # 刷新配置单例，读取 webui 侧写入的最新值
+            config.reload()
             # 是否启用按键监听和直接对话，没启用的话就不用执行了
             if not config.get("talk", "key_listener_enable") and not config.get("talk", "direct_run_talk"):
                 is_recording = False
@@ -623,7 +624,7 @@ def start_server():
                         is_recording = False
                         break
 
-                    config = Config(config_path)
+                    config.reload()
 
                     # 根据接入的语音识别类型执行
                     if config.get("talk", "type") in [

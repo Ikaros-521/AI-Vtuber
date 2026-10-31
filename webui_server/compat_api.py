@@ -31,9 +31,8 @@ async def set_config(msg: SetConfigMessage):
         config_data.update(msg.data)
 
         try:
-            with open(msg.config_path, "w", encoding="utf-8") as config_file:
-                json.dump(config_data, config_file, indent=2, ensure_ascii=False)
-                config_file.flush()
+            # 走 runtime 的原子写，避免与前端保存/sha256 校验读到半份 JSON
+            runtime.write_config_file(msg.config_path, config_data)
             logger.info("配置数据已成功写入文件！")
             return CommonResult(code=200, message="配置数据已成功写入文件！")
         except Exception as e:

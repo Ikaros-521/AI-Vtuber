@@ -13,7 +13,14 @@ config_path = os.environ.get("LUNA_CONFIG_PATH") or str(project_dir / "config.js
 
 logger.debug("配置文件路径=" + str(config_path))
 
-config = Config(config_path)
+# 日志模块是全仓 import 链的根（约 25 个模块直接/间接依赖），
+# 这里绝不能因为 config.json 缺失/损坏而抛异常，否则所有模块连环 import 失败。
+# 读不到配置时退回默认值，保证日志可用、问题可见。
+try:
+    config = Config(config_path)
+    _log_cfg = config.get("webui", "log") or {}
+except Exception:
+    _log_cfg = {}
 
 log_dir = project_dir / "log"
 log_dir.mkdir(parents=True, exist_ok=True)
@@ -38,8 +45,8 @@ def configure_logger(file_path, log_level, max_file_size):
 
 
 # 获取日志配置
-log_level = config["webui"]["log"].get("log_level", "INFO")
-max_file_size = config["webui"]["log"].get("max_file_size", "1024 MB")
+log_level = _log_cfg.get("log_level", "INFO")
+max_file_size = _log_cfg.get("max_file_size", "1024 MB")
 
 # 配置 logger
 configure_logger(file_path, log_level, max_file_size)
