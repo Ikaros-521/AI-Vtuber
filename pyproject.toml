@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ai-vtuber"
-version = "1.0.0"
+version = "4.0.0"
 description = "AI Vtuber，结合ASR、LLM、TTS、SVC、SD等功能为一体的开源AI软件"
 authors = ["ikaros <327209194@qq.com>"]
 license = "GPL-3.0"
