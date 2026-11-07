@@ -100,3 +100,50 @@ class MemorySystem:
             "SELECT content FROM agent_episodic WHERE kind = 'highlight' ORDER BY ts DESC LIMIT ?", (limit,)
         )
         return [r[0] for r in rows]
+
+    # ---------- 管理接口（WebUI 记忆管理页用；读侧不启用也允许查已存数据） ----------
+
+    def list_viewers(self, keyword: str = "", limit: int = 100) -> list:
+        """观众画像列表，按最近互动倒序；keyword 模糊匹配用户名。"""
+        if self.db is None:
+            return []
+        try:
+            if keyword:
+                return self.db.fetch_all(
+                    "SELECT platform, username, first_seen, last_seen, interactions, note "
+                    "FROM viewer_profile WHERE username LIKE ? ORDER BY last_seen DESC LIMIT ?",
+                    (f"%{keyword}%", limit),
+                )
+            return self.db.fetch_all(
+                "SELECT platform, username, first_seen, last_seen, interactions, note "
+                "FROM viewer_profile ORDER BY last_seen DESC LIMIT ?",
+                (limit,),
+            )
+        except Exception:
+            # 表还没建（agent 从未启用过）按空处理，WebUI 显示空态
+            return []
+
+    def delete_viewer(self, platform: str, username: str) -> bool:
+        if self.db is None:
+            return False
+        self.db.execute("DELETE FROM viewer_profile WHERE platform = ? AND username = ?", (platform, username))
+        return True
+
+    def list_highlights(self, limit: int = 50) -> list:
+        """高光时间线（带 rowid 供删除），按时间倒序。"""
+        if self.db is None:
+            return []
+        try:
+            return self.db.fetch_all(
+                "SELECT rowid, ts, username, content FROM agent_episodic WHERE kind = 'highlight' "
+                "ORDER BY ts DESC LIMIT ?",
+                (limit,),
+            )
+        except Exception:
+            return []
+
+    def delete_highlight(self, row_id: int) -> bool:
+        if self.db is None:
+            return False
+        self.db.execute("DELETE FROM agent_episodic WHERE rowid = ?", (row_id,))
+        return True

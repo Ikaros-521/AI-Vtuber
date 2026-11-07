@@ -214,3 +214,12 @@ def test_intent_decline_degrades():
     runtime = AgentRuntime(handle, adapter=FakeAdapter([]))
     runtime.intent = DeclineRouter()
     assert runtime.handle_chat(make_event(), "comment") is False
+
+
+def test_kill_switch_silences_agent():
+    runtime, handle, adapter = make_runtime(results=[AdapterResult(text="不该出现")])
+    runtime.kill_switch = True
+    assert runtime.handle_chat(make_event(), "comment") is False
+    assert adapter.calls == []
+    runtime.kill_switch = False
+    assert runtime.handle_chat(make_event(), "comment") is True

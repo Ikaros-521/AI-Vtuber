@@ -132,6 +132,70 @@ def create_api_app(state):
             logger.error(f"get_sys_info处理失败！{e}")
             return CommonResult(code=-1, message=f"get_sys_info处理失败！{e}")
 
+    # ---------- Agent 决策域（v5）：webui 的 Agent 工作台经 webui_server 代理到这里 ----------
+
+    @app.get("/agent_status")
+    async def agent_status():
+        """Agent 运行时实时状态：急停/预算/最近决策数。"""
+        try:
+            runtime_obj = getattr(state.my_handle, "agent_runtime", None)
+            config_enabled = bool(state.config.get("agent", "enabled"))
+            if runtime_obj is None:
+                return CommonResult(
+                    code=200,
+                    data={"enabled": config_enabled, "runtime": None},
+                    message="Agent 运行时未启用",
+                )
+            from luna.agent.trace import RECENT
+
+            limit = int(state.config.get("agent", "budget", "tokens_per_hour") or 0)
+            with runtime_obj._budget_lock:
+                hour_used = runtime_obj._hour_used
+            return CommonResult(
+                code=200,
+                data={
+                    "enabled": config_enabled,
+                    "runtime": {
+                        "killed": bool(runtime_obj.kill_switch),
+                        "tools_enabled": list(runtime_obj.registry._tools.keys()),
+                        "hour_used": hour_used,
+                        "hour_limit": limit,
+                        "recent_trace_count": len(RECENT),
+                    },
+                },
+                message="成功",
+            )
+        except Exception as e:
+            logger.error(f"agent_status处理失败！{e}")
+            return CommonResult(code=-1, message=f"agent_status处理失败！{e}")
+
+    @app.get("/agent_trace")
+    async def agent_trace():
+        """最近决策 trace（进程内滚动窗口）。"""
+        try:
+            from luna.agent.trace import RECENT
+
+            return CommonResult(code=200, data={"records": list(RECENT)}, message="成功")
+        except Exception as e:
+            logger.error(f"agent_trace处理失败！{e}")
+            return CommonResult(code=-1, message=f"agent_trace处理失败！{e}")
+
+    @app.post("/agent_kill")
+    async def agent_kill(request: Request):
+        """急停开关：on=true 本进程立即静默 Agent（不落盘），on=false 恢复。"""
+        try:
+            data_json = await request.json()
+            on = bool(data_json.get("on", True))
+            runtime_obj = getattr(state.my_handle, "agent_runtime", None)
+            if runtime_obj is None:
+                return CommonResult(code=-1, message="Agent 运行时未启用（config.agent.enabled 后重启生效）")
+            runtime_obj.kill_switch = on
+            logger.info(f"Agent 急停开关置为 {on}")
+            return CommonResult(code=200, message="Agent 已急停（本进程立即生效）" if on else "Agent 已恢复")
+        except Exception as e:
+            logger.error(f"agent_kill处理失败！{e}")
+            return CommonResult(code=-1, message=f"agent_kill处理失败！{e}")
+
     # 将本地目录中的静态文件（如 CSS、JavaScript、图片等）暴露给 web 服务器，以便用户可以通过特定的 URL 访问这些文件。
     if state.config.get("webui", "local_dir_to_endpoint", "enable"):
         for tmp in state.config.get("webui", "local_dir_to_endpoint", "config"):

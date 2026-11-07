@@ -71,6 +71,72 @@ export const api = {
   // ---------- 数据分析 ----------
   dataAnalysis: (top: number) =>
     get<ApiResult & Record<string, unknown>>(`/api/data-analysis?top=${top}`),
+
+  // ---------- Agent 工作台（v5） ----------
+  agentOverview: () => get<AgentOverviewResult>('/api/agent/overview'),
+  agentTrace: () => get<ApiResult & { records: AgentTraceRecord[] }>('/api/agent/trace'),
+  agentKill: (on: boolean) => post<ApiResult>('/api/agent/kill', { on }),
+  agentViewers: (keyword: string) =>
+    get<ApiResult & { viewers: AgentViewer[] }>(`/api/agent/memory/viewers?keyword=${encodeURIComponent(keyword)}`),
+  agentSetNote: (platform: string, username: string, note: string) =>
+    post<ApiResult>('/api/agent/memory/viewer/note', { platform, username, note }),
+  agentDeleteViewer: (platform: string, username: string) =>
+    post<ApiResult>('/api/agent/memory/viewer/delete', { platform, username }),
+  agentHighlights: () => get<ApiResult & { highlights: AgentHighlight[] }>('/api/agent/memory/highlights'),
+  agentDeleteHighlight: (rowId: number) =>
+    post<ApiResult>('/api/agent/memory/highlight/delete', { row_id: rowId }),
+}
+
+// ---------- Agent 工作台类型（与 webui_server/schemas.py 的模型一一对应） ----------
+
+export interface AgentOverviewResult extends ApiResult {
+  agent: Record<string, unknown>
+  tool_catalog: AgentToolInfo[]
+  running: boolean
+  runtime?: AgentRuntimeInfo | null
+}
+
+export interface AgentToolInfo {
+  name: string
+  description: string
+  dangerous: boolean
+}
+
+export interface AgentRuntimeInfo {
+  killed: boolean
+  tools_enabled: string[]
+  hour_used: number
+  hour_limit: number
+  recent_trace_count: number
+}
+
+export interface AgentTraceRecord {
+  ts: string
+  event_type: string
+  username: string
+  source: string
+  duration_ms: number
+  tool_calls: { name: string; args_digest: string; ms: number; ok: boolean }[]
+  degraded: boolean
+  reason: string
+  output_chars: number
+  prompt_chars: number
+}
+
+export interface AgentViewer {
+  platform: string
+  username: string
+  first_seen: string
+  last_seen: string
+  interactions: number
+  note: string
+}
+
+export interface AgentHighlight {
+  row_id: number
+  ts: string
+  username: string
+  content: string
 }
 
 /** 试听音频的播放地址（后端流式读文件）。 */

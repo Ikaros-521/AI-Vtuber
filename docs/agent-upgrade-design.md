@@ -182,14 +182,16 @@ Agent 决策失败（超时 / 异常 / 预算耗尽 / FC 不可用）
 
 `luna/agent/trace.py`：每次决策一条 JSON line 追加到独立日志（复用 `my_log` 基建），字段：`ts / event_type / username / prompt_chars / tool_calls[(name, args_digest, ms, ok)] / output_chars / degraded / tokens_est / cost_flag`。WebUI trace 查看器按场次过滤。没有 trace 的 Agent 在直播场景等于盲飞——排查"为什么它说了这话/没说话/说话超时"全靠它。
 
-## 7. WebUI：Agent 工作台（v5 前端演进方向）
+## 7. WebUI：Agent 工作台（已实装，2026-11-07）
 
-在 v3 信号链信息架构上加一个一级导航"Agent 工作台"，四块：
+一级导航"Agent 工作台"（`webui_react/src/components/AgentPage.tsx` + `webui_server/agent_api.py`），四块：
 
-1. **总控**：enabled 开关（大按钮，即急停）、模型通道选择、预算/超时参数。
-2. **工具管理**：工具卡片墙（沿用选卡墙交互），逐个启用/禁用，dangerous 类单独红色标识。
-3. **记忆管理**：观众画像表（搜索/编辑/删除）、本场高光时间线。
-4. **决策回放**：trace 流水 + 单条展开（prompt/工具调用/耗时/token），直播复盘用。
+1. **总控**：enabled 持久开关（走 configStore 草稿，保存后重启生效）+ **一键急停**（代理主进程 `/agent_kill`，进程内即时生效不落盘）+ 轮次/超时/预算/LLM 通道/人设参数。
+2. **工具管理**：工具卡片墙，逐个启用/禁用（`agent.tools.enabled` 数组草稿），dangerous 类红色标识。
+3. **记忆管理**：观众画像表（搜索/备注编辑/删除）+ 高光时间线；webui 侧经 `MemorySystem` 直接读写共享 sqlite。
+4. **决策回放**：trace 流水 + 单条展开（工具调用/耗时/降级原因），代理主进程 `/agent_trace`。
+
+主进程侧新增机机接口：`/agent_status` `/agent_trace` `/agent_kill`（app/api.py）。`resolveTab` 顺带修复页面中文标题深链（此前 `?tab=玩法库` 等一律回 dash）。
 
 ## 8. 分期实施计划
 

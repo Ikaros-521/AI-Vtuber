@@ -41,6 +41,10 @@ class AgentRuntime:
         self.intent = IntentRouter()
         self.adapter = adapter  # 测试注入；None 则按 chat_type 构造
 
+        # 急停开关（WebUI 一键急停用）：置位后本进程内 Agent 立即静默降级，
+        # 不落盘——持久开关仍是 config 的 agent.enabled，重启后以配置为准。
+        self.kill_switch = False
+
         # 小时预算：滚动 1 小时窗口的 token 折算计数（<=0 视为不限）
         self._hour_started = time.monotonic()
         self._hour_used = 0
@@ -48,6 +52,8 @@ class AgentRuntime:
 
     def handle_chat(self, data_json: dict, source: str) -> bool:
         """处理一条已过滤的待回复消息。True=接管完成，False=降级（落回原 LLM 路径）。"""
+        if self.kill_switch:
+            return False
         try:
             return self._run(data_json, source)
         except Exception:

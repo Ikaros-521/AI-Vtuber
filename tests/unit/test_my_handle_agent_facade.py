@@ -4,8 +4,6 @@
 这里用桩 runtime 验证门面自身的门控逻辑，不构造真 AgentRuntime。
 """
 
-from fakes import FakeConfig
-
 BASE_CONFIG = {
     "agent": {"enabled": True},
     "chat_type": "chatgpt",

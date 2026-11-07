@@ -31,7 +31,7 @@ export const WORKSPACES: Workspace[] = [
 export const SETTINGS_STEPS: Workspace[] = [platformWorkspace, brainWorkspace, voiceWorkspace, bodyWorkspace]
 
 /** 顶层页面：dash/chat 是非表单页，其余映射到工作区或 settings 组合页。 */
-export type PageId = 'dash' | 'settings' | 'play' | 'mod' | 'sys' | 'chat'
+export type PageId = 'dash' | 'settings' | 'play' | 'mod' | 'sys' | 'chat' | 'agent'
 
 export interface PageDef {
   id: PageId
@@ -42,6 +42,7 @@ export interface PageDef {
 export const PAGES: PageDef[] = [
   { id: 'dash', title: '开播台', sub: '现在能开播吗？差哪一步？' },
   { id: 'settings', title: '基础设置', sub: '四步配齐信号链：直播间 → AI 大脑 → 声音 → 形象' },
+  { id: 'agent', title: 'Agent 工作台', sub: '给 AI 大脑装上工具、记忆与缰绳' },
   { id: 'play', title: '玩法库', sub: '可选玩法，开关式启用' },
   { id: 'mod', title: '弹幕管家', sub: '什么弹幕进、怎么答谢、谁先播' },
   { id: 'sys', title: '系统', sub: '数据 / 备份 / 账号 / 外观 / 模块' },
@@ -62,6 +63,7 @@ const LEGACY_TAB_MAP: Record<string, { page: PageId; step?: string }> = {
   dash: { page: 'dash' },
   chat: { page: 'chat' },
   settings: { page: 'settings' },
+  agent: { page: 'agent' },
   play: { page: 'play' },
   mod: { page: 'mod' },
   sys: { page: 'sys' },
@@ -71,12 +73,15 @@ const LEGACY_TAB_MAP: Record<string, { page: PageId; step?: string }> = {
   body: { page: 'settings', step: 'body' },
 }
 
-/** ?tab= 的值 → 页面 + 步骤。认老标题、新 id、settings 步骤 id。 */
+/** ?tab= 的值 → 页面 + 步骤。认老标题、新 id、页面中文标题、settings 步骤 id。 */
 export function resolveTab(tab: string | null): { page: PageId; step: string } {
   if (!tab) return { page: 'dash', step: 'platform' }
   const hit = LEGACY_TAB_MAP[tab]
   if (hit) return { page: hit.page, step: hit.step ?? 'platform' }
-  // 没见过的标题：如果恰好是某个 settings 步骤的标题也接住
+  // 没见过的值：按页面中文标题接住（导航与 document.title 显示的就是它们），
+  // 再按 settings 步骤标题接住
+  const byPage = PAGES.find((w) => w.title === tab)
+  if (byPage) return { page: byPage.id, step: 'platform' }
   const byTitle = SETTINGS_STEPS.find((w) => w.title === tab)
   if (byTitle) return { page: 'settings', step: byTitle.id }
   return { page: 'dash', step: 'platform' }

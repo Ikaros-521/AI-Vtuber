@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from luna.infra.my_log import logger
-from webui_server import actions_api, auth_api, compat_api, config_api, logs_api, ops_api
+from webui_server import actions_api, agent_api, auth_api, compat_api, config_api, logs_api, ops_api
 from webui_server.auth_api import COOKIE_NAME, is_valid_session
 from webui_server.runtime import ROOT_DIR, runtime
 
@@ -49,6 +49,7 @@ def create_app() -> FastAPI:
     app.include_router(ops_api.router)
     app.include_router(logs_api.router)
     app.include_router(actions_api.router)
+    app.include_router(agent_api.router)
     app.include_router(auth_api.router)
     app.include_router(compat_api.router)
 

@@ -53,3 +53,24 @@ class RunLogResult(Envelope):
 
 class ChatLogResult(Envelope):
     messages: List[Dict[str, Any]] = []
+
+
+class AgentOverviewResult(Envelope):
+    """Agent 工作台总览：config 侧 + 工具目录 + 主进程运行态（主进程不在则为 None）。"""
+
+    agent: Dict[str, Any] = {}
+    tool_catalog: List[Dict[str, Any]] = []
+    running: bool = False
+    runtime: Optional[Dict[str, Any]] = None
+
+
+class AgentTraceResult(Envelope):
+    records: List[Dict[str, Any]] = []
+
+
+class AgentViewerListResult(Envelope):
+    viewers: List[Dict[str, Any]] = []
+
+
+class AgentHighlightListResult(Envelope):
+    highlights: List[Dict[str, Any]] = []
