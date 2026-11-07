@@ -35,6 +35,10 @@ TOOLS = {
     "play_song": ("luna.agent.tools.song", "PlaySong"),
     "generate_image": ("luna.agent.tools.image", "GenerateImage"),
     "stop_playback": ("luna.agent.tools.playback", "StopPlayback"),
+    "pause_playback": ("luna.agent.tools.playback", "PausePlayback"),
+    "resume_playback": ("luna.agent.tools.playback", "ResumePlayback"),
+    "set_volume": ("luna.agent.tools.playback", "SetVolume"),
+    "observe_screen": ("luna.agent.tools.vision", "ObserveScreen"),
 }
 
 

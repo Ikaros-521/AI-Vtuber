@@ -132,3 +132,131 @@ def test_stop_playback_tool_reports_missing_audio():
 
     handle = SimpleNamespace(audio=None, clear_queue=lambda type: None)
     assert "未就绪" in StopPlayback().run({}, make_ctx(handle))
+
+
+def test_pause_resume_volume_tools():
+    """v5 播放控制升级：暂停/继续双路径入口 + 音量百分比换算。"""
+    from luna.agent.tools.playback import PausePlayback, ResumePlayback, SetVolume
+
+    calls = []
+
+    class AudioStub:
+        def pause_current_audio(self):
+            calls.append("pause")
+
+        def resume_current_audio(self):
+            calls.append("resume")
+
+        def set_playback_volume(self, level):
+            calls.append(("volume", level))
+            return True
+
+    handle = SimpleNamespace(audio=AudioStub())
+    assert PausePlayback().run({}, make_ctx(handle)) == "已暂停播放"
+    assert ResumePlayback().run({}, make_ctx(handle)) == "已继续播放"
+    assert SetVolume().run({"level": 30}, make_ctx(handle)) == "音量已调到 30%"
+    assert calls == ["pause", "resume", ("volume", 0.3)]
+
+
+def test_set_volume_clamps_and_reports_unsupported():
+    from luna.agent.tools.playback import SetVolume
+
+    seen = []
+
+    class AudioStub:
+        def set_playback_volume(self, level):
+            seen.append(level)
+            return True
+
+    class UnsupportedAudio:
+        def set_playback_volume(self, level):
+            return False
+
+    assert "不支持" in SetVolume().run({"level": 50}, make_ctx(SimpleNamespace(audio=UnsupportedAudio())))
+    assert SetVolume().run({"level": 250}, make_ctx(SimpleNamespace(audio=AudioStub()))) == "音量已调到 100%"
+    assert seen[-1] == 1.0  # 250 被钳到 100%
+    assert "整数" in SetVolume().run({"level": "abc"}, make_ctx(SimpleNamespace(audio=AudioStub())))
+
+
+def test_observe_screen_tool_passes_question():
+    from luna.agent.tools.vision import ObserveScreen
+
+    seen = []
+
+    class Handle:
+        def observe_screen(self, question):
+            seen.append(question)
+            return f"画面：{question}"
+
+    assert ObserveScreen().run({"question": "在玩什么游戏"}, make_ctx(Handle())) == "画面：在玩什么游戏"
+    assert seen == ["在玩什么游戏"]
+    # 留空走默认描述提示词
+    ObserveScreen().run({}, make_ctx(Handle()))
+    assert seen[-1] == "请描述一下画面里的内容"
+
+
+def test_observe_screen_branches(handle, configure, monkeypatch):
+    """My_handle.observe_screen：未启用 / 窗口截图 / 摄像头源 / 模型无返回。"""
+    configure(
+        {
+            "image_recognition": {
+                "enable": True,
+                "img_save_path": "out",
+                "screenshot_window_title": "游戏窗口",
+                "model": "gemini",
+                "cam_screenshot_enable": False,
+            }
+        }
+    )
+    captured = []
+    monkeypatch.setattr(
+        handle,
+        "common",
+        SimpleNamespace(
+            capture_window_by_title=lambda path, title: captured.append(("window", title)) or "shot.png",
+            capture_image=lambda path, idx: captured.append(("cam", idx)) or "cam.png",
+        ),
+    )
+    monkeypatch.setattr(handle, "get_vision_model", lambda ct, cfg: None)
+    handle.image_recognition_model = SimpleNamespace(get_resp_with_img=lambda prompt, img: f"看到 {img}")
+
+    assert handle.observe_screen("看看") == "看到 shot.png"
+    assert captured == [("window", "游戏窗口")]
+
+    # 摄像头源
+    configure(
+        {
+            "image_recognition": {
+                "enable": True,
+                "img_save_path": "out",
+                "model": "gemini",
+                "cam_screenshot_enable": True,
+                "cam_index": 2,
+            }
+        }
+    )
+    assert handle.observe_screen("看看") == "看到 cam.png"
+    assert captured[-1] == ("cam", 2)
+
+    # 未启用
+    configure({"image_recognition": {"enable": False}})
+    assert "未启用" in handle.observe_screen("看看")
+
+    # 截图失败
+    configure(
+        {
+            "image_recognition": {
+                "enable": True,
+                "img_save_path": "out",
+                "screenshot_window_title": "",
+                "model": "gemini",
+                "cam_screenshot_enable": False,
+            }
+        }
+    )
+    monkeypatch.setattr(
+        handle,
+        "common",
+        SimpleNamespace(capture_window_by_title=lambda p, t: None, capture_image=lambda p, i: None),
+    )
+    assert "截图失败" in handle.observe_screen("看看")

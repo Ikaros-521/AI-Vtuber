@@ -1455,6 +1455,31 @@ class Audio:
         else:
             self.mixer_normal.music.fadeout(1000)
 
+    def pause_current_audio(self):
+        """暂停当前播放（audio_player 走播放器接口，pygame 走 mixer.music.pause）。"""
+        if self.config.get("play_audio", "player") == "audio_player":
+            self.audio_player.pause_stream()
+        else:
+            self.mixer_normal.music.pause()
+
+    def resume_current_audio(self):
+        """恢复播放（与 pause_current_audio 对应）。"""
+        if self.config.get("play_audio", "player") == "audio_player":
+            self.audio_player.resume_stream()
+        else:
+            self.mixer_normal.music.unpause()
+
+    def set_playback_volume(self, level: float) -> bool:
+        """设置主播放音量（0.0-1.0）。
+
+        仅 pygame mixer 路径支持（pygame.mixer.music 原生能力，此前没暴露）；
+        audio_player 播放器的 HTTP 接口没有音量端点，返回 False 由调用方提示。
+        """
+        if self.config.get("play_audio", "player") == "audio_player":
+            return False
+        self.mixer_normal.music.set_volume(max(0.0, min(1.0, level)))
+        return True
+
     r"""
                                                      ./@\]                    
                    ,@@@@\*                             \@@^ ,]]]              

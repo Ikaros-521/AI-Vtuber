@@ -1826,7 +1826,11 @@
         "memory_save",
         "play_song",
         "generate_image",
-        "stop_playback"
+        "stop_playback",
+        "pause_playback",
+        "resume_playback",
+        "set_volume",
+        "observe_screen"
       ],
       "dangerous_enabled": []
     },

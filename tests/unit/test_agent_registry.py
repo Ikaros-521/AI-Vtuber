@@ -15,6 +15,10 @@ EXPECTED_TOOLS = {
     "play_song",
     "generate_image",
     "stop_playback",
+    "pause_playback",
+    "resume_playback",
+    "set_volume",
+    "observe_screen",
 }
 
 

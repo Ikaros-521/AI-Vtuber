@@ -1344,6 +1344,38 @@ class My_handle(metaclass=SingletonMeta):
         self.sd.process_input(prompt)
         return "已提交画图请求，稍后会在直播间画面展示"
 
+    def observe_screen(self, prompt: str):
+        """截取直播画面并交给视觉模型描述（Agent observe_screen 工具的干净入口，v5）。
+
+        截图源与模型沿用图像识别配置（config.image_recognition）：默认窗口截图
+        （screenshot_window_title），开启 cam_screenshot_enable 时用摄像头。
+
+        Returns:
+            str: 视觉模型的回答（或失败原因）
+        """
+        if not self.config.get("image_recognition", "enable"):
+            return "图像识别未启用（config.image_recognition.enable），需要先配置视觉模型"
+        save_path = self.config.get("image_recognition", "img_save_path") or "./out/图像识别"
+        if self.config.get("image_recognition", "cam_screenshot_enable"):
+            screenshot_path = self.common.capture_image(
+                save_path, int(self.config.get("image_recognition", "cam_index"))
+            )
+        else:
+            screenshot_path = self.common.capture_window_by_title(
+                save_path, self.config.get("image_recognition", "screenshot_window_title")
+            )
+        if not screenshot_path:
+            return "截图失败：没拿到画面（检查图像识别的截图窗口标题是否配置正确）"
+        chat_type = self.config.get("image_recognition", "model")
+        if getattr(self, "image_recognition_model", None) is None:
+            self.get_vision_model(chat_type, self.config.get("image_recognition", chat_type))
+        if getattr(self, "image_recognition_model", None) is None:
+            return f"视觉模型 {chat_type} 加载失败（检查 image_recognition 配置与依赖）"
+        resp_content = self.image_recognition_model.get_resp_with_img(prompt, screenshot_path)
+        if not resp_content:
+            return f"视觉模型 {chat_type} 没有返回内容"
+        return str(resp_content).strip()
+
     # 弹幕格式检查和特殊字符替换和指定语言过滤
     def comment_check_and_replace(self, content):
         # 实现已拆分到 utils/filters.py，这里保留委托门面
