@@ -56,6 +56,16 @@ def test_collect_stats_aggregates_local_tables(seeded_db):
     assert stats["top_viewers"][0] == {"username": "alice", "interactions": 9}
 
 
+@pytest.fixture(autouse=True)
+def _clear_trace_recent():
+    """RECENT 是进程级滚动窗口，不清理会被其它测试的 trace 记录污染计数断言。"""
+    from luna.agent.trace import RECENT
+
+    RECENT.clear()
+    yield
+    RECENT.clear()
+
+
 def test_collect_stats_agent_window(seeded_db):
     from luna.agent.trace import RECENT, Trace
 

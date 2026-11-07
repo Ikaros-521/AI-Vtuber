@@ -68,7 +68,7 @@ def test_enforce_danger_for_sensitive_paths():
 
 def test_history_roundtrip_and_reset(tmp_config):
     assistant = ConfigAssistant(runtime)
-    assistant._call_llm = lambda prompt: '{"reply": "r1", "changes": [], "questions": []}'
+    assistant._call_llm = lambda prompt: ('{"reply": "r1", "changes": [], "questions": []}', None)
     assistant.chat("s1", "第一条")
     assistant.chat("s1", "第二条")
     history = assistant._history("s1")

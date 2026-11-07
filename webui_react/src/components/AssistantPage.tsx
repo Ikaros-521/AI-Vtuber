@@ -27,6 +27,7 @@ export function AssistantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
   const [level, setLevel] = useState<string>('manual')
   const [sessionVersion, setSessionVersion] = useState(0)
   const sessionId = useRef(`assistant-${sessionVersion}`)
@@ -45,6 +46,14 @@ export function AssistantPage() {
       if (resp.code === 200 && resp.safety_level) setLevel(resp.safety_level)
     })
   }, [])
+
+  // 等待计时：配置助手单轮要 10-30s，无反馈会被当成没响应
+  useEffect(() => {
+    if (!busy) return
+    setElapsed(0)
+    const timer = setInterval(() => setElapsed((sec) => sec + 1), 1000)
+    return () => clearInterval(timer)
+  }, [busy])
 
   const changeLevel = async (next: string) => {
     const target = LEVEL_OPTIONS.find((l) => l.value === next)
@@ -71,20 +80,38 @@ export function AssistantPage() {
     setInput('')
     setMessages((prev) => [...prev, { role: 'user', text }])
     setBusy(true)
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 120000)
     try {
-      const resp = await api.configChat(sessionId.current, text)
+      const resp = await api.configChat(sessionId.current, text, controller.signal)
       if (resp.code === 200) {
+        const cost = resp.elapsed_ms ? `（耗时 ${(resp.elapsed_ms / 1000).toFixed(1)}s）` : ''
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', text: resp.reply, questions: resp.questions, changes: resp.changes },
+          {
+            role: 'assistant',
+            text: resp.error ? `⚠️ ${resp.reply}` : resp.reply + (resp.error ? '' : ` ${cost}`),
+            questions: resp.questions,
+            changes: resp.changes,
+          },
         ])
         if (resp.changes.some((c) => c.status === 'applied')) notify.ok('有变更已生效 · 重启程序后作用于直播间')
       } else {
         setMessages((prev) => [...prev, { role: 'assistant', text: resp.message || '出错了，请重试' }])
       }
     } catch (e) {
-      setMessages((prev) => [...prev, { role: 'assistant', text: `请求失败：${e}` }])
+      const aborted = e instanceof DOMException && e.name === 'AbortError'
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: aborted
+            ? '等待超时（120s）——检查模型服务/网关是否在运行，或换更快的模型（agent.config_assistant.chat_type）后重试'
+            : `请求失败：${e}`,
+        },
+      ])
     } finally {
+      clearTimeout(timeout)
       setBusy(false)
     }
   }
@@ -219,7 +246,11 @@ export function AssistantPage() {
             </div>
           </div>
         ))}
-        {busy && <p className="text-xs text-[var(--ink-mut)]">助手思考中……</p>}
+        {busy && (
+          <p className="text-xs text-[var(--ink-mut)]">
+            助手思考中…… {elapsed}s{elapsed >= 30 ? '（模型响应较慢，仍在等待，请勿重复发送）' : ''}
+          </p>
+        )}
         <div ref={bottomRef} />
       </div>
 

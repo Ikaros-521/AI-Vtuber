@@ -20,6 +20,18 @@ interface ReportMeta {
   window_date: string
   size: number
 }
+
+interface RagInfo {
+  enabled: boolean
+  dir?: string
+  files?: string[]
+  chunks?: number
+}
+
+interface McpInfo {
+  enabled: boolean
+  servers: { name: string; state: string; error: string; tools: string[] }[]
+}
 import { getByPath, type JsonObject } from '../lib/path'
 import { useConfigStore } from '../state/configStore'
 import { notify, useConfirmStore } from '../state/ui'
@@ -60,6 +72,10 @@ export function AgentPage() {
   const [reportContent, setReportContent] = useState<string | null>(null)
   const [reviewBusy, setReviewBusy] = useState(false)
   const [useLlm, setUseLlm] = useState(true)
+  const [rag, setRag] = useState<RagInfo | null>(null)
+  const [ragFile, setRagFile] = useState<string | null>(null)
+  const [ragContent, setRagContent] = useState('')
+  const [mcp, setMcp] = useState<McpInfo | null>(null)
   const [expandedTrace, setExpandedTrace] = useState<string | null>(null)
   const [viewers, setViewers] = useState<AgentViewer[] | null>(null)
   const [highlights, setHighlights] = useState<AgentHighlight[] | null>(null)
@@ -93,6 +109,16 @@ export function AgentPage() {
     if (highlightResp.code === 200) setHighlights(highlightResp.highlights)
   }, [])
 
+  const loadRag = useCallback(async () => {
+    const resp = await api.ragStatus()
+    if (resp.code === 200) setRag(resp)
+  }, [])
+
+  const loadMcp = useCallback(async () => {
+    const resp = await api.mcpStatus()
+    if (resp.code === 200) setMcp(resp)
+  }, [])
+
   const loadReports = useCallback(async () => {
     const resp = await api.reviewList()
     if (resp.code === 200) setReports(resp.reports)
@@ -104,7 +130,9 @@ export function AgentPage() {
     void loadMemory('')
     void loadTrace()
     void loadReports()
-  }, [loadOverview, loadMemory, loadTrace, loadReports])
+    void loadRag()
+    void loadMcp()
+  }, [loadOverview, loadMemory, loadTrace, loadReports, loadRag, loadMcp])
 
   // ---------- 总控 ----------
 
@@ -410,6 +438,134 @@ export function AgentPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+      </section>
+
+      {/* ---------- 人设知识库 ---------- */}
+      <section className="card-surface p-5">
+        <BlockHead
+          title="人设知识库"
+          desc="markdown 知识文件；直播时 Agent 按弹幕话题检索相关知识遵循"
+          extra={
+            rag?.enabled ? (
+              <span className="text-xs text-[var(--ink-mut)]">
+                {rag.files?.length ?? 0} 个文件 · {rag.chunks ?? 0} 块
+              </span>
+            ) : (
+              <span className="text-xs text-[var(--ink-mut)]">未启用（config.agent.rag.enabled）</span>
+            )
+          }
+        />
+        {rag?.enabled && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                className="inp w-auto text-[12.5px]"
+                value={ragFile ?? ''}
+                onChange={async (e) => {
+                  const name = e.target.value
+                  setRagFile(name || null)
+                  if (name) {
+                    const resp = await api.ragGetFile(name)
+                    if (resp.code === 200) setRagContent(resp.content)
+                  } else {
+                    setRagContent('')
+                  }
+                }}
+              >
+                <option value="">选择文件 / 新建……</option>
+                {(rag.files ?? []).map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </select>
+              {ragFile != null && (
+                <button
+                  className={BTN}
+                  onClick={async () => {
+                    const resp = await api.ragSaveFile(ragFile, ragContent)
+                    if (resp.code === 200) {
+                      notify.ok('知识文件已保存')
+                      void loadRag()
+                    } else {
+                      notify.err(resp.message || '保存失败')
+                    }
+                  }}
+                >
+                  保存
+                </button>
+              )}
+              {ragFile != null && (
+                <button
+                  className={BTN}
+                  style={{ color: 'var(--warn)' }}
+                  onClick={() => {
+                    useConfirmStore.getState().ask('删除知识文件', async () => {
+                      const resp = await api.ragDeleteFile(ragFile)
+                      if (resp.code === 200) {
+                        notify.ok('已删除')
+                        setRagFile(null)
+                        setRagContent('')
+                        void loadRag()
+                      } else {
+                        notify.err(resp.message || '删除失败')
+                      }
+                    }, `将删除知识文件「${ragFile}」。`)
+                  }}
+                >
+                  删除
+                </button>
+              )}
+            </div>
+            {ragFile != null && (
+              <textarea
+                className="inp w-full font-mono text-[12.5px]"
+                rows={10}
+                value={ragContent}
+                onChange={(e) => setRagContent(e.target.value)}
+                placeholder={'# 主播设定\n直播间规矩：……\n口头禅：……'}
+              />
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* ---------- MCP 工具生态 ---------- */}
+      <section className="card-surface p-5">
+        <BlockHead
+          title="MCP 工具生态"
+          desc="外部 MCP server 的工具并入 Agent 工具清单（server 级信任）；在 config.agent.mcp 配置 servers"
+          extra={
+            mcp?.enabled ? (
+              <span className="text-xs text-[var(--ink-mut)]">{mcp.servers.length} 个 server</span>
+            ) : (
+              <span className="text-xs text-[var(--ink-mut)]">未启用（config.agent.mcp.enabled）</span>
+            )
+          }
+        />
+        {mcp?.enabled && (
+          <div className="space-y-2">
+            {mcp.servers.length === 0 && <p className="text-xs text-[var(--ink-mut)]">还没有接入的 MCP server。</p>}
+            {mcp.servers.map((server) => (
+              <div key={server.name} className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-100 px-3 py-2">
+                <span className="text-[13px] font-medium">{server.name}</span>
+                <span
+                  className="rounded-full px-2 py-0.5 text-[11px]"
+                  style={
+                    server.state === 'ready'
+                      ? { background: 'color-mix(in srgb, var(--ok) 14%, white)', color: 'var(--ok)' }
+                      : { background: 'color-mix(in srgb, var(--warn) 14%, white)', color: 'var(--warn)' }
+                  }
+                >
+                  {server.state}
+                  {server.error ? ` · ${server.error}` : ''}
+                </span>
+                <span className="text-xs text-[var(--ink-mut)]">{server.tools.length} 个工具</span>
+                {server.tools.length > 0 && <code className="text-[11px] text-[var(--ink-mut)]">{server.tools.join('、')}</code>}
+              </div>
+            ))}
           </div>
         )}
       </section>

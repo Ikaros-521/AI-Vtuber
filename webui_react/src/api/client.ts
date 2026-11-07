@@ -95,14 +95,27 @@ export const api = {
     post<ApiResult>('/api/agent/memory/highlight/delete', { row_id: rowId }),
 
   // ---------- 配置助手（v5 P2） ----------
-  configChat: (sessionId: string, message: string) =>
-    post<ApiResult & { reply: string; changes: ConfigChange[]; questions: string[]; level: string }>(
+  configChat: (sessionId: string, message: string, signal?: AbortSignal) =>
+    request<ApiResult & { reply: string; changes: ConfigChange[]; questions: string[]; level: string; elapsed_ms?: number; error?: boolean }>(
       '/api/agent/config-chat',
-      { session_id: sessionId, message },
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: sessionId, message }), signal },
     ),
   configApply: (changes: { path: string[]; value: unknown }[]) =>
     post<ApiResult & { results: { path: string[]; ok: boolean }[] }>('/api/agent/config-apply', { changes }),
   assistantSettings: () => get<ApiResult & { safety_level: string }>('/api/agent/assistant-settings'),
+
+  // ---------- 人设知识库 RAG / MCP 生态（v5 P2） ----------
+  ragStatus: () => get<ApiResult & { enabled: boolean; dir?: string; files?: string[]; chunks?: number }>(
+    '/api/agent/rag/status',
+  ),
+  ragGetFile: (name: string) =>
+    get<ApiResult & { name: string; content: string }>(`/api/agent/rag/file?name=${encodeURIComponent(name)}`),
+  ragSaveFile: (name: string, content: string) => post<ApiResult>('/api/agent/rag/file', { name, content }),
+  ragDeleteFile: (name: string) => post<ApiResult>('/api/agent/rag/file/delete', { name }),
+  mcpStatus: () =>
+    get<ApiResult & { enabled: boolean; servers: { name: string; state: string; error: string; tools: string[] }[] }>(
+      '/api/agent/mcp/status',
+    ),
   setAssistantSettings: (safetyLevel: string) =>
     post<ApiResult>('/api/agent/assistant-settings', { safety_level: safetyLevel }),
 }

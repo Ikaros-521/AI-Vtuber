@@ -301,7 +301,7 @@ export function AppShell() {
 
         {/* 页面内容 */}
         <main className="mx-auto w-full max-w-[1240px] flex-1 px-6 pb-16 pt-5">
-          {route.page === 'dash' && <DashboardPage onOpenChat={() => navGo('chat')} onOpenWizard={() => setWizardOpen(true)} />}
+          {route.page === 'dash' && <DashboardPage onOpenChat={() => navGo('chat')} onOpenWizard={() => setWizardOpen(true)} onOpenAssistant={() => navGo('assistant')} />}
           {route.page === 'settings' && (
             <SettingsPage step={route.step} onStep={(s) => setRoute({ page: 'settings', step: s })} />
           )}

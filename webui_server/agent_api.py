@@ -201,6 +201,82 @@ async def review_get(report_id: int):
         return {"code": -1, "message": f"读取复盘失败：{e}"}
 
 
+class RagFileSaveRequest(BaseModel):
+    name: str
+    content: str
+
+
+class RagFileDeleteRequest(BaseModel):
+    name: str
+
+
+@router.get("/rag/status", response_model=Envelope)
+async def rag_status():
+    try:
+        resp, proxy_error = await _proxy_main("/agent_rag/status")
+        if isinstance(resp, dict) and resp.get("code") == 200:
+            return {"code": 200, **resp.get("data", {})}
+        message = proxy_error or (resp.get("message", "主进程未响应") if isinstance(resp, dict) else "主进程未响应")
+        return {"code": -1, "message": f"读取知识库状态失败：{message}"}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "message": f"读取知识库状态失败：{e}"}
+
+
+@router.get("/rag/file", response_model=Envelope)
+async def rag_file(name: str):
+    try:
+        import urllib.parse
+
+        resp, proxy_error = await _proxy_main(f"/agent_rag/file?name={urllib.parse.quote(name)}")
+        if isinstance(resp, dict) and resp.get("code") == 200:
+            return {"code": 200, "name": name, "content": resp.get("data", {}).get("content", "")}
+        message = proxy_error or (resp.get("message", "主进程未响应") if isinstance(resp, dict) else "主进程未响应")
+        return {"code": -1, "message": f"读取知识文件失败：{message}"}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "message": f"读取知识文件失败：{e}"}
+
+
+@router.post("/rag/file", response_model=Envelope)
+async def rag_file_save(req: RagFileSaveRequest):
+    try:
+        resp, proxy_error = await _proxy_main("/agent_rag/file", "POST", {"name": req.name, "content": req.content})
+        if isinstance(resp, dict) and resp.get("code") == 200:
+            return {"code": 200, "message": "知识文件已保存"}
+        message = proxy_error or (resp.get("message", "主进程未响应") if isinstance(resp, dict) else "主进程未响应")
+        return {"code": -1, "message": f"保存失败：{message}"}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "message": f"保存失败：{e}"}
+
+
+@router.post("/rag/file/delete", response_model=Envelope)
+async def rag_file_delete(req: RagFileDeleteRequest):
+    try:
+        resp, proxy_error = await _proxy_main("/agent_rag/file/delete", "POST", {"name": req.name})
+        if isinstance(resp, dict) and resp.get("code") == 200:
+            return {"code": 200, "message": "已删除"}
+        message = proxy_error or (resp.get("message", "主进程未响应") if isinstance(resp, dict) else "主进程未响应")
+        return {"code": -1, "message": f"删除失败：{message}"}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "message": f"删除失败：{e}"}
+
+
+@router.get("/mcp/status", response_model=Envelope)
+async def mcp_status():
+    try:
+        resp, proxy_error = await _proxy_main("/mcp_status")
+        if isinstance(resp, dict) and resp.get("code") == 200:
+            return {"code": 200, **resp.get("data", {})}
+        message = proxy_error or (resp.get("message", "主进程未响应") if isinstance(resp, dict) else "主进程未响应")
+        return {"code": -1, "servers": [], "message": f"读取 MCP 状态失败：{message}"}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "servers": [], "message": f"读取 MCP 状态失败：{e}"}
+
+
 @router.get("/stats", response_model=Envelope)
 async def stats():
     """决策聚合统计（P1 尾部度量），代理主进程 /agent_stats。"""
@@ -274,6 +350,8 @@ def config_chat(req: ConfigChatRequest):
             "changes": result["changes"],
             "questions": result["questions"],
             "level": level,
+            "elapsed_ms": result.get("elapsed_ms", 0),
+            "error": result.get("error", False),
         }
     except Exception as e:
         logger.error(traceback.format_exc())

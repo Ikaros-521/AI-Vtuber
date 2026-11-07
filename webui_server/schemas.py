@@ -83,6 +83,8 @@ class ConfigChatResult(Envelope):
     changes: List[Dict[str, Any]] = []
     questions: List[str] = []
     level: str = "manual"
+    elapsed_ms: int = 0
+    error: bool = False
 
 
 class ConfigApplyResult(Envelope):

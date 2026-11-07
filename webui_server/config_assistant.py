@@ -17,6 +17,7 @@
 import json
 import re
 import threading
+import uuid
 
 from luna.agent.config_knowledge import INJECT_SECTIONS, KNOWLEDGE, SENSITIVE_KEY_HINTS
 from luna.infra.my_log import logger
@@ -39,7 +40,12 @@ class ConfigAssistant:
     # ---------- LLM 接入 ----------
 
     def _call_llm(self, prompt):
-        """webui 进程内直调 provider（每轮现读配置现实例化，不缓存避免旧参数）。"""
+        """webui 进程内直调 provider，返回 (文本, 失败原因)。
+
+        每轮现读配置现实例化（不缓存避免旧参数）；chatgpt 用一次性会话 ID——
+        固定会话会把每轮完整 prompt 追进 provider 的会话历史，第二轮起输入翻倍
+        （真机实测 24s/轮的元凶之一），而多轮上下文已由本类自己的 history 承担。
+        """
         config = self.runtime.read_config()
         chat_type = (config.get("agent", {}) or {}).get("config_assistant", {}).get("chat_type") or config.get(
             "chat_type"
@@ -48,17 +54,25 @@ class ConfigAssistant:
 
         cls = load_model_class(chat_type)
         if cls is None:
-            return None
-        if chat_type == "chatgpt":
-            data_openai = config.get("openai")
-            if not data_openai or not data_openai.get("api_key"):
-                logger.warning("配置助手：openai key 为空，无法调用")
-                return None
-            model = cls(data_openai, config.get("chatgpt") or {})
-            return model.get_gpt_resp("config-assistant", prompt)
-        if chat_type in ("anythingllm", "custom_llm", "dify"):
-            return cls(config.get(chat_type) or {}).get_resp({"prompt": prompt})
-        return cls(config.get(chat_type) or {}).get_resp(prompt)
+            return None, f"模型 {chat_type} 加载失败（检查依赖是否安装）"
+        try:
+            if chat_type == "chatgpt":
+                data_openai = config.get("openai")
+                if not data_openai or not data_openai.get("api_key"):
+                    logger.warning("配置助手：openai key 为空，无法调用")
+                    return None, "openai key 为空（基础设置 → 人设与大脑）"
+                model = cls(data_openai, config.get("chatgpt") or {})
+                text = model.get_gpt_resp(f"cfg-assistant-{uuid.uuid4().hex[:8]}", prompt)
+            elif chat_type in ("anythingllm", "custom_llm", "dify"):
+                text = cls(config.get(chat_type) or {}).get_resp({"prompt": prompt})
+            else:
+                text = cls(config.get(chat_type) or {}).get_resp(prompt)
+        except Exception as e:
+            logger.error(f"配置助手 LLM 调用异常：\n{e}")
+            return None, f"模型调用异常：{e}"
+        if not text:
+            return None, f"模型 {chat_type} 没有返回内容（检查模型服务/网关是否在运行）"
+        return str(text), None
 
     # ---------- 会话历史 ----------
 
@@ -80,13 +94,33 @@ class ConfigAssistant:
 
     # ---------- 提示词 ----------
 
+    @staticmethod
+    def _deep_trim(value, depth: int = 0):
+        """递归压缩注入值：文案池数组只留前 3 条、长字符串截断。
+
+        实测全量注入 13K chars（各文案池撑的），压缩后 ~2-3K——模型只需要
+        「有什么键、大概什么值」，不需要逐条文案。
+        """
+        if isinstance(value, str):
+            return value[:200] + "…(截断)" if len(value) > 200 else value
+        if isinstance(value, list):
+            if not value:
+                return value
+            head = [ConfigAssistant._deep_trim(item, depth + 1) for item in value[:3]]
+            return head + [f"…(共{len(value)}条)"] if len(value) > 3 else head
+        if isinstance(value, dict):
+            if depth >= 3:
+                return "…"
+            return {key: ConfigAssistant._deep_trim(item, depth + 1) for key, item in value.items()}
+        return value
+
     def _system_prompt(self) -> str:
         config = self.runtime.read_config()
         inject = {}
         for section in INJECT_SECTIONS:
             value = config.get(section)
             if value is not None:
-                inject[section] = value
+                inject[section] = self._deep_trim(value)
         level = self.safety_level()
         return (
             "你是 AI Vtuber（Luna）的配置助手，帮主播把自然语言需求翻译成具体的配置变更。"
@@ -103,6 +137,7 @@ class ConfigAssistant:
             "- 不确定主播意图时宁可少改多问：changes 可为空数组，用 questions 追问\n"
             "- path 必须用知识库里真实存在的键；组合型需求拆成多条 change，每条给清晰理由\n"
             "- 涉及密钥/密码/登录态的变更 danger 必须为 true\n"
+            "- reply 控制在 200 字内，细节放到 questions 里追问\n"
             "- 主播闲聊或提问（不涉及配置）时 changes 为空，直接回答\n"
             f"- 当前安全等级是 {level}（{SAFETY_LEVEL_NAMES.get(level, level)}）；"
             "配置落盘后需重启程序才能在直播间生效，回复里要提醒\n"
@@ -156,13 +191,25 @@ class ConfigAssistant:
     # ---------- 主入口 ----------
 
     def chat(self, session_id: str, message: str) -> dict:
+        import time as time_module
+
+        started = time_module.monotonic()
         prompt_parts = [self._system_prompt()]
         for role, text in self._history(session_id):
             prompt_parts.append(f"{'主播' if role == 'user' else '你'}：{text}")
         prompt_parts.append(f"主播：{message}")
         prompt_parts.append("你：（严格按输出协议回答）")
-        raw = self._call_llm("\n\n".join(prompt_parts))
+        raw, error = self._call_llm("\n\n".join(prompt_parts))
+        if raw is None:
+            return {
+                "reply": f"调用模型失败：{error}",
+                "changes": [],
+                "questions": [],
+                "elapsed_ms": round((time_module.monotonic() - started) * 1000),
+                "error": True,
+            }
         result = self._parse_reply(raw)
+        result["elapsed_ms"] = round((time_module.monotonic() - started) * 1000)
         self._append_history(session_id, message, result["reply"])
         return result
 

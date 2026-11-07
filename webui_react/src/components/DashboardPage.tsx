@@ -88,7 +88,15 @@ function readiness(config: JsonObject): ChainNode[] {
   ]
 }
 
-export function DashboardPage({ onOpenChat, onOpenWizard }: { onOpenChat: () => void; onOpenWizard: () => void }) {
+export function DashboardPage({
+  onOpenChat,
+  onOpenWizard,
+  onOpenAssistant,
+}: {
+  onOpenChat: () => void
+  onOpenWizard: () => void
+  onOpenAssistant: () => void
+}) {
   const draft = useConfigStore((s) => s.draft)
   const running = useOpsStore((s) => s.running)
   const llmTests = useTestStore((s) => s.llm)
@@ -194,6 +202,23 @@ export function DashboardPage({ onOpenChat, onOpenWizard }: { onOpenChat: () => 
           </button>
         </div>
       </div>
+
+        {/* 配置助手入口：不会配？直接说需求（引导用户用 AI 配置） */}
+        <button
+          className="card-surface flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:border-[var(--accent)]"
+          onClick={onOpenAssistant}
+        >
+          <span className="text-[20px]">💬</span>
+          <span className="flex-1">
+            <span className="block text-[13.5px] font-semibold">不会配置？直接说需求</span>
+            <span className="block text-xs text-[var(--ink-mut)]">
+              配置助手听你吩咐：「我想要观众能点歌」→ AI 帮你把配置调好，确认后生效
+            </span>
+          </span>
+          <span className="whitespace-nowrap text-[13px] font-medium" style={{ color: 'var(--accent)' }}>
+            打开 →
+          </span>
+        </button>
 
         {/* 信号链：弹幕从哪来 → 谁想 → 谁说 → 长什么样 */}
         <div>
