@@ -3,6 +3,7 @@
 | 文档 | 说明 |
 | --- | --- |
 | [backend-architecture.md](./backend-architecture.md) | **后端架构说明（现行）**：luna 六域分层、依赖方向、配置单例与线程模型、provider 注册表扩展方式、测试与验证策略 |
+| [agent-upgrade-design.md](./agent-upgrade-design.md) | **Agent 化升级设计（v5）**：新增 `luna/agent/` 决策域，现有能力工具化，双引擎热切换与降级链，分期实施计划 |
 | [README_EN.md](../README_EN.md) | 项目英文版 README（与中文版同源维护） |
 
 ## 设计历史（v2 → v3 迁移时期，仅供追溯）
