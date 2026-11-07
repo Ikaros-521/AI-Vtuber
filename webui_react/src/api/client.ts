@@ -76,6 +76,13 @@ export const api = {
   agentOverview: () => get<AgentOverviewResult>('/api/agent/overview'),
   agentTrace: () => get<ApiResult & { records: AgentTraceRecord[] }>('/api/agent/trace'),
   agentStats: () => get<ApiResult & AgentStats>('/api/agent/stats'),
+  reviewGenerate: (useLlm: boolean) =>
+    post<ApiResult & { id: number; content: string }>('/api/agent/review/generate', { use_llm: useLlm }),
+  reviewList: () => get<ApiResult & { reports: { id: number; ts: string; window_date: string; size: number }[] }>(
+    '/api/agent/review/list',
+  ),
+  reviewGet: (reportId: number) =>
+    get<ApiResult & { id: number; content: string }>(`/api/agent/review?report_id=${reportId}`),
   agentKill: (on: boolean) => post<ApiResult>('/api/agent/kill', { on }),
   agentViewers: (keyword: string) =>
     get<ApiResult & { viewers: AgentViewer[] }>(`/api/agent/memory/viewers?keyword=${encodeURIComponent(keyword)}`),

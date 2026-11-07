@@ -149,6 +149,58 @@ async def overview():
         return {"code": -1, "message": f"获取 Agent 总览失败：{e}"}
 
 
+class ReviewGenerateRequest(BaseModel):
+    use_llm: bool = True
+
+
+@router.post("/review/generate", response_model=Envelope)
+async def review_generate(req: ReviewGenerateRequest):
+    """生成直播复盘，代理主进程 /agent_review/generate。"""
+    try:
+        resp, proxy_error = await _proxy_main("/agent_review/generate", "POST", {"use_llm": req.use_llm}, timeout=90)
+        if isinstance(resp, dict) and resp.get("code") == 200:
+            return {
+                "code": 200,
+                "id": resp.get("data", {}).get("id"),
+                "content": resp.get("data", {}).get("content", ""),
+            }
+        message = proxy_error or (resp.get("message", "主进程未响应") if isinstance(resp, dict) else "主进程未响应")
+        return {"code": -1, "message": f"生成复盘失败：{message}（主程序需在运行中）"}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "message": f"生成复盘失败：{e}"}
+
+
+@router.get("/review/list", response_model=Envelope)
+async def review_list():
+    try:
+        resp, proxy_error = await _proxy_main("/agent_review/list")
+        if isinstance(resp, dict) and resp.get("code") == 200:
+            return {"code": 200, "reports": resp.get("data", {}).get("reports", [])}
+        message = proxy_error or (resp.get("message", "主进程未响应") if isinstance(resp, dict) else "主进程未响应")
+        return {"code": -1, "reports": [], "message": f"读取复盘列表失败：{message}"}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "reports": [], "message": f"读取复盘列表失败：{e}"}
+
+
+@router.get("/review", response_model=Envelope)
+async def review_get(report_id: int):
+    try:
+        resp, proxy_error = await _proxy_main(f"/agent_review?report_id={report_id}")
+        if isinstance(resp, dict) and resp.get("code") == 200:
+            return {
+                "code": 200,
+                "id": resp.get("data", {}).get("id"),
+                "content": resp.get("data", {}).get("content", ""),
+            }
+        message = proxy_error or (resp.get("message", "主进程未响应") if isinstance(resp, dict) else "主进程未响应")
+        return {"code": -1, "message": f"读取复盘失败：{message}"}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "message": f"读取复盘失败：{e}"}
+
+
 @router.get("/stats", response_model=Envelope)
 async def stats():
     """决策聚合统计（P1 尾部度量），代理主进程 /agent_stats。"""

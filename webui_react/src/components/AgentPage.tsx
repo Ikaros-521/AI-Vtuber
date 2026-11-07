@@ -13,6 +13,13 @@ import {
   type AgentTraceRecord,
   type AgentViewer,
 } from '../api/client'
+
+interface ReportMeta {
+  id: number
+  ts: string
+  window_date: string
+  size: number
+}
 import { getByPath, type JsonObject } from '../lib/path'
 import { useConfigStore } from '../state/configStore'
 import { notify, useConfirmStore } from '../state/ui'
@@ -49,6 +56,10 @@ export function AgentPage() {
   const [overview, setOverview] = useState<AgentOverviewResult | null>(null)
   const [trace, setTrace] = useState<AgentTraceRecord[] | null>(null)
   const [stats, setStats] = useState<AgentStats | null>(null)
+  const [reports, setReports] = useState<ReportMeta[] | null>(null)
+  const [reportContent, setReportContent] = useState<string | null>(null)
+  const [reviewBusy, setReviewBusy] = useState(false)
+  const [useLlm, setUseLlm] = useState(true)
   const [expandedTrace, setExpandedTrace] = useState<string | null>(null)
   const [viewers, setViewers] = useState<AgentViewer[] | null>(null)
   const [highlights, setHighlights] = useState<AgentHighlight[] | null>(null)
@@ -82,11 +93,18 @@ export function AgentPage() {
     if (highlightResp.code === 200) setHighlights(highlightResp.highlights)
   }, [])
 
+  const loadReports = useCallback(async () => {
+    const resp = await api.reviewList()
+    if (resp.code === 200) setReports(resp.reports)
+    else setReports([])
+  }, [])
+
   useEffect(() => {
     void loadOverview()
     void loadMemory('')
     void loadTrace()
-  }, [loadOverview, loadMemory, loadTrace])
+    void loadReports()
+  }, [loadOverview, loadMemory, loadTrace, loadReports])
 
   // ---------- 总控 ----------
 
@@ -393,6 +411,72 @@ export function AgentPage() {
               ))}
             </div>
           </div>
+        )}
+      </section>
+
+      {/* ---------- 直播复盘 ---------- */}
+      <section className="card-surface p-5">
+        <BlockHead
+          title="直播复盘"
+          desc="按日聚合弹幕/礼物/入场/Agent 决策，可选 AI 总结与建议"
+          extra={
+            <>
+              <label className="flex items-center gap-1.5 text-xs text-[var(--ink-mut)]">
+                <input type="checkbox" checked={useLlm} onChange={(e) => setUseLlm(e.target.checked)} />
+                AI 总结
+              </label>
+              <button
+                className={BTN}
+                disabled={reviewBusy || !overview?.running}
+                title={overview?.running ? undefined : '需要主程序在运行中'}
+                onClick={async () => {
+                  setReviewBusy(true)
+                  try {
+                    const resp = await api.reviewGenerate(useLlm)
+                    if (resp.code === 200) {
+                      setReportContent(resp.content)
+                      notify.ok('复盘已生成并保存')
+                      void loadReports()
+                    } else {
+                      notify.err(resp.message || '生成失败')
+                    }
+                  } finally {
+                    setReviewBusy(false)
+                  }
+                }}
+              >
+                {reviewBusy ? '生成中……' : '生成本场复盘'}
+              </button>
+            </>
+          }
+        />
+        {reports != null && reports.length > 0 && (
+          <select
+            className="inp mb-3 w-auto text-[12.5px]"
+            onChange={async (e) => {
+              const id = Number(e.target.value)
+              if (!id) {
+                setReportContent(null)
+                return
+              }
+              const resp = await api.reviewGet(id)
+              if (resp.code === 200) setReportContent(resp.content)
+              else notify.err(resp.message || '读取复盘失败')
+            }}
+          >
+            <option value="">历史复盘（{reports.length}）</option>
+            {reports.map((r) => (
+              <option key={r.id} value={r.id}>
+                #{r.id} · {r.window_date} · {r.ts.slice(5, 16)}
+              </option>
+            ))}
+          </select>
+        )}
+        {reportContent == null && <p className="text-xs text-[var(--ink-mut)]">还没有复盘记录；直播后点「生成本场复盘」，报告会存档在这里。</p>}
+        {reportContent != null && (
+          <pre className="whitespace-pre-wrap rounded-xl border border-slate-100 bg-slate-50 p-4 font-sans text-[13px] leading-relaxed">
+            {reportContent}
+          </pre>
         )}
       </section>
 

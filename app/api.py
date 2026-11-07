@@ -169,6 +169,68 @@ def create_api_app(state):
             logger.error(f"agent_status处理失败！{e}")
             return CommonResult(code=-1, message=f"agent_status处理失败！{e}")
 
+    @app.post("/agent_review/generate")
+    async def agent_review_generate(request: Request):
+        """生成直播复盘：本地统计聚合 + 可选 AI 总结，存 agent_report 表。"""
+        try:
+            from luna.agent.review import build_report_text, collect_stats, llm_summarize, save_report
+
+            try:
+                data_json = await request.json()
+            except Exception:
+                data_json = {}
+            use_llm = bool(data_json.get("use_llm", True))
+
+            from luna.agent.trace import RECENT
+
+            stats = collect_stats(state.my_handle.db, list(RECENT))
+            if use_llm:
+                highlights = (
+                    state.my_handle.agent_runtime.memory.recent_highlights(5)
+                    if getattr(state.my_handle, "agent_runtime", None)
+                    else []
+                )
+                stats["highlights"] = highlights
+            summary = llm_summarize(state.my_handle, stats) if use_llm else None
+            content = build_report_text(stats, summary)
+            report_id = save_report(state.my_handle.db, content, stats["window"]["start"])
+            return CommonResult(code=200, data={"id": report_id, "content": content}, message="复盘已生成")
+        except Exception as e:
+            logger.error(f"agent_review/generate 失败！{e}")
+            return CommonResult(code=-1, message=f"生成复盘失败：{e}")
+
+    @app.get("/agent_review/list")
+    async def agent_review_list():
+        try:
+            from luna.agent.review import list_reports
+
+            rows = list_reports(state.my_handle.db, 20)
+            return CommonResult(
+                code=200,
+                data={"reports": [{"id": r[0], "ts": str(r[1]), "window_date": r[2], "size": r[3]} for r in rows]},
+                message="成功",
+            )
+        except Exception as e:
+            logger.error(f"agent_review/list 失败！{e}")
+            return CommonResult(code=-1, message=f"读取复盘列表失败：{e}")
+
+    @app.get("/agent_review")
+    async def agent_review_get(report_id: int):
+        try:
+            from luna.agent.review import get_report
+
+            row = get_report(state.my_handle.db, report_id)
+            if row is None:
+                return CommonResult(code=-1, message="复盘不存在")
+            return CommonResult(
+                code=200,
+                data={"id": row[0], "ts": str(row[1]), "window_date": row[2], "content": row[3]},
+                message="成功",
+            )
+        except Exception as e:
+            logger.error(f"agent_review 读取失败！{e}")
+            return CommonResult(code=-1, message=f"读取复盘失败：{e}")
+
     @app.get("/agent_stats")
     async def agent_stats():
         """决策聚合统计（P1 尾部度量）：降级率 / 备用模型触发 / 小模型直答 / 工具成功率。"""
