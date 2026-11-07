@@ -39,21 +39,64 @@ def read_tmp_config(tmp_config):
 # ---------- 解析协议 ----------
 
 
-def test_parse_reply_json_block():
+def test_split_output_with_marker():
     assistant = ConfigAssistant(runtime)
-    raw = '好的\n```json\n{"reply": "已开启点歌", "changes": [{"path": ["choose_song","enable"], "value": true, "reason": "点歌需求"}], "questions": []}\n```'
-    result = assistant._parse_reply(raw)
-    assert result["reply"] == "已开启点歌"
+    raw = (
+        "已开启点歌功能，重启后生效。\n<<<CHANGES>>>\n"
+        '{"changes": [{"path": ["choose_song","enable"], "value": true, "reason": "点歌需求"}], "questions": ["歌库目录在哪？"]}'
+    )
+    result = assistant._split_output(raw)
+    assert result["reply"] == "已开启点歌功能，重启后生效。"
     assert result["changes"][0]["path"] == ["choose_song", "enable"]
+    assert result["questions"] == ["歌库目录在哪？"]
 
 
-def test_parse_reply_bare_json_and_failure_fallback():
+def test_split_output_without_marker_treats_all_as_reply():
+    """模型没按协议输出（缺分隔行）：整段当说明、不出变更——宁可不改不可误改。"""
     assistant = ConfigAssistant(runtime)
-    result = assistant._parse_reply('{"reply": "直接给", "changes": [], "questions": ["歌库在哪个目录？"]}')
-    assert result["questions"] == ["歌库在哪个目录？"]
-    broken = assistant._parse_reply("这不是 JSON，就是一段普通回答")
-    assert broken["changes"] == []
-    assert "普通回答" in broken["reply"]
+    result = assistant._split_output("这只是普通回答，不涉及配置")
+    assert result["changes"] == []
+    assert "普通回答" in result["reply"]
+
+
+def test_split_output_broken_changes_json():
+    assistant = ConfigAssistant(runtime)
+    result = assistant._split_output("说明文字\n<<<CHANGES>>>\n{broken json")
+    assert result["reply"] == "说明文字"
+    assert result["changes"] == []
+
+
+def test_chat_stream_yields_deltas_then_done(tmp_config):
+    """流式：delta 逐条透出，done 带安全等级处理后的变更状态。"""
+    assistant = ConfigAssistant(runtime)
+    assistant._call_llm_stream = lambda prompt: (
+        iter(
+            [
+                "已开启。\n<<<CHANGES>>>\n",
+                '{"changes": [{"path": ["choose_song","enable"], "value": true, "reason": "r"}], "questions": []}',
+            ]
+        ),
+        None,
+    )
+
+    events = list(assistant.chat_stream("s1", "我要点歌"))
+    deltas = [e["text"] for e in events if e["type"] == "reply_delta"]
+    done = [e for e in events if e["type"] == "done"]
+    assert "".join(deltas).startswith("已开启。")
+    assert len(done) == 1
+    assert done[0]["reply"] == "已开启。"
+    assert done[0]["changes"][0]["status"] == "pending"  # manual 全挂起
+    assert done[0]["elapsed_ms"] >= 0
+    assert read_tmp_config(tmp_config)["choose_song"]["enable"] is False
+    # 历史：完整说明（不含协议尾巴）入档
+    assert assistant._history("s1")[-1] == ("assistant", "已开启。")
+
+
+def test_chat_stream_error_event(tmp_config):
+    assistant = ConfigAssistant(runtime)
+    assistant._call_llm_stream = lambda prompt: (None, "模型没有返回内容")
+    events = list(assistant.chat_stream("s1", "hi"))
+    assert events == [{"type": "error", "message": "调用模型失败：模型没有返回内容"}]
 
 
 def test_enforce_danger_for_sensitive_paths():
@@ -68,7 +111,7 @@ def test_enforce_danger_for_sensitive_paths():
 
 def test_history_roundtrip_and_reset(tmp_config):
     assistant = ConfigAssistant(runtime)
-    assistant._call_llm = lambda prompt: ('{"reply": "r1", "changes": [], "questions": []}', None)
+    assistant._call_llm = lambda prompt: ("这是回答", None)
     assistant.chat("s1", "第一条")
     assistant.chat("s1", "第二条")
     history = assistant._history("s1")
@@ -163,3 +206,31 @@ def test_assistant_settings_endpoint_roundtrip(tmp_config):
         assert client.get("/api/agent/assistant-settings").json()["safety_level"] == "manual"
         assert client.post("/api/agent/assistant-settings", json={"safety_level": "full"}).json()["code"] == 200
         assert client.get("/api/agent/assistant-settings").json()["safety_level"] == "full"
+
+
+def test_config_chat_stream_endpoint_sse(tmp_config, monkeypatch):
+    """SSE 端点：事件按 data: 行输出，[DONE] 收尾。"""
+    assistant = _get_assistant()
+
+    def fake_stream(session_id, message):
+        yield {"type": "reply_delta", "text": "你好"}
+        yield {
+            "type": "done",
+            "reply": "你好",
+            "changes": [
+                {"path": ["choose_song", "enable"], "value": True, "reason": "r", "danger": False, "status": "pending"}
+            ],
+            "questions": [],
+            "elapsed_ms": 12,
+            "level": "manual",
+        }
+
+    monkeypatch.setattr(assistant, "chat_stream", fake_stream)
+
+    with _client() as client:
+        resp = client.post("/api/agent/config-chat-stream", json={"session_id": "t", "message": "hi"})
+    assert resp.status_code == 200
+    assert "text/event-stream" in resp.headers["content-type"]
+    assert "data: " in resp.text
+    assert "reply_delta" in resp.text
+    assert "[DONE]" in resp.text

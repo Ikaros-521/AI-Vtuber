@@ -8,9 +8,11 @@
   MemorySystem 直接读写（与主进程各开短连接，SQLite 自身兜并发）。
 """
 
+import json
 import traceback
 
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from luna.infra.db import SQLiteDB
@@ -356,6 +358,29 @@ def config_chat(req: ConfigChatRequest):
     except Exception as e:
         logger.error(traceback.format_exc())
         return {"code": -1, "message": f"配置助手出错：{e}"}
+
+
+@router.post("/config-chat-stream")
+def config_chat_stream(req: ConfigChatRequest):
+    """流式配置对话（SSE）：说明文本边生成边推，变更集完成时按安全等级处理。"""
+
+    def _generate():
+        try:
+            for event in _get_assistant().chat_stream(req.session_id, req.message):
+                payload = json.dumps(event, ensure_ascii=False)
+                yield f"data: {payload}\n\n"
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            payload = json.dumps({"type": "error", "message": str(e)}, ensure_ascii=False)
+            yield f"data: {payload}\n\n"
+            yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        _generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.post("/config-apply", response_model=ConfigApplyResult)

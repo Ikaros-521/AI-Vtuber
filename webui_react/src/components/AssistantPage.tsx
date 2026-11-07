@@ -4,7 +4,7 @@
  * 完全访问：全部自动落盘。落盘即写 config.json，重启程序后在直播间生效。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { api, type ConfigChange } from '../api/client'
+import { api, configChatStream, type ConfigChange } from '../api/client'
 import { notify, useConfirmStore } from '../state/ui'
 
 const BTN =
@@ -78,38 +78,43 @@ export function AssistantPage() {
     const text = input.trim()
     if (!text || busy) return
     setInput('')
-    setMessages((prev) => [...prev, { role: 'user', text }])
+    setMessages((prev) => [...prev, { role: 'user', text }, { role: 'assistant', text: '' }])
     setBusy(true)
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 120000)
     try {
-      const resp = await api.configChat(sessionId.current, text, controller.signal)
-      if (resp.code === 200) {
-        const cost = resp.elapsed_ms ? `（耗时 ${(resp.elapsed_ms / 1000).toFixed(1)}s）` : ''
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            text: resp.error ? `⚠️ ${resp.reply}` : resp.reply + (resp.error ? '' : ` ${cost}`),
-            questions: resp.questions,
-            changes: resp.changes,
-          },
-        ])
-        if (resp.changes.some((c) => c.status === 'applied')) notify.ok('有变更已生效 · 重启程序后作用于直播间')
-      } else {
-        setMessages((prev) => [...prev, { role: 'assistant', text: resp.message || '出错了，请重试' }])
-      }
+      await configChatStream(
+        sessionId.current,
+        text,
+        // 流式 delta：更新最后一条（占位中的助手消息）
+        (delta) =>
+          setMessages((prev) =>
+            prev.map((msg, i) => (i === prev.length - 1 ? { ...msg, text: msg.text + delta } : msg)),
+          ),
+        (ev) => {
+          if (ev.type === 'done') {
+            const cost = ev.elapsed_ms ? `（耗时 ${(ev.elapsed_ms / 1000).toFixed(1)}s）` : ''
+            const applied = (ev.changes ?? []).some((c) => c.status === 'applied')
+            if (applied) notify.ok('有变更已生效 · 重启程序后作用于直播间')
+            setMessages((prev) =>
+              prev.map((msg, i) =>
+                i === prev.length - 1
+                  ? { ...msg, text: msg.text.trim() + cost, questions: ev.questions, changes: ev.changes }
+                  : msg,
+              ),
+            )
+          } else {
+            setMessages((prev) => prev.map((msg, i) => (i === prev.length - 1 ? { ...msg, text: `⚠️ ${ev.message}` } : msg)))
+          }
+        },
+        controller.signal,
+      )
     } catch (e) {
       const aborted = e instanceof DOMException && e.name === 'AbortError'
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          text: aborted
-            ? '等待超时（120s）——检查模型服务/网关是否在运行，或换更快的模型（agent.config_assistant.chat_type）后重试'
-            : `请求失败：${e}`,
-        },
-      ])
+      const reason = aborted
+        ? '等待超时（120s）——检查模型服务/网关是否在运行，或换更快的模型（agent.config_assistant.chat_type）后重试'
+        : `请求失败：${e}`
+      setMessages((prev) => prev.map((msg, i) => (i === prev.length - 1 && msg.text === '' ? { ...msg, text: `⚠️ ${reason}` } : msg)))
     } finally {
       clearTimeout(timeout)
       setBusy(false)

@@ -130,6 +130,53 @@ export interface ConfigChange {
   status?: 'pending' | 'applied' | 'failed'
 }
 
+export interface ConfigStreamEvent {
+  type: 'reply_delta' | 'done' | 'error'
+  text?: string
+  message?: string
+  reply?: string
+  changes?: ConfigChange[]
+  questions?: string[]
+  elapsed_ms?: number
+  level?: string
+}
+
+/** 配置助手流式对话（SSE）：onDelta 逐字上屏，done/error 事件经 onEvent 回调。 */
+export async function configChatStream(
+  sessionId: string,
+  message: string,
+  onDelta: (text: string) => void,
+  onEvent: (ev: ConfigStreamEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const resp = await fetch('/api/agent/config-chat-stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId, message }),
+    signal,
+  })
+  if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`)
+  const reader = resp.body.getReader()
+  const decoder = new TextDecoder()
+  let buf = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buf += decoder.decode(value, { stream: true })
+    let idx: number
+    while ((idx = buf.indexOf('\n\n')) !== -1) {
+      const line = buf.slice(0, idx).trim()
+      buf = buf.slice(idx + 2)
+      if (!line.startsWith('data: ')) continue
+      const data = line.slice(6)
+      if (data === '[DONE]') return
+      const ev = JSON.parse(data) as ConfigStreamEvent
+      if (ev.type === 'reply_delta' && ev.text) onDelta(ev.text)
+      else onEvent(ev)
+    }
+  }
+}
+
 // ---------- Agent 工作台类型（与 webui_server/schemas.py 的模型一一对应） ----------
 
 export interface AgentOverviewResult extends ApiResult {
