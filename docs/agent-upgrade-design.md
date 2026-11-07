@@ -161,12 +161,16 @@ class Tool(ABC):
 ### 4.7 降级链（直播不翻车的核心）
 
 ```
-Agent 决策失败（超时 / 异常 / 预算耗尽 / FC 不可用）
-  → ① 原 LLM 直答路径（llm_handle，provider sessions 现状逻辑）
-  → ② 静默放弃本轮（现状 llm 无返回时的既有行为）
+Agent 决策失败：
+  模型级异常（调用异常/空返回）且配置了 fallback_chat_type
+    → ① 备用模型无工具直答（_direct_answer，P1 尾部）→ 备用也挂 → ②
+  超时 / 预算耗尽（不切备用：延迟翻倍且换模型救不了资源类失败）
+    → ② 原 LLM 直答路径（llm_handle，provider sessions 现状逻辑）
+  有成功动作而收尾无话
+    → ③ 静默完成（acted_no_final，不降级避免裸 LLM 回复盖在已入队音频上）
 ```
 
-每次降级写 trace。规则引擎的所有关键词功能不受影响——**它从"被替代者"变成了"安全网"**。
+每次降级写 trace（reason 记 model_error / model_fallback / +fallback_failed 等，/agent_stats 按此聚合降级率）。规则引擎的所有关键词功能不受影响——**它从"被替代者"变成了"安全网"**。
 
 ## 5. 集成点与改动面（文件级清单）
 
@@ -201,7 +205,7 @@ Agent 决策失败（超时 / 异常 / 预算耗尽 / FC 不可用）
 | --- | --- | --- |
 | **P0 Agent-Ready**（**已实施** b737b69） | `luna/agent` 骨架；ToolRegistry + 首批 5 工具；LLMAdapter 双通道；`_interaction_pipeline` 门控分支；config 段；trace；单测+守卫+冒烟；真机 LLM 验证通过 | "积分榜前五是谁""刚才在聊什么"能被回答并播报；`enabled=false` 零回归 |
 | **P1 大脑升级**（**已实施** 2026-11-07） | IntentRouter v1（复读风暴跳过 + 内容截断）；动作类工具 **play_song / generate_image** 入册（handle 提炼干净入口，关键词链路不动）；**stop_playback** 播放控制工具（观众喊停/切歌，停当前 + 清队列；system prompt 注入播放状态）；`idle_tasks` 文案模式接 `generate_proactive()`（高光+弹幕上下文注入，失败回落文案池）；reply_template 对齐；WebUI 卡片墙自动收录新工具 | 观众自然语言点歌/求画可被模型自主触发；刷屏弹幕不再重复烧 token |
-| **P1 剩余（待做）** | 小模型意图分流；互动率/降级率度量对比 | 对比规则模式互动率提升；降级率 < 5% |
+| **P1 尾部**（**已实施** 34f750b） | 模型异常降级（fallback_chat_type 备用模型直答，超时/预算类失败不切）；小模型分流（small_chat_type + 长度/排除词规则）；决策统计（/agent_stats + 工作台统计条） | 降级率、备用触发数、小模型直答数在工作台可见 |
 | **P2 生态化** | MCP 协议接入（Luna 作 MCP host，第三方工具即插即用）；Agent 工作台完整版；直播复盘报告；人设知识库 RAG | 第三方工具接入成本 ≤ 一个 JSON 描述 + 一个类；复盘报告成为留存功能 |
 
 ## 9. 测试策略
