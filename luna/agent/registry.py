@@ -32,6 +32,8 @@ TOOLS = {
     "query_danmu_summary": ("luna.agent.tools.danmu", "QueryDanmuSummary"),
     "search_online": ("luna.agent.tools.search", "SearchOnline"),
     "memory_save": ("luna.agent.tools.memory_tool", "MemorySave"),
+    "play_song": ("luna.agent.tools.song", "PlaySong"),
+    "generate_image": ("luna.agent.tools.image", "GenerateImage"),
 }
 
 

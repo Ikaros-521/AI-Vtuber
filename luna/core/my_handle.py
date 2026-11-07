@@ -1290,6 +1290,60 @@ class My_handle(metaclass=SingletonMeta):
 
         return False
 
+    def play_song_by_name(self, username: str, song_name: str):
+        """按歌名点播本地歌曲（Agent play_song 工具的干净入口，v5 P1）。
+
+        弹幕关键词点歌链路仍走 choose_song_handle；本方法只负责"给一个歌名，
+        匹配并播放"，返回给模型/日志看的结果描述。
+
+        Args:
+            username (str): 触发点歌的观众名（播报文案用）
+            song_name (str): 歌名，空串则随机点一首
+
+        Returns:
+            str: 结果描述（成功含文件名，失败含原因）
+        """
+        if not self.config.get("choose_song", "enable"):
+            return "点歌功能未启用（基础设置里的点歌开关）"
+        song_path = self.config.get("choose_song", "song_path")
+        if not song_name:
+            matched_path = self.common.random_search_a_audio_file(song_path)
+            if matched_path is None:
+                return "曲库为空，随机点歌失败"
+            path = os.path.abspath(matched_path)
+        else:
+            song_lists = self.audio.get_dir_audios_filename(song_path, 1)
+            song_filename = self.common.find_best_match(
+                song_name, song_lists, similarity=self.config.get("choose_song", "similarity")
+            )
+            if song_filename is None:
+                return self.config.get("choose_song", "match_fail_copy").format(content=song_name)
+            found = self.audio.search_files(song_path, song_filename, True)
+            if not found:
+                return f"匹配到了「{song_filename}」但文件检索失败"
+            path = os.path.abspath(f"{song_path}/{found[0]}")
+
+        message = build_message(self.config, "song", username, path)
+        self.webui_show_chat_log_callback("点歌", {"username": username, "content": song_name}, path)
+        self.audio_synthesis_handle(message)
+        return f"已播放：{os.path.basename(path)}"
+
+    def generate_image_by_prompt(self, username: str, prompt: str):
+        """按提示词提交 SD 画图（Agent generate_image 工具的干净入口，v5 P1）。
+
+        弹幕画图链路仍走 sd_handle（含翻译与 prompt 润色）；本方法是直通入口。
+
+        Returns:
+            str: 结果描述
+        """
+        if not self.config.get("sd", "enable"):
+            return "画图功能未启用（基础设置里的 SD 开关）"
+        prompt = self.prohibitions_handle(prompt)
+        if prompt is None:
+            return "画图提示词未通过违禁检测"
+        self.sd.process_input(prompt)
+        return "已提交画图请求，稍后会在直播间画面展示"
+
     # 弹幕格式检查和特殊字符替换和指定语言过滤
     def comment_check_and_replace(self, content):
         # 实现已拆分到 utils/filters.py，这里保留委托门面

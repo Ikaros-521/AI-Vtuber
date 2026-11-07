@@ -1818,8 +1818,20 @@
       "model": ""
     },
     "tools": {
-      "enabled": ["speak", "query_integral", "query_danmu_summary", "search_online", "memory_save"],
+      "enabled": [
+        "speak",
+        "query_integral",
+        "query_danmu_summary",
+        "search_online",
+        "memory_save",
+        "play_song",
+        "generate_image"
+      ],
       "dangerous_enabled": []
+    },
+    "intent": {
+      "duplicate_burst": { "count": 3, "window_seconds": 30 },
+      "max_content_chars": 200
     },
     "budget": {
       "tokens_per_hour": 200000

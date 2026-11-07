@@ -6,7 +6,15 @@ from fakes import FakeConfig
 from luna.agent import registry as registry_module
 from luna.agent.registry import TOOLS, Tool, ToolRegistry, load_tool_class
 
-EXPECTED_TOOLS = {"speak", "query_integral", "query_danmu_summary", "search_online", "memory_save"}
+EXPECTED_TOOLS = {
+    "speak",
+    "query_integral",
+    "query_danmu_summary",
+    "search_online",
+    "memory_save",
+    "play_song",
+    "generate_image",
+}
 
 
 def test_tools_registry_covers_the_p0_toolset():

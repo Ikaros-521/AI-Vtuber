@@ -38,7 +38,7 @@ class AgentRuntime:
             enable_profile=bool(memory_cfg.get("viewer_profile", True)),
             enable_episodic=bool(memory_cfg.get("episodic", True)),
         )
-        self.intent = IntentRouter()
+        self.intent = IntentRouter(config)
         self.adapter = adapter  # 测试注入；None 则按 chat_type 构造
 
         # 急停开关（WebUI 一键急停用）：置位后本进程内 Agent 立即静默降级，
@@ -102,7 +102,7 @@ class AgentRuntime:
 
         messages = [
             {"role": "system", "content": self._build_system_prompt(ctx, config)},
-            {"role": "user", "content": f"观众 {username} 说：{event['content']}" if username else event["content"]},
+            {"role": "user", "content": self._build_user_message(username, event["content"], config)},
         ]
         budget.add_chars(messages[0]["content"], messages[1]["content"])
 
@@ -146,6 +146,8 @@ class AgentRuntime:
             return True
 
         filtered = filtered.replace("\n", "。").strip()
+        # 回复模板对齐（与 llm_handle 尾部一致）：模板包裹后的文本也写回 data_json 供门面触发
+        filtered = self._apply_reply_template(filtered, ctx, config)
         # 与原 LLM 直答路径对齐的回显与落库
         self.handle.webui_show_chat_log_callback("agent", data_json, filtered)
         self.handle.write_to_comment_log(filtered, {"username": username, "content": event["content"]})
@@ -157,6 +159,82 @@ class AgentRuntime:
         return True
 
     # ---------- 内部 ----------
+
+    def _build_user_message(self, username: str, content: str, config) -> str:
+        """观众消息组装；超长内容截断（粘贴长文不该烧掉整轮预算）。"""
+        max_chars = int(config.get("agent", "intent", "max_content_chars") or 0)
+        if max_chars > 0 and len(content) > max_chars:
+            content = content[:max_chars] + "……（内容过长已截断）"
+        return f"观众 {username} 说：{content}" if username else content
+
+    def _apply_reply_template(self, text: str, ctx, config) -> str:
+        """回复模板替换，与 llm_handle 的处理保持一致；失败回退原文。"""
+        if not config.get("reply_template", "enable"):
+            return text
+        try:
+            variables = {
+                "username": ctx.event["username"][: int(config.get("reply_template", "username_max_len"))],
+                "data": text,
+                "cur_time": ctx.state["cur_time"],
+            }
+            template = self.handle.common.get_list_random_or_default(
+                config.get("reply_template", "copywriting"), "{data}"
+            )
+            if any(var in template for var in variables):
+                return template.format(**{var: value for var, value in variables.items() if var in template})
+        except Exception:
+            logger.error("Agent 回复模板处理失败：\n" + traceback.format_exc())
+        return text
+
+    def generate_proactive(self):
+        """闲时主动话题：单轮生成（无工具），失败返回 None 由调用方回落文案池。
+
+        上下文注入近期高光与最近弹幕，让话题接得上直播间正在聊的内容；
+        计入小时预算（超限静默回落）。
+        """
+        try:
+            config = self.handle.config
+            if self.kill_switch or not self._hour_budget_allow():
+                return None
+            parts = [
+                config.get("agent", "persona")
+                or (config.get("before_prompt") or "") + (config.get("after_prompt") or "")
+                or "你是直播间的主播助手。",
+                "当前时间：" + self.handle.common.get_bj_time(5),
+                "请主动开一个直播话题：一句话，口语化，适合朗读，有互动感；不要 Markdown 与换行。",
+            ]
+            highlights = self.memory.recent_highlights(3)
+            if highlights:
+                parts.append("近期高光：" + "；".join(highlights))
+            recent = self._recent_danmu_digest(10)
+            if recent:
+                parts.append("观众最近在聊：" + recent)
+            prompt = "\n".join(parts)
+            self._hour_budget_charge(len(prompt))
+
+            chat_type = config.get("chat_type")
+            adapter = self.adapter or LLMAdapter(
+                self.handle, chat_type, config.get("agent", "llm", "channel") or "auto"
+            )
+            result = adapter.call(
+                [{"role": "system", "content": prompt}, {"role": "user", "content": "生成一句主动话题。"}],
+                [],
+            )
+            text = (result.text or "").strip()
+            return text or None
+        except Exception:
+            logger.error("Agent 主动话题生成失败：\n" + traceback.format_exc())
+            return None
+
+    def _recent_danmu_digest(self, limit: int) -> str:
+        db = self.handle.db
+        if db is None:
+            return ""
+        try:
+            rows = db.fetch_all("SELECT content FROM danmu ORDER BY ts DESC LIMIT ?", (limit,))
+        except Exception:
+            return ""
+        return "；".join(str(r[0]) for r in reversed(rows)) if rows else ""
 
     def _build_system_prompt(self, ctx, config) -> str:
         persona = config.get("agent", "persona")

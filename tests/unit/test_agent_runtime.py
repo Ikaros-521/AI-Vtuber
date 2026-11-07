@@ -40,7 +40,10 @@ class FakeHandle:
     def __init__(self, config, db=None):
         self.config = config
         self.db = db
-        self.common = SimpleNamespace(get_bj_time=lambda fmt="": "2026-11-07 20:00:00")
+        self.common = SimpleNamespace(
+            get_bj_time=lambda fmt="": "2026-11-07 20:00:00",
+            get_list_random_or_default=lambda items, default: default if not items else items[0],
+        )
         self.synthesized = []
         self.chat_log = []
         self.comment_logs = []
@@ -207,6 +210,9 @@ def test_intent_decline_degrades():
     from luna.agent.intent import IntentRouter
 
     class DeclineRouter(IntentRouter):
+        def __init__(self):
+            pass  # 覆写后不接 config：should_agent 已完全自定义
+
         def should_agent(self, context):
             return False
 
@@ -223,3 +229,72 @@ def test_kill_switch_silences_agent():
     assert adapter.calls == []
     runtime.kill_switch = False
     assert runtime.handle_chat(make_event(), "comment") is True
+
+
+def test_duplicate_burst_skips_agent():
+    config = make_config()
+    config.config["agent"]["intent"] = {"duplicate_burst": {"count": 3, "window_seconds": 30}}
+    results = [AdapterResult(text=f"回复{i}") for i in range(5)]
+    runtime, handle, adapter = make_runtime(config=config, results=results)
+    # 同一段内容连刷：第 1、2 次正常接管，第 3 次起跳过（落回规则链路）
+    assert runtime.handle_chat(make_event("666"), "comment") is True
+    assert runtime.handle_chat(make_event("666"), "comment") is True
+    assert runtime.handle_chat(make_event("666"), "comment") is False
+    assert len(adapter.calls) == 2
+    # 别的内容不受影响
+    assert runtime.handle_chat(make_event("你好"), "comment") is True
+
+
+def test_duplicate_burst_disabled_by_config():
+    config = make_config()
+    config.config["agent"]["intent"] = {"duplicate_burst": {"count": 0}}
+    results = [AdapterResult(text="回复") for _ in range(4)]
+    runtime, _, adapter = make_runtime(config=config, results=results)
+    for _ in range(4):
+        assert runtime.handle_chat(make_event("666"), "comment") is True
+    assert len(adapter.calls) == 4
+
+
+def test_overlong_content_truncated():
+    config = make_config()
+    config.config["agent"]["intent"] = {"max_content_chars": 10}
+    runtime, _, adapter = make_runtime(config=config, results=[AdapterResult(text="收到")])
+    assert runtime.handle_chat(make_event("字" * 100), "comment") is True
+    user_message = adapter.calls[0][-1]["content"]
+    assert "……（内容过长已截断）" in user_message
+    assert len(user_message) < 40
+
+
+def test_reply_template_wraps_output():
+    config = make_config()
+    config.config["reply_template"] = {"enable": True, "username_max_len": 10, "copywriting": ["【{data}】"]}
+    runtime, handle, _ = make_runtime(config=config, results=[AdapterResult(text="大家好")])
+    assert runtime.handle_chat(make_event(), "comment") is True
+    assert handle.synthesized[-1]["content"] == "【大家好】"
+    assert handle.synthesized[-1]["username"] == "alice"
+
+
+def test_generate_proactive_uses_context_and_budget(tmp_path):
+    config = make_config()
+    results = [AdapterResult(text="来聊聊大家刚才点的歌")]
+    runtime, handle, adapter = make_runtime(config=config, results=results)
+    topic = runtime.generate_proactive()
+    assert topic == "来聊聊大家刚才点的歌"
+    system_prompt = adapter.calls[0][0]["content"]
+    assert "主动开一个直播话题" in system_prompt
+    assert "当前时间" in system_prompt
+
+
+def test_generate_proactive_falls_back_on_budget():
+    config = make_config(budget={"tokens_per_hour": 10})
+    runtime, _, adapter = make_runtime(config=config)
+    runtime._hour_used = 999999
+    assert runtime.generate_proactive() is None
+    assert adapter.calls == []
+
+
+def test_generate_proactive_falls_back_on_kill_switch():
+    runtime, _, adapter = make_runtime(results=[AdapterResult(text="x")])
+    runtime.kill_switch = True
+    assert runtime.generate_proactive() is None
+    assert adapter.calls == []

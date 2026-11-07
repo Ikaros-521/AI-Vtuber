@@ -200,6 +200,15 @@ async def idle_time_task(state):
                     # 动态变量替换
                     variables = build_dynamic_variables()
 
+                    # v5 Agent 话题策划：启用时优先让 Agent 结合直播间上下文生成话题，
+                    # 生成失败/预算超限回落文案池（docs/agent-upgrade-design.md §8 P1）
+                    agent_runtime = getattr(my_handle, "agent_runtime", None)
+                    if config.get("agent", "enabled") and agent_runtime is not None:
+                        agent_topic = agent_runtime.generate_proactive()
+                        if agent_topic:
+                            logger.info(f"Agent 生成闲时话题：{agent_topic}")
+                            copywriting_copy = agent_topic
+
                     # 使用字典进行字符串替换
                     if any(var in copywriting_copy for var in variables):
                         copywriting_copy = copywriting_copy.format(
