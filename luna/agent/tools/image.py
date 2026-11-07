@@ -12,6 +12,7 @@ class GenerateImage(Tool):
     description = (
         "调用 Stable Diffusion 画一张图并展示在直播间画面。观众想看画/起哄看图时使用；"
         "提示词会直接传给 SD，请写成适合文生图模型的画面描述。响应较慢，一句话内不要重复调用。"
+        "如需在画图前说一句话（如预告画什么），先调用 speak 说话，再调用本工具。"
     )
     parameters = {
         "type": "object",

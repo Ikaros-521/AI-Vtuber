@@ -111,6 +111,7 @@ class AgentRuntime:
         specs = self.registry.specs()
         final_text = None
         stop_reason = "budget_exhausted"
+        acted = False
 
         while not budget.exhausted():
             result = adapter.call(messages, specs)
@@ -120,7 +121,8 @@ class AgentRuntime:
                 self._hour_budget_charge(budget.prompt_chars)
                 messages.append(self._assistant_tool_message(result))
                 for tool_call in result.tool_calls:
-                    observation = self._execute_tool(tool_call, ctx)
+                    observation, ok = self._execute_tool(tool_call, ctx)
+                    acted = acted or ok
                     if tool_call.get("id"):
                         messages.append({"role": "tool", "tool_call_id": tool_call["id"], "content": observation})
                     else:
@@ -134,6 +136,11 @@ class AgentRuntime:
             break
 
         if final_text is None:
+            if acted:
+                # 动作已执行而模型收尾无话：视为完成（静默），不降级——
+                # 降级会触发一次无视工具结果的裸 LLM 回复，盖在已入队的音频上
+                trace.finish(degraded=False, reason="acted_no_final", prompt_chars=budget.prompt_chars)
+                return True
             trace.finish(degraded=True, reason=stop_reason, prompt_chars=budget.prompt_chars)
             return False
 
@@ -249,6 +256,11 @@ class AgentRuntime:
         if highlights:
             parts.append("近期高光：" + "；".join(highlights))
         parts.append("回复要求：简短口语化，适合直播朗读；不要输出 Markdown 与换行。")
+        parts.append(
+            "行动顺序由你安排，工具按调用顺序即时执行（先调用的先播放）。"
+            "既要说话又要执行动作（如点歌/画图）时：先用 speak 把要说的话说出来，再调用动作工具；"
+            "动作做完若无话可说就直接结束。"
+        )
         return "\n".join(parts)
 
     @staticmethod
@@ -269,17 +281,18 @@ class AgentRuntime:
             ],
         }
 
-    def _execute_tool(self, tool_call: dict, ctx) -> str:
+    def _execute_tool(self, tool_call: dict, ctx):
+        """执行单个工具调用，返回 (OBSERVATION 文本, 是否执行成功)。"""
         name = str(tool_call.get("name") or "").strip()
         args = tool_call.get("args") or {}
         started = time.monotonic()
         tool = self.registry.get(name)
         if tool is None:
             ctx.trace.tool_done(name, "", 0, False)
-            return f"工具 {name} 不存在或未启用"
+            return f"工具 {name} 不存在或未启用", False
         if not self.safety.viewer_rate_ok(ctx.event.get("username", "")):
             ctx.trace.tool_done(name, "", 0, False)
-            return "工具调用过于频繁，本次已跳过，请直接回答"
+            return "工具调用过于频繁，本次已跳过，请直接回答", False
         try:
             observation = tool.run(args, ctx) or "（无返回）"
             ok = True
@@ -288,7 +301,7 @@ class AgentRuntime:
             observation = f"工具 {name} 执行失败"
             ok = False
         ctx.trace.tool_done(name, json.dumps(args, ensure_ascii=False)[:100], (time.monotonic() - started) * 1000, ok)
-        return observation
+        return observation, ok
 
     def _hour_budget_allow(self) -> bool:
         limit = int(self.handle.config.get("agent", "budget", "tokens_per_hour") or 0)

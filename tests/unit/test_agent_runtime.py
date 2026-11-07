@@ -123,7 +123,8 @@ def test_tool_round_feeds_observation_then_answers(tmp_path):
     assert handle.synthesized[-1]["content"] == "alice 现在积分 99 分"
 
 
-def test_rounds_exhausted_degrades(tmp_path):
+def test_rounds_exhausted_with_actions_completes_silently(tmp_path):
+    """轮次触顶且动作已执行：静默完成（动作已在队列里，降级会叠加无关回复）。"""
     config = make_config(max_tool_rounds=2)
     results = [
         AdapterResult(tool_calls=[{"name": "query_integral", "args": {}, "id": None}]),
@@ -131,9 +132,22 @@ def test_rounds_exhausted_degrades(tmp_path):
         AdapterResult(text="永远不会被消费"),
     ]
     runtime, handle, adapter = make_runtime(config=config, results=results)
-    assert runtime.handle_chat(make_event(), "comment") is False
+    assert runtime.handle_chat(make_event(), "comment") is True
     assert handle.synthesized == []
     assert len(adapter.calls) == 2  # 轮次触顶后不再请求
+
+
+def test_rounds_exhausted_without_actions_degrades(tmp_path):
+    """轮次触顶且没有任何成功动作：照旧降级（否则观众的问题没人答）。"""
+    config = make_config(max_tool_rounds=2)
+    results = [
+        AdapterResult(tool_calls=[{"name": "not_registered", "args": {}, "id": None}]),
+        AdapterResult(tool_calls=[{"name": "not_registered", "args": {}, "id": None}]),
+    ]
+    runtime, handle, adapter = make_runtime(config=config, results=results)
+    assert runtime.handle_chat(make_event(), "comment") is False
+    assert handle.synthesized == []
+    assert len(adapter.calls) == 2
 
 
 def test_adapter_exception_degrades():
@@ -298,3 +312,31 @@ def test_generate_proactive_falls_back_on_kill_switch():
     runtime.kill_switch = True
     assert runtime.generate_proactive() is None
     assert adapter.calls == []
+
+
+def test_action_ordering_guidance_in_prompt():
+    """顺序引导必须在 system prompt 里：先 speak 后动作、动作完收尾（真机回归点）。"""
+    runtime, _, adapter = make_runtime(results=[AdapterResult(text="好")])
+    assert runtime.handle_chat(make_event(), "comment") is True
+    prompt = adapter.calls[0][0]["content"]
+    assert "按调用顺序" in prompt
+    assert "speak" in prompt
+
+
+def test_acted_then_no_final_completes_silently():
+    """动作已执行而模型收尾无话：静默完成，不降级（降级会让裸 LLM 回复盖在已入队音频上）。"""
+    results = [
+        AdapterResult(tool_calls=[{"name": "memory_save", "args": {"kind": "highlight", "content": "a"}, "id": None}]),
+        AdapterResult(text=""),  # 模型收尾空文本
+    ]
+    runtime, handle, adapter = make_runtime(results=results)
+    assert runtime.handle_chat(make_event(), "comment") is True
+    assert len(adapter.calls) == 2
+    assert handle.synthesized == []  # 没有最终播报，也没有降级生成的回复
+
+
+def test_no_output_without_tools_still_degrades():
+    results = [AdapterResult(text="")]
+    runtime, handle, _ = make_runtime(results=results)
+    assert runtime.handle_chat(make_event(), "comment") is False
+    assert handle.synthesized == []
