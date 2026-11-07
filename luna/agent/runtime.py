@@ -249,6 +249,9 @@ class AgentRuntime:
             persona = (config.get("before_prompt") or "") + (config.get("after_prompt") or "")
         parts = [persona or "你是直播间的主播助手，用简短口语化的中文回复。"]
         parts.append("当前时间：" + ctx.state["cur_time"])
+        parts.append(
+            "播放状态：" + ("正在播放音频（观众喊停可用 stop_playback）" if ctx.state.get("playback_busy") else "空闲")
+        )
         viewer = (ctx.viewer or {}).get("summary")
         if viewer:
             parts.append("观众记忆：" + viewer)

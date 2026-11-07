@@ -109,3 +109,26 @@ def test_generate_image_by_prompt_branches(handle, configure, monkeypatch):
     # 功能未启用
     configure({"sd": {"enable": False}})
     assert "未启用" in handle.generate_image_by_prompt("alice", "一只猫")
+
+
+def test_stop_playback_tool_stops_and_clears():
+    """观众喊停：停当前播放 + 清待播队列（真机回归点）。"""
+    from luna.agent.tools.playback import StopPlayback
+
+    calls = []
+
+    class AudioStub:
+        def stop_current_audio(self):
+            calls.append("stop_current")
+
+    handle = SimpleNamespace(audio=AudioStub(), clear_queue=lambda type: calls.append(("clear", type)))
+    observation = StopPlayback().run({}, make_ctx(handle))
+    assert observation == "已停止播放并清空待播队列"
+    assert calls == ["stop_current", ("clear", "message_queue")]
+
+
+def test_stop_playback_tool_reports_missing_audio():
+    from luna.agent.tools.playback import StopPlayback
+
+    handle = SimpleNamespace(audio=None, clear_queue=lambda type: None)
+    assert "未就绪" in StopPlayback().run({}, make_ctx(handle))

@@ -34,6 +34,7 @@ TOOLS = {
     "memory_save": ("luna.agent.tools.memory_tool", "MemorySave"),
     "play_song": ("luna.agent.tools.song", "PlaySong"),
     "generate_image": ("luna.agent.tools.image", "GenerateImage"),
+    "stop_playback": ("luna.agent.tools.playback", "StopPlayback"),
 }
 
 

@@ -200,7 +200,7 @@ Agent 决策失败（超时 / 异常 / 预算耗尽 / FC 不可用）
 | 阶段 | 范围 | 验收标准 |
 | --- | --- | --- |
 | **P0 Agent-Ready**（**已实施** b737b69） | `luna/agent` 骨架；ToolRegistry + 首批 5 工具；LLMAdapter 双通道；`_interaction_pipeline` 门控分支；config 段；trace；单测+守卫+冒烟；真机 LLM 验证通过 | "积分榜前五是谁""刚才在聊什么"能被回答并播报；`enabled=false` 零回归 |
-| **P1 大脑升级**（**已实施** 2026-11-07） | IntentRouter v1（复读风暴跳过 + 内容截断）；动作类工具 **play_song / generate_image** 入册（handle 提炼干净入口，关键词链路不动）；`idle_tasks` 文案模式接 `generate_proactive()`（高光+弹幕上下文注入，失败回落文案池）；reply_template 对齐；WebUI 卡片墙自动收录新工具 | 观众自然语言点歌/求画可被模型自主触发；刷屏弹幕不再重复烧 token |
+| **P1 大脑升级**（**已实施** 2026-11-07） | IntentRouter v1（复读风暴跳过 + 内容截断）；动作类工具 **play_song / generate_image** 入册（handle 提炼干净入口，关键词链路不动）；**stop_playback** 播放控制工具（观众喊停/切歌，停当前 + 清队列；system prompt 注入播放状态）；`idle_tasks` 文案模式接 `generate_proactive()`（高光+弹幕上下文注入，失败回落文案池）；reply_template 对齐；WebUI 卡片墙自动收录新工具 | 观众自然语言点歌/求画可被模型自主触发；刷屏弹幕不再重复烧 token |
 | **P1 剩余（待做）** | 小模型意图分流；互动率/降级率度量对比 | 对比规则模式互动率提升；降级率 < 5% |
 | **P2 生态化** | MCP 协议接入（Luna 作 MCP host，第三方工具即插即用）；Agent 工作台完整版；直播复盘报告；人设知识库 RAG | 第三方工具接入成本 ≤ 一个 JSON 描述 + 一个类；复盘报告成为留存功能 |
 

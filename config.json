@@ -1825,7 +1825,8 @@
         "search_online",
         "memory_save",
         "play_song",
-        "generate_image"
+        "generate_image",
+        "stop_playback"
       ],
       "dangerous_enabled": []
     },

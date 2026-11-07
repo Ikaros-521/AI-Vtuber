@@ -14,6 +14,7 @@ EXPECTED_TOOLS = {
     "memory_save",
     "play_song",
     "generate_image",
+    "stop_playback",
 }
 
 
@@ -29,7 +30,7 @@ def test_every_tool_is_loadable_and_self_describing(name):
     assert tool.name == name, "TOOLS 登记名要与类属性 name 一致，否则运行期会被跳过"
     assert tool.description.strip()
     assert tool.parameters.get("type") == "object"
-    assert tool.parameters.get("properties")
+    assert "properties" in tool.parameters  # 无参数工具（如 stop_playback）允许空 properties
 
 
 def test_registry_respects_enabled_whitelist():
