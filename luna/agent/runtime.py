@@ -106,34 +106,50 @@ class AgentRuntime:
         ]
         budget.add_chars(messages[0]["content"], messages[1]["content"])
 
+        # 小模型分流（P1 尾部）：配置 small_chat_type 且弹幕判定为简单时直答，
+        # 省去主模型的工具循环开销；分流不中/失败静默落回主循环
+        final_text = self._try_small_model_route(ctx, config, budget)
+        used_small = final_text is not None
+        used_fallback = False
+
         chat_type = config.get("chat_type")
-        adapter = self.adapter or LLMAdapter(self.handle, chat_type, config.get("agent", "llm", "channel") or "auto")
-        specs = self.registry.specs()
-        final_text = None
+        adapter = (
+            None
+            if used_small
+            else (self.adapter or LLMAdapter(self.handle, chat_type, config.get("agent", "llm", "channel") or "auto"))
+        )
+        specs = [] if used_small else self.registry.specs()
         stop_reason = "budget_exhausted"
         acted = False
 
-        while not budget.exhausted():
-            result = adapter.call(messages, specs)
-            budget.add_chars(result.text or "")
-            if result.tool_calls:
-                budget.tool_rounds += 1
-                self._hour_budget_charge(budget.prompt_chars)
-                messages.append(self._assistant_tool_message(result))
-                for tool_call in result.tool_calls:
-                    observation, ok = self._execute_tool(tool_call, ctx)
-                    acted = acted or ok
-                    if tool_call.get("id"):
-                        messages.append({"role": "tool", "tool_call_id": tool_call["id"], "content": observation})
-                    else:
-                        messages.append({"role": "user", "content": f"OBSERVATION：{observation}"})
-                continue
-            if result.text:
-                final_text = result.text
-                stop_reason = ""
+        if not used_small:
+            while not budget.exhausted():
+                try:
+                    result = adapter.call(messages, specs)
+                except Exception:
+                    # 模型级异常（key 失效/配额/网络）：不再向上抛，交备用模型降级链处理
+                    logger.error("Agent 主模型调用异常：\n" + traceback.format_exc())
+                    stop_reason = "model_error"
+                    break
+                budget.add_chars(result.text or "")
+                if result.tool_calls:
+                    budget.tool_rounds += 1
+                    self._hour_budget_charge(budget.prompt_chars)
+                    messages.append(self._assistant_tool_message(result))
+                    for tool_call in result.tool_calls:
+                        observation, ok = self._execute_tool(tool_call, ctx)
+                        acted = acted or ok
+                        if tool_call.get("id"):
+                            messages.append({"role": "tool", "tool_call_id": tool_call["id"], "content": observation})
+                        else:
+                            messages.append({"role": "user", "content": f"OBSERVATION：{observation}"})
+                    continue
+                if result.text:
+                    final_text = result.text
+                    stop_reason = ""
+                    break
+                stop_reason = "no_output"
                 break
-            stop_reason = "no_output"
-            break
 
         if final_text is None:
             if acted:
@@ -141,8 +157,17 @@ class AgentRuntime:
                 # 降级会触发一次无视工具结果的裸 LLM 回复，盖在已入队的音频上
                 trace.finish(degraded=False, reason="acted_no_final", prompt_chars=budget.prompt_chars)
                 return True
-            trace.finish(degraded=True, reason=stop_reason, prompt_chars=budget.prompt_chars)
-            return False
+            # 模型级异常（调用异常/空返回）→ 备用模型直答；超时/预算耗尽不降级
+            # （备用调用会把单次决策延迟翻倍，且资源类失败换模型也救不了）
+            fallback_type = config.get("agent", "llm", "fallback_chat_type")
+            if stop_reason in ("model_error", "no_output") and not budget.timed_out() and fallback_type:
+                final_text = self._direct_answer(fallback_type, ctx, config, budget)
+                used_fallback = final_text is not None
+                if not used_fallback:
+                    stop_reason += "+fallback_failed"
+            if final_text is None:
+                trace.finish(degraded=True, reason=stop_reason, prompt_chars=budget.prompt_chars)
+                return False
 
         # 输出侧违禁过滤（复用 My_handle）；被拦则刻意沉默——不回落原路径，避免二次生成浪费
         filtered = self.handle.prohibitions_handle(final_text.strip())
@@ -162,7 +187,8 @@ class AgentRuntime:
 
         # 供门面做回复侧 key_mapping/custom_cmd 触发（与原路径语义一致）
         data_json["content"] = filtered
-        trace.finish(output_chars=len(filtered), prompt_chars=budget.prompt_chars)
+        success_reason = "small_model_direct" if used_small else ("model_fallback" if used_fallback else "")
+        trace.finish(reason=success_reason, output_chars=len(filtered), prompt_chars=budget.prompt_chars)
         return True
 
     # ---------- 内部 ----------
@@ -192,6 +218,74 @@ class AgentRuntime:
         except Exception:
             logger.error("Agent 回复模板处理失败：\n" + traceback.format_exc())
         return text
+
+    # ---------- 直答模型（小模型分流 / 备用模型降级共用，P1 尾部） ----------
+
+    # 简单弹幕的排除词：命中即视为需要工具或复杂决策，交主模型（拿不准宁可上大模型）
+    SMALL_ROUTE_EXCLUDE_KEYWORDS = (
+        "歌",
+        "唱",
+        "画",
+        "点",
+        "放",
+        "搜",
+        "查",
+        "积分",
+        "榜",
+        "礼",
+        "什么",
+        "怎么",
+        "谁",
+        "几",
+        "为什么",
+    )
+
+    def _direct_answer_system(self, config) -> str:
+        persona = config.get("agent", "persona")
+        if not persona:
+            persona = (config.get("before_prompt") or "") + (config.get("after_prompt") or "")
+        parts = [persona or "你是直播间的主播助手，用简短口语化的中文回复。"]
+        parts.append("当前时间：" + self.handle.common.get_bj_time(5))
+        parts.append("回复要求：简短口语化，适合直播朗读；不要输出 Markdown 与换行。")
+        return "\n".join(parts)
+
+    def _direct_answer(self, chat_type, ctx, config, budget):
+        """指定模型的无工具直答；chat_type 未配置/不支持、调用异常、空返回都返回 None。"""
+        if not chat_type or chat_type not in (self.handle.chat_type_list or []):
+            return None
+        if not self._hour_budget_allow():
+            return None
+        try:
+            system = self._direct_answer_system(config)
+            username = ctx.event.get("username", "")
+            user = f"观众 {username} 说：{ctx.event['content']}" if username else ctx.event["content"]
+            budget.add_chars(system, user)
+            self._hour_budget_charge(len(system) + len(user))
+            adapter = LLMAdapter(self.handle, chat_type, config.get("agent", "llm", "channel") or "auto")
+            result = adapter.call([{"role": "system", "content": system}, {"role": "user", "content": user}], [])
+            return (result.text or "").strip() or None
+        except Exception:
+            logger.error(f"Agent 直答模型 {chat_type} 调用失败：\n" + traceback.format_exc())
+            return None
+
+    def _try_small_model_route(self, ctx, config, budget):
+        """小模型分流：规则判定为「简单」的弹幕走 small_chat_type 直答。
+
+        规则即时零成本：未配置 / 空内容 / 超长（small_max_chars）/ 命中排除词 /
+        预算超限 → None 走主循环；小模型调用失败同样 None 落回主循环。
+        """
+        small_type = config.get("agent", "llm", "small_chat_type")
+        if not small_type:
+            return None
+        content = str(ctx.event.get("content") or "").strip()
+        if not content:
+            return None
+        max_chars = int(config.get("agent", "llm", "small_max_chars") or 10)
+        if len(content) > max_chars:
+            return None
+        if any(keyword in content for keyword in self.SMALL_ROUTE_EXCLUDE_KEYWORDS):
+            return None
+        return self._direct_answer(small_type, ctx, config, budget)
 
     def generate_proactive(self):
         """闲时主动话题：单轮生成（无工具），失败返回 None 由调用方回落文案池。

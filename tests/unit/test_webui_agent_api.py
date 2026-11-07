@@ -192,3 +192,33 @@ def test_machine_agent_trace_returns_recent():
         body = client.get("/agent_trace").json()
     assert body["code"] == 200
     assert body["data"]["records"][0]["username"] == "alice"
+
+
+def test_machine_agent_stats_aggregates_trace():
+    """P1 尾部度量：/agent_stats 聚合降级率/备用触发/小模型直答/工具成功率。"""
+    from luna.agent.trace import Trace
+
+    t1 = Trace(event_type="comment", username="a", source="comment")
+    t1.tool_done("speak", "", 5, True)
+    t1.finish(output_chars=5)
+    Trace(event_type="comment", username="b", source="comment").finish(degraded=True, reason="model_error")
+    Trace(event_type="comment", username="c", source="comment").finish(reason="model_fallback", output_chars=3)
+    Trace(event_type="comment", username="d", source="comment").finish(reason="small_model_direct", output_chars=4)
+
+    with _api_client() as client:
+        body = client.get("/agent_stats").json()
+    assert body["code"] == 200
+    data = body["data"]
+    assert data["total"] == 4
+    assert data["degraded"] == 1
+    assert data["degrade_rate"] == 25.0
+    assert data["fallback_used"] == 1
+    assert data["small_routed"] == 1
+    assert (data["tool_total"], data["tool_ok"]) == (1, 1)
+
+
+def test_stats_degrades_when_main_down(tmp_config):
+    with _client() as client:
+        body = client.get("/api/agent/stats").json()
+    assert body["code"] == -1
+    assert "主进程" in body["message"]

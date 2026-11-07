@@ -1815,7 +1815,10 @@
     "persona": "",
     "llm": {
       "channel": "auto",
-      "model": ""
+      "model": "",
+      "fallback_chat_type": "",
+      "small_chat_type": "",
+      "small_max_chars": 10
     },
     "tools": {
       "enabled": [

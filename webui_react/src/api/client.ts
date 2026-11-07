@@ -75,6 +75,7 @@ export const api = {
   // ---------- Agent 工作台（v5） ----------
   agentOverview: () => get<AgentOverviewResult>('/api/agent/overview'),
   agentTrace: () => get<ApiResult & { records: AgentTraceRecord[] }>('/api/agent/trace'),
+  agentStats: () => get<ApiResult & AgentStats>('/api/agent/stats'),
   agentKill: (on: boolean) => post<ApiResult>('/api/agent/kill', { on }),
   agentViewers: (keyword: string) =>
     get<ApiResult & { viewers: AgentViewer[] }>(`/api/agent/memory/viewers?keyword=${encodeURIComponent(keyword)}`),
@@ -121,6 +122,17 @@ export interface AgentTraceRecord {
   reason: string
   output_chars: number
   prompt_chars: number
+}
+
+export interface AgentStats {
+  total: number
+  degraded: number
+  degrade_rate: number
+  fallback_used: number
+  small_routed: number
+  avg_ms: number
+  tool_total: number
+  tool_ok: number
 }
 
 export interface AgentViewer {

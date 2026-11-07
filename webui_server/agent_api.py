@@ -120,6 +120,20 @@ async def overview():
         return {"code": -1, "message": f"获取 Agent 总览失败：{e}"}
 
 
+@router.get("/stats", response_model=Envelope)
+async def stats():
+    """决策聚合统计（P1 尾部度量），代理主进程 /agent_stats。"""
+    try:
+        resp, proxy_error = await _proxy_main("/agent_stats")
+        if isinstance(resp, dict) and resp.get("code") == 200:
+            return {"code": 200, **resp.get("data", {})}
+        message = proxy_error or (resp.get("message", "主进程未响应") if isinstance(resp, dict) else "主进程未响应")
+        return {"code": -1, "message": f"读取统计失败：{message}"}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "message": f"读取统计失败：{e}"}
+
+
 @router.get("/trace", response_model=AgentTraceResult)
 async def trace():
     try:

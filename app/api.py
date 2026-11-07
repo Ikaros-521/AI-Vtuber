@@ -169,6 +169,39 @@ def create_api_app(state):
             logger.error(f"agent_status处理失败！{e}")
             return CommonResult(code=-1, message=f"agent_status处理失败！{e}")
 
+    @app.get("/agent_stats")
+    async def agent_stats():
+        """决策聚合统计（P1 尾部度量）：降级率 / 备用模型触发 / 小模型直答 / 工具成功率。"""
+        try:
+            from luna.agent.trace import RECENT
+
+            records = list(RECENT)
+            total = len(records)
+            degraded = sum(1 for r in records if r.get("degraded"))
+            fallback_used = sum(1 for r in records if r.get("reason") == "model_fallback")
+            small_routed = sum(1 for r in records if r.get("reason") == "small_model_direct")
+            durations = [r.get("duration_ms", 0) for r in records]
+            tool_calls = [tc for r in records for tc in r.get("tool_calls", [])]
+            tool_total = len(tool_calls)
+            tool_ok = sum(1 for tc in tool_calls if tc.get("ok"))
+            return CommonResult(
+                code=200,
+                data={
+                    "total": total,
+                    "degraded": degraded,
+                    "degrade_rate": round(degraded / total * 100, 1) if total else 0.0,
+                    "fallback_used": fallback_used,
+                    "small_routed": small_routed,
+                    "avg_ms": round(sum(durations) / total, 1) if total else 0.0,
+                    "tool_total": tool_total,
+                    "tool_ok": tool_ok,
+                },
+                message="成功",
+            )
+        except Exception as e:
+            logger.error(f"agent_stats处理失败！{e}")
+            return CommonResult(code=-1, message=f"agent_stats处理失败！{e}")
+
     @app.get("/agent_trace")
     async def agent_trace():
         """最近决策 trace（进程内滚动窗口）。"""

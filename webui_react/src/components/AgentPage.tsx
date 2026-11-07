@@ -9,6 +9,7 @@ import {
   api,
   type AgentHighlight,
   type AgentOverviewResult,
+  type AgentStats,
   type AgentTraceRecord,
   type AgentViewer,
 } from '../api/client'
@@ -47,6 +48,7 @@ export function AgentPage() {
 
   const [overview, setOverview] = useState<AgentOverviewResult | null>(null)
   const [trace, setTrace] = useState<AgentTraceRecord[] | null>(null)
+  const [stats, setStats] = useState<AgentStats | null>(null)
   const [expandedTrace, setExpandedTrace] = useState<string | null>(null)
   const [viewers, setViewers] = useState<AgentViewer[] | null>(null)
   const [highlights, setHighlights] = useState<AgentHighlight[] | null>(null)
@@ -68,10 +70,10 @@ export function AgentPage() {
   }, [])
 
   const loadTrace = useCallback(async () => {
-    const resp = await api.agentTrace()
-    if (resp.code === 200) setTrace(resp.records)
-    else setTrace([])
-    return resp
+    const [traceResp, statsResp] = await Promise.all([api.agentTrace(), api.agentStats()])
+    setTrace(traceResp.code === 200 ? traceResp.records : [])
+    if (statsResp.code === 200) setStats(statsResp)
+    return traceResp
   }, [])
 
   const loadMemory = useCallback(async (kw: string) => {
@@ -401,6 +403,18 @@ export function AgentPage() {
           desc="Agent 每次决策的输入/工具调用/耗时，排查「为什么它这么说」全靠这里"
           extra={
             <>
+              {stats && (
+                <span className="flex items-center gap-2 text-[11px] text-[var(--ink-mut)]">
+                  <span>决策 {stats.total}</span>
+                  <span style={{ color: stats.degrade_rate > 20 ? 'var(--warn)' : undefined }}>
+                    降级率 {stats.degrade_rate}%
+                  </span>
+                  {stats.fallback_used > 0 && <span>备用模型 {stats.fallback_used}</span>}
+                  {stats.small_routed > 0 && <span>小模型直答 {stats.small_routed}</span>}
+                  <span>工具 {stats.tool_ok}/{stats.tool_total}</span>
+                  <span>均 {stats.avg_ms}ms</span>
+                </span>
+              )}
               <span className="text-xs text-[var(--ink-mut)]">保留最近 200 条</span>
               <button className={BTN} onClick={() => void loadTrace()}>刷新</button>
             </>

@@ -340,3 +340,131 @@ def test_no_output_without_tools_still_degrades():
     runtime, handle, _ = make_runtime(results=results)
     assert runtime.handle_chat(make_event(), "comment") is False
     assert handle.synthesized == []
+
+
+def make_config_with_models(**llm_extra):
+    config = make_config()
+    config.config["agent"]["llm"].update(llm_extra)
+    return config
+
+
+def test_model_error_falls_back_to_backup_model():
+    """主模型异常 → 备用模型直答（模型异常降级链核心）。"""
+
+    class MainBoomAdapter:
+        def call(self, messages, tool_specs):
+            raise RuntimeError("api key expired")
+
+    handle = FakeHandle(make_config_with_models(fallback_chat_type="tongyi"))
+    runtime = AgentRuntime(handle, adapter=MainBoomAdapter())
+    # 备用模型走 _direct_answer 内部自建 adapter，monkeypatch 拦截其输出
+    calls = []
+
+    def fake_direct(chat_type, ctx, config, budget):
+        calls.append(chat_type)
+        return "备用模型的回答"
+
+    runtime._direct_answer = fake_direct
+    assert runtime.handle_chat(make_event(), "comment") is True
+    assert calls == ["tongyi"]
+    assert handle.synthesized[-1]["content"] == "备用模型的回答"
+
+
+class ExplodingAdapter:
+    """模块级主模型异常桩（局部类无法跨用例复用）。"""
+
+    def call(self, messages, tool_specs):
+        raise RuntimeError("api key expired")
+
+
+def test_model_error_without_fallback_degrades():
+    handle = FakeHandle(make_config_with_models(fallback_chat_type=""))
+    runtime = AgentRuntime(handle, adapter=ExplodingAdapter())
+    assert runtime.handle_chat(make_event(), "comment") is False
+
+
+def test_fallback_failed_reports_degrade_reason():
+    handle = FakeHandle(make_config_with_models(fallback_chat_type="tongyi"))
+    runtime = AgentRuntime(handle, adapter=ExplodingAdapter())
+    runtime._direct_answer = lambda *a, **k: None  # 备用也挂
+    assert runtime.handle_chat(make_event(), "comment") is False
+
+
+def test_budget_exhausted_does_not_trigger_fallback(monkeypatch):
+    """超时/预算类失败不切备用模型（延迟会翻倍，资源类失败换模型救不了）。"""
+    from luna.agent import runtime as runtime_module
+
+    class DeadBudget:
+        """确定性预算桩：一进决策就是耗尽状态，不依赖真实时序。"""
+
+        tool_rounds = 0
+        prompt_chars = 0
+
+        def exhausted(self):
+            return True
+
+        def timed_out(self):
+            return True
+
+        def add_chars(self, *texts):
+            return None
+
+    monkeypatch.setattr(runtime_module, "Budget", DeadBudget)
+    calls = []
+
+    class RecordingAdapter:
+        def call(self, messages, tool_specs):
+            calls.append(1)
+            return AdapterResult(text="不会被消费")
+
+    config = make_config_with_models(fallback_chat_type="tongyi")
+    runtime, handle, adapter = make_runtime(config=config, results=[])
+    runtime.adapter = RecordingAdapter()
+    runtime._direct_answer = lambda *a, **k: (_ for _ in ()).throw(AssertionError("超时路径不应触发备用"))
+    assert runtime.handle_chat(make_event(), "comment") is False
+    assert calls == []  # 循环未进入
+
+
+def test_small_model_routes_simple_danmaku():
+    """小模型分流：短且无排除词 → 小模型直答，主模型不被调用。"""
+    main_calls = []
+
+    class MainAdapter:
+        def call(self, messages, tool_specs):
+            main_calls.append(1)
+            return AdapterResult(text="不该出现")
+
+    config = make_config_with_models(small_chat_type="tongyi")
+    handle = FakeHandle(config)
+    runtime = AgentRuntime(handle, adapter=MainAdapter())
+    runtime._direct_answer = lambda chat_type, ctx, cfg, budget: (
+        (calls.append(chat_type) or "在的呀") if (calls := []) is not None else None
+    )
+
+    assert runtime.handle_chat(make_event("在吗"), "comment") is True
+    assert main_calls == []
+    assert handle.synthesized[-1]["content"] == "在的呀"
+
+
+def test_small_model_skips_complex_or_keyword_danmaku():
+    """超长/命中排除词 → 不分流，走主模型。"""
+    main_results = [AdapterResult(text="主模型回答"), AdapterResult(text="主模型回答2")]
+    config = make_config_with_models(small_chat_type="tongyi")
+    runtime, _, adapter = make_runtime(config=config, results=main_results)
+    runtime._direct_answer = lambda *a, **k: (_ for _ in ()).throw(AssertionError("不应分流"))
+
+    assert runtime.handle_chat(make_event("点一首晴天吧"), "comment") is True  # 命中"点/歌"
+    assert runtime.handle_chat(make_event("这" * 50), "comment") is True  # 超长
+    assert len(adapter.calls) == 2
+
+
+def test_small_model_failure_falls_back_to_main_loop():
+    """小模型直答失败（None）→ 静默落回主模型循环。"""
+    config = make_config_with_models(small_chat_type="tongyi")
+    results = [AdapterResult(text="主模型接手")]
+    runtime, handle, adapter = make_runtime(config=config, results=results)
+    runtime._direct_answer = lambda *a, **k: None
+
+    assert runtime.handle_chat(make_event("在吗"), "comment") is True
+    assert len(adapter.calls) == 1
+    assert handle.synthesized[-1]["content"] == "主模型接手"
