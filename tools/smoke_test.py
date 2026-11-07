@@ -96,6 +96,35 @@ def check_platform_registry():
         raise AssertionError("平台注册表有问题：\n  " + "\n  ".join(failures))
 
 
+def check_agent_registry():
+    """Agent 决策域（v5）：注册表完整性与核心类型可构造（docs/agent-upgrade-design.md）。"""
+    from luna.agent.context import AgentContext, Budget
+    from luna.agent.registry import TOOLS, ToolRegistry, load_tool_class
+
+    failures = []
+    for name in TOOLS:
+        try:
+            tool = load_tool_class(name)()
+            if tool.name != name or not tool.description:
+                failures.append(f"{name}：name/description 不完整")
+        except Exception:
+            failures.append(f"{name}：加载失败")
+            traceback.print_exc()
+    # ToolRegistry 走 Config 的多级链式取值，要传 Config 而不是裸 dict
+    from luna.infra.config import Config
+
+    config_path = Path(os.environ.get("LUNA_CONFIG_PATH") or ROOT / "config.json")
+    registry = ToolRegistry(Config(str(config_path)))
+    enabled = [spec["name"] for spec in registry.specs()]
+    print(f"  已注册工具：{', '.join(sorted(TOOLS))}")
+    print(f"  当前启用：{', '.join(enabled) if enabled else '（无）'}")
+    if failures:
+        raise AssertionError("Agent 工具注册表有问题：\n  " + "\n  ".join(failures))
+    # Budget/AgentContext 只做可构造性检查（不请求 LLM、不碰 db）
+    Budget(max_tool_rounds=1, timeout_seconds=1)
+    assert AgentContext.__dataclass_fields__, "AgentContext 字段缺失"
+
+
 def find_free_port():
     sock = socket.socket()
     try:
@@ -185,20 +214,23 @@ def main():
     parser.add_argument("--timeout", type=float, default=60, help="WebUI 启动超时秒数")
     args = parser.parse_args()
 
-    print("[1/4] 配置检查")
+    print("[1/5] 配置检查")
     load_config()
     print("  OK   config.json")
 
-    print("[2/4] 核心模块导入")
+    print("[2/5] 核心模块导入")
     check_imports()
 
-    print("[3/4] 平台注册表")
+    print("[3/5] 平台注册表")
     check_platform_registry()
 
+    print("[4/5] Agent 决策域")
+    check_agent_registry()
+
     if args.skip_webui:
-        print("[4/4] 已跳过 WebUI 启动")
+        print("[5/5] 已跳过 WebUI 启动")
     else:
-        print("[4/4] WebUI 启动")
+        print("[5/5] WebUI 启动")
         check_webui(args.timeout)
 
     print("SMOKE OK")

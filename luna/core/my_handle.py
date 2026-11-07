@@ -148,6 +148,9 @@ class My_handle(metaclass=SingletonMeta):
 
             self.image_recognition_model: Any = None
 
+            # v5 Agent 决策运行时（agent.enabled 时由 config_load 构造，见 docs/agent-upgrade-design.md）
+            self.agent_runtime: Any = None
+
             self.chat_type_list = [
                 "chatgpt",
                 "langchain_chatchat",
@@ -607,6 +610,15 @@ class My_handle(metaclass=SingletonMeta):
             """
             self.db.execute(create_table_sql)
             logger.debug("创建integral（积分）表")
+
+            # v5 Agent 决策域：默认关闭，开启后接管走到 LLM 的闲聊段
+            # （docs/agent-upgrade-design.md）。放在 db/业务表就绪之后，记忆表随其初始化。
+            self.agent_runtime = None
+            if self.config.get("agent", "enabled"):
+                from luna.agent.runtime import AgentRuntime
+
+                self.agent_runtime = AgentRuntime(self)
+                logger.info("Agent 运行时已启用（luna/agent，docs/agent-upgrade-design.md）")
         except Exception:
             logger.error(traceback.format_exc())
             logger.error(f"数据库 {self.config.get('database', 'path')} 创建失败，请查看日志排查问题！！！")
@@ -2434,6 +2446,48 @@ class My_handle(metaclass=SingletonMeta):
     #     用户名数字转中文、念弹幕(含周期性触发)
     #   - build_message 的消息类型：comment 用 "comment"，talk 用 "talk"
     #   - talk 原实现的念弹幕块被 `and False` 永久禁用，等价于整块不执行
+    def agent_handle_chat(self, data_json, source):
+        """Agent 决策分支门面（v5，docs/agent-upgrade-design.md §4.2/§4.7）。
+
+        仅在 agent.enabled 且 chat_type 是 LLM 聊天类型时接管；接管条件与
+        llm_handle 的前置过滤（before/after_must_str_for_llm）保持一致，避免
+        原本不触发 LLM 的弹幕被 Agent 抢答。降级链：Agent 失败一律 False，
+        落回下方原有 LLM 直答路径。
+
+        Returns:
+            bool: True=本次回复已由 Agent 接管完成；False=未启用/降级
+        """
+        runtime = getattr(self, "agent_runtime", None)
+        if runtime is None or not self.config.get("agent", "enabled"):
+            return False
+        chat_type = self.config.get("chat_type")
+        if chat_type not in self.chat_type_list:
+            # game/none/reread 等非 LLM 类型保持原有特殊分支，Agent 不抢
+            return False
+
+        # 与 llm_handle 同款前置过滤，保持「哪些弹幕值得触发回复」的行为一致
+        must_prefixes = self.config.get("filter", "before_must_str_for_llm")
+        if must_prefixes and not any(str(data_json.get("ori_content", "")).startswith(p) for p in must_prefixes):
+            return False
+        must_suffixes = self.config.get("filter", "after_must_str_for_llm")
+        if must_suffixes and not any(str(data_json.get("ori_content", "")).endswith(p) for p in must_suffixes):
+            return False
+
+        try:
+            if not runtime.handle_chat(data_json, source):
+                return False
+        except Exception:
+            logger.error(traceback.format_exc())
+            return False
+
+        # 与原 LLM 直答路径对齐：回复侧按键映射 / 自定义命令照常触发
+        # （handle_chat 成功时已把最终文本写回 data_json["content"]）
+        if self.config.get("key_mapping", "type") in ("回复", "弹幕+回复"):
+            self.key_mapping_handle("回复", data_json)
+        if self.config.get("custom_cmd", "type") in ("回复", "弹幕+回复"):
+            self.custom_cmd_handle("回复", data_json)
+        return True
+
     def _interaction_pipeline(self, data, source: str):
         """弹幕/语音聊天统一处理流水线
 
@@ -2633,6 +2687,12 @@ class My_handle(metaclass=SingletonMeta):
                 "ori_username": data["username"],
                 "ori_content": data["content"],
             }
+
+            # v5 Agent 决策分支：agent.enabled 且本次命中 LLM 聊天类型时，由 luna/agent
+            # 接管回复；未启用/降级返回 False，继续走下方原有 LLM 直答路径（安全网语义，
+            # docs/agent-upgrade-design.md §4.7）
+            if self.agent_handle_chat(data_json, source):
+                return
 
             """
             根据聊天类型执行不同逻辑

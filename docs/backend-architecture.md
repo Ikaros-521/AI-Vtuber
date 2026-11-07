@@ -26,6 +26,8 @@
 │   audio/    service(Audio编排) my_tts audio_player           │
 │             playback_stream                                │
 │   llm/      gpt(PROVIDERS注册表) + 10 家 provider + history  │
+│   agent/    Agent 决策域（v5）：runtime/registry/tools/       │
+│             memory/safety/trace，见 docs/agent-upgrade-design│
 │   platforms/ 13 平台监听器 + luoxi/ + kuaishou_pb2 + protobuf│
 │   infra/    config(单例) my_log db my_global models logger   │
 │   common/   helpers http_client screen（纯工具）             │
@@ -37,7 +39,7 @@
 └─────────────────────────────────────────────────────────┘
 ```
 
-**依赖方向（强制）**：`main → app → luna`；`webui_server → luna`；luna 内部不得 import app/main；luna.common 不依赖其他域，luna.core/audio/llm/platforms 只依赖 infra/common 与自身。`test_platform_scoping` 的 AST 守卫会自动检查 luna 全树新增模块。`test_platform_scoping` 的 AST 守卫会自动检查新增模块。
+**依赖方向（强制）**：`main → app → luna`；`webui_server → luna`；luna 内部不得 import app/main；luna.common 不依赖其他域，luna.core/audio/llm/platforms 只依赖 infra/common 与自身；luna.agent 只依赖 infra/common（+ `luna.core.message`/`luna.core.search_engine` 两个纯工具模块），对 My_handle 能力一律经 ctx.handle 注入（`test_agent_deps` 强制）。`test_platform_scoping` 的 AST 守卫会自动检查 luna 全树新增模块。
 
 ## 关键设计决策
 

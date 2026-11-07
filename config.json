@@ -1807,5 +1807,32 @@
         "live2d_TTS_LLM_GPT_SoVITS_Vtuber": true
       }
     }
+  },
+  "agent": {
+    "enabled": false,
+    "max_tool_rounds": 3,
+    "timeout_seconds": 8,
+    "persona": "",
+    "llm": {
+      "channel": "auto",
+      "model": ""
+    },
+    "tools": {
+      "enabled": ["speak", "query_integral", "query_danmu_summary", "search_online", "memory_save"],
+      "dangerous_enabled": []
+    },
+    "budget": {
+      "tokens_per_hour": 200000
+    },
+    "memory": {
+      "viewer_profile": true,
+      "episodic": true
+    },
+    "safety": {
+      "per_viewer_tool_rate": {
+        "count": 3,
+        "window_seconds": 60
+      }
+    }
   }
 }

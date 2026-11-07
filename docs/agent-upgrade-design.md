@@ -1,6 +1,6 @@
 # Luna AI Agent 化升级设计（v5）
 
-> 状态：设计定稿，随 P0 实施迭代。分支 `v5`（自 v4.0.0 切出）。
+> 状态：**P0（Agent-Ready）已实施**——`luna/agent` 骨架、ToolRegistry + 5 工具、LLMAdapter 双通道、`_interaction_pipeline` 门控分支、config `agent` 段、trace、单测/守卫/冒烟均已落地；P1/P2 待排期。分支 `v5`（自 v4.0.0 切出）。
 > 前置阅读：[backend-architecture.md](./backend-architecture.md)——本文所有集成点都建立在该分层之上，不推翻任何现有决策。
 
 ## 1. 背景与定位
@@ -204,7 +204,9 @@ Agent 决策失败（超时 / 异常 / 预算耗尽 / FC 不可用）
 - **单测**（`.venv`，pytest）：注册表完整性（description/schema 非空、白名单一致性）；runtime 循环（mock LLM：零轮直答 / 一轮工具 / 超轮次 / 异常降级 / 预算熔断）；记忆读写与截断；安全门（白名单外调用拒绝、频率限制、dangerous 拦截）。
 - **双环境**：webui_server 的 agent_api 遵守 pydantic v1/v2 兼容约束，Miniconda（v1.10）起一遍验证。
 - **AST 守卫**：`test_platform_scoping` 扩展——`luna/agent` 只准依赖 `luna/infra`、`luna/common` 与标准库，能力一律经 ctx 注入。
-- **回归锚点**：`agent.enabled=false` 时现有 650 用例行为不变；`tools/smoke_test.py` 增 agent 段（配置读取/注册表加载/LLMAdapter 构造）。
+- **回归锚点**：`agent.enabled=false` 时现有全部用例行为不变；`tools/smoke_test.py` 的 `[4/5] Agent 决策域` 段覆盖配置读取/注册表加载（Miniconda 与 .venv 双环境跑通）。
+
+**已知问题（v4 遗留，非 agent 引入）**：全量单测在 pytest 报告全部通过后，解释器退出会因若干未 cancel 的非 daemon `threading.Timer` 线程挂住（本地可见，CI 按进程退出不受影响）；来源是 `start_timers`/audio 的既有 Timer，待后续统一治理。
 
 ## 10. 风险与对策
 
