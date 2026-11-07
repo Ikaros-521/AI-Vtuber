@@ -86,6 +86,28 @@ export const api = {
   agentHighlights: () => get<ApiResult & { highlights: AgentHighlight[] }>('/api/agent/memory/highlights'),
   agentDeleteHighlight: (rowId: number) =>
     post<ApiResult>('/api/agent/memory/highlight/delete', { row_id: rowId }),
+
+  // ---------- 配置助手（v5 P2） ----------
+  configChat: (sessionId: string, message: string) =>
+    post<ApiResult & { reply: string; changes: ConfigChange[]; questions: string[]; level: string }>(
+      '/api/agent/config-chat',
+      { session_id: sessionId, message },
+    ),
+  configApply: (changes: { path: string[]; value: unknown }[]) =>
+    post<ApiResult & { results: { path: string[]; ok: boolean }[] }>('/api/agent/config-apply', { changes }),
+  assistantSettings: () => get<ApiResult & { safety_level: string }>('/api/agent/assistant-settings'),
+  setAssistantSettings: (safetyLevel: string) =>
+    post<ApiResult>('/api/agent/assistant-settings', { safety_level: safetyLevel }),
+}
+
+// ---------- 配置助手类型 ----------
+
+export interface ConfigChange {
+  path: string[]
+  value: unknown
+  reason: string
+  danger: boolean
+  status?: 'pending' | 'applied' | 'failed'
 }
 
 // ---------- Agent 工作台类型（与 webui_server/schemas.py 的模型一一对应） ----------

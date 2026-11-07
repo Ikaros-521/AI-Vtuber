@@ -21,6 +21,7 @@ import { ChatPage } from './ChatPage'
 import { DashboardPage } from './DashboardPage'
 import { DirtyListDialog } from './Dialogs'
 import { AgentPage } from './AgentPage'
+import { AssistantPage } from './AssistantPage'
 import { PlayPage } from './PlayPage'
 import { SearchDialog } from './SearchDialog'
 import { ConfirmHost, ToastHost } from './Overlays'
@@ -305,6 +306,7 @@ export function AppShell() {
             <SettingsPage step={route.step} onStep={(s) => setRoute({ page: 'settings', step: s })} />
           )}
           {route.page === 'agent' && <AgentPage />}
+          {route.page === 'assistant' && <AssistantPage />}
           {route.page === 'play' && <PlayPage workspace={playWorkspace} />}
           {route.page === 'mod' && <WorkspacePage workspace={modWorkspace} />}
           {route.page === 'sys' && <WorkspacePage workspace={sysWorkspace} />}

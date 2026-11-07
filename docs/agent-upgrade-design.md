@@ -234,6 +234,34 @@ Agent 决策失败：
 - **产品层**：互动率（有回复弹幕占比）、人均互动次数、观众回头率（viewer_profile 回访）、礼物转化对比、主播满意度（群内问卷）。
 - 全部指标从 trace + 现有 db 数据即可统计，P0 就埋好。
 
+## 12. 配置助手（P2 新增，2026-11-07 实装）
+
+面向主播的**第二个 Agent 场景**：与直播间数字员工（面向观众、实时音频）不同，
+配置助手面向主播、走 WebUI 文本对话，输出物是**配置变更集**而非语音。
+
+**产品流程**：主播只会提需求（"我想要观众能点歌"）→ 助手理解需求、定位配置键
+→ 输出变更集 `[{path, value, reason, danger}]` 与说明 → 按安全等级处理 →
+主播确认或自动生效。
+
+**三档安全等级**（对标 Codex 自动化模式，存 `agent.config_assistant.safety_level`）：
+- `manual` 人工审核（默认）：所有变更挂起，逐条确认后经 `/api/agent/config-apply` 落盘
+- `auto` 自动审核：安全变更自动落盘；**敏感变更仍挂起**——敏感判定后端强制复核
+  （`_enforce_danger`：路径命中 api_key/password/token/sessdata/cookie/login/secret
+  一律 danger=true，模型说了不算）
+- `full` 完全访问：全部自动落盘
+
+**实现要点**：
+- 跑在 webui_server 进程（配置是它的领域，不碰主进程直播间 runtime）；
+  因此实现放 `webui_server/config_assistant.py` 而非 luna/agent——它必须直接
+  实例化 provider，与 luna/agent 的"LLM 能力经 ctx.handle 注入"守卫是两种架构约束
+- LLM 接入复用 provider 注册表纯文本调用；输出走 **JSON 变更集协议**而非工具循环
+  （零 FC 依赖、全 provider 兼容）
+- 助手的"配置百科"在 `luna/agent/config_knowledge.py`：功能域目录 + 关键键语义，
+  渲染进 system prompt，并注入重点配置段的当前值
+- 配置写盘走 runtime 原子写；与设置页草稿的 sha256 乐观锁并存（外部写盘后
+  设置页保存会 409，属既有冲突保护语义）
+- 落盘后需重启程序在直播间生效（与全部配置一致），助手回复里会提醒
+
 ## 附录 A：`config.json` 新增段草案
 
 ```json

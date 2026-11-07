@@ -74,3 +74,20 @@ class AgentViewerListResult(Envelope):
 
 class AgentHighlightListResult(Envelope):
     highlights: List[Dict[str, Any]] = []
+
+
+class ConfigChatResult(Envelope):
+    """配置助手一轮对话：回复 + 变更集（含安全等级处理后的状态）+ 追问。"""
+
+    reply: str = ""
+    changes: List[Dict[str, Any]] = []
+    questions: List[str] = []
+    level: str = "manual"
+
+
+class ConfigApplyResult(Envelope):
+    results: List[Dict[str, Any]] = []
+
+
+class AssistantSettingsResult(Envelope):
+    safety_level: str = "manual"

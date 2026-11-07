@@ -1840,6 +1840,10 @@
         "count": 3,
         "window_seconds": 60
       }
+    },
+    "config_assistant": {
+      "safety_level": "manual",
+      "chat_type": ""
     }
   }
 }

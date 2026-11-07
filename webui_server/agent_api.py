@@ -21,6 +21,9 @@ from webui_server.schemas import (
     AgentOverviewResult,
     AgentTraceResult,
     AgentViewerListResult,
+    AssistantSettingsResult,
+    ConfigApplyResult,
+    ConfigChatResult,
     Envelope,
 )
 
@@ -44,6 +47,32 @@ class AgentDeleteRequest(BaseModel):
 
 class AgentHighlightDeleteRequest(BaseModel):
     row_id: int
+
+
+class ConfigChatRequest(BaseModel):
+    session_id: str = "default"
+    message: str
+
+
+class ConfigApplyRequest(BaseModel):
+    changes: list
+
+
+class AssistantSettingsRequest(BaseModel):
+    safety_level: str
+
+
+_assistant_singleton = None
+
+
+def _get_assistant():
+    """配置助手懒单例（webui 进程内；测试可 monkeypatch 本函数）。"""
+    global _assistant_singleton
+    if _assistant_singleton is None:
+        from webui_server.config_assistant import ConfigAssistant
+
+        _assistant_singleton = ConfigAssistant(runtime)
+    return _assistant_singleton
 
 
 # ---------- 内部工具 ----------
@@ -169,6 +198,69 @@ async def kill(req: AgentKillRequest):
     except Exception as e:
         logger.error(traceback.format_exc())
         return {"code": -1, "message": f"急停失败：{e}"}
+
+
+# ---------- 配置助手（v5 P2：需求 → 配置变更集 → 按安全等级应用） ----------
+
+
+@router.post("/config-chat", response_model=ConfigChatResult)
+def config_chat(req: ConfigChatRequest):
+    """一轮配置对话：模型输出变更集，按安全等级决定直接落盘还是挂起待确认。"""
+    try:
+        assistant = _get_assistant()
+        result = assistant.chat(req.session_id, req.message)
+        level = assistant.safety_level()
+        for change in result["changes"]:
+            if level == "full" or (level == "auto" and not change["danger"]):
+                ok = assistant.apply_changes([change])[0]["ok"]
+                change["status"] = "applied" if ok else "failed"
+            else:
+                change["status"] = "pending"
+        return {
+            "code": 200,
+            "reply": result["reply"],
+            "changes": result["changes"],
+            "questions": result["questions"],
+            "level": level,
+        }
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "message": f"配置助手出错：{e}"}
+
+
+@router.post("/config-apply", response_model=ConfigApplyResult)
+def config_apply(req: ConfigApplyRequest):
+    """应用（前端确认过的）变更集：原子写盘。"""
+    try:
+        results = _get_assistant().apply_changes(req.changes)
+        ok_count = sum(1 for r in results if r["ok"])
+        return {
+            "code": 200,
+            "message": f"已应用 {ok_count}/{len(results)} 条变更，重启程序后生效",
+            "results": results,
+        }
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "message": f"应用变更失败：{e}"}
+
+
+@router.get("/assistant-settings", response_model=AssistantSettingsResult)
+def assistant_settings():
+    try:
+        assistant = _get_assistant()
+        return {"code": 200, "safety_level": assistant.safety_level()}
+    except Exception as e:
+        return {"code": -1, "message": f"读取助手设置失败：{e}"}
+
+
+@router.post("/assistant-settings", response_model=AssistantSettingsResult)
+def set_assistant_settings(req: AssistantSettingsRequest):
+    try:
+        ok, message = _get_assistant().set_safety_level(req.safety_level)
+        return {"code": 200 if ok else -1, "message": message}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": -1, "message": f"保存助手设置失败：{e}"}
 
 
 # ---------- 记忆管理 ----------

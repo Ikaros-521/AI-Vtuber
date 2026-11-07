@@ -31,7 +31,7 @@ export const WORKSPACES: Workspace[] = [
 export const SETTINGS_STEPS: Workspace[] = [platformWorkspace, brainWorkspace, voiceWorkspace, bodyWorkspace]
 
 /** 顶层页面：dash/chat 是非表单页，其余映射到工作区或 settings 组合页。 */
-export type PageId = 'dash' | 'settings' | 'play' | 'mod' | 'sys' | 'chat' | 'agent'
+export type PageId = 'dash' | 'settings' | 'play' | 'mod' | 'sys' | 'chat' | 'agent' | 'assistant'
 
 export interface PageDef {
   id: PageId
@@ -43,6 +43,7 @@ export const PAGES: PageDef[] = [
   { id: 'dash', title: '开播台', sub: '现在能开播吗？差哪一步？' },
   { id: 'settings', title: '基础设置', sub: '四步配齐信号链：直播间 → AI 大脑 → 声音 → 形象' },
   { id: 'agent', title: 'Agent 工作台', sub: '给 AI 大脑装上工具、记忆与缰绳' },
+  { id: 'assistant', title: '配置助手', sub: '说出需求，AI 帮你把配置调好' },
   { id: 'play', title: '玩法库', sub: '可选玩法，开关式启用' },
   { id: 'mod', title: '弹幕管家', sub: '什么弹幕进、怎么答谢、谁先播' },
   { id: 'sys', title: '系统', sub: '数据 / 备份 / 账号 / 外观 / 模块' },
@@ -64,6 +65,7 @@ const LEGACY_TAB_MAP: Record<string, { page: PageId; step?: string }> = {
   chat: { page: 'chat' },
   settings: { page: 'settings' },
   agent: { page: 'agent' },
+  assistant: { page: 'assistant' },
   play: { page: 'play' },
   mod: { page: 'mod' },
   sys: { page: 'sys' },
