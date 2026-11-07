@@ -18,7 +18,9 @@ import traceback
 from luna.agent.context import AgentContext, Budget
 from luna.agent.intent import IntentRouter
 from luna.agent.llm_adapter import LLMAdapter
+from luna.agent.mcp_client import MCPManager
 from luna.agent.memory import MemorySystem
+from luna.agent.rag import KnowledgeBase
 from luna.agent.registry import ToolRegistry
 from luna.agent.safety import SafetyGuard
 from luna.agent.tools.basic import speak_via
@@ -40,6 +42,17 @@ class AgentRuntime:
         )
         self.intent = IntentRouter(config)
         self.adapter = adapter  # 测试注入；None 则按 chat_type 构造
+
+        # 人设知识库 RAG（轻量关键词检索）：启用时把相关知识片段注入 system prompt
+        rag_cfg = config.get("agent", "rag") or {}
+        self.knowledge = KnowledgeBase(rag_cfg.get("knowledge_dir") or "knowledge") if rag_cfg.get("enabled") else None
+
+        # MCP host：外部 MCP server 的工具并入工具清单（server 级信任 + 同门禁）
+        mcp_cfg = config.get("agent", "mcp") or {}
+        self.mcp = None
+        if mcp_cfg.get("enabled"):
+            self.mcp = MCPManager(mcp_cfg.get("servers") or [], float(mcp_cfg.get("timeout_seconds") or 15))
+            self.mcp.start()
 
         # 急停开关（WebUI 一键急停用）：置位后本进程内 Agent 立即静默降级，
         # 不落盘——持久开关仍是 config 的 agent.enabled，重启后以配置为准。
@@ -118,7 +131,7 @@ class AgentRuntime:
             if used_small
             else (self.adapter or LLMAdapter(self.handle, chat_type, config.get("agent", "llm", "channel") or "auto"))
         )
-        specs = [] if used_small else self.registry.specs()
+        specs = [] if used_small else self._all_tool_specs()
         stop_reason = "budget_exhausted"
         acted = False
 
@@ -192,6 +205,12 @@ class AgentRuntime:
         return True
 
     # ---------- 内部 ----------
+
+    def _all_tool_specs(self) -> list:
+        specs = self.registry.specs()
+        if self.mcp is not None:
+            specs += self.mcp.tool_specs()
+        return specs
 
     def _build_user_message(self, username: str, content: str, config) -> str:
         """观众消息组装；超长内容截断（粘贴长文不该烧掉整轮预算）。"""
@@ -352,6 +371,14 @@ class AgentRuntime:
         highlights = ctx.state["recent_highlights"]
         if highlights:
             parts.append("近期高光：" + "；".join(highlights))
+        if self.knowledge is not None:
+            knowledge = self.knowledge.retrieve(
+                ctx.event.get("content") or "",
+                top_k=int(config.get("agent", "rag", "top_k") or 3),
+                max_chars=int(config.get("agent", "rag", "max_chars") or 600),
+            )
+            if knowledge:
+                parts.append("【知识库参考】以下是主播的人设/直播间知识，回答相关话题时遵循：\n" + knowledge)
         parts.append("回复要求：简短口语化，适合直播朗读；不要输出 Markdown 与换行。")
         parts.append(
             "行动顺序由你安排，工具按调用顺序即时执行（先调用的先播放）。"
@@ -383,6 +410,22 @@ class AgentRuntime:
         name = str(tool_call.get("name") or "").strip()
         args = tool_call.get("args") or {}
         started = time.monotonic()
+        if name.startswith("mcp__"):
+            # 外部 MCP 工具：server 级信任接入，走与内置工具相同的频率/预算门禁
+            if self.mcp is None:
+                ctx.trace.tool_done(name, "", 0, False)
+                return "MCP 工具生态未启用", False
+            try:
+                observation = self.mcp.call_tool(name, args) or "（无返回）"
+                ok = True
+            except Exception:
+                logger.error(f"MCP 工具 {name} 执行失败：\n" + traceback.format_exc())
+                observation = f"工具 {name} 执行失败"
+                ok = False
+            ctx.trace.tool_done(
+                name, json.dumps(args, ensure_ascii=False)[:100], (time.monotonic() - started) * 1000, ok
+            )
+            return observation, ok
         tool = self.registry.get(name)
         if tool is None:
             ctx.trace.tool_done(name, "", 0, False)

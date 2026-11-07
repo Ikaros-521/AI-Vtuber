@@ -231,6 +231,95 @@ def create_api_app(state):
             logger.error(f"agent_review 读取失败！{e}")
             return CommonResult(code=-1, message=f"读取复盘失败：{e}")
 
+    @app.get("/agent_rag/status")
+    async def agent_rag_status():
+        try:
+            knowledge = (
+                getattr(state.my_handle.agent_runtime, "knowledge", None)
+                if getattr(state.my_handle, "agent_runtime", None)
+                else None
+            )
+            if knowledge is None:
+                return CommonResult(code=200, data={"enabled": False}, message="知识库未启用")
+            return CommonResult(code=200, data={"enabled": True, **knowledge.status()}, message="成功")
+        except Exception as e:
+            logger.error(f"agent_rag/status 失败！{e}")
+            return CommonResult(code=-1, message=f"读取知识库状态失败：{e}")
+
+    def _rag_file_path(name: str):
+        """知识文件路径校验：仅允许目录直下的 .md 文件，防路径穿越。"""
+        import re as _re
+
+        from pathlib import Path as _Path
+
+        runtime_obj = state.my_handle.agent_runtime
+        if runtime_obj is None or runtime_obj.knowledge is None:
+            return None
+        if not _re.fullmatch(r"[\w一-鿿\- ]+\.md", name):
+            return None
+        path = (_Path(runtime_obj.knowledge.dir) / name).resolve()
+        if path.parent != _Path(runtime_obj.knowledge.dir).resolve():
+            return None
+        return path
+
+    @app.get("/agent_rag/file")
+    async def agent_rag_file(name: str):
+        try:
+            path = _rag_file_path(name)
+            if path is None:
+                return CommonResult(code=-1, message="非法文件名或知识库未启用")
+            if not path.exists():
+                return CommonResult(code=200, data={"name": name, "content": ""}, message="新文件")
+            return CommonResult(
+                code=200, data={"name": name, "content": path.read_text(encoding="utf-8")}, message="成功"
+            )
+        except Exception as e:
+            logger.error(f"agent_rag/file 读取失败！{e}")
+            return CommonResult(code=-1, message=f"读取知识文件失败：{e}")
+
+    @app.post("/agent_rag/file")
+    async def agent_rag_file_save(request: Request):
+        try:
+            data_json = await request.json()
+            path = _rag_file_path(str(data_json.get("name", "")))
+            if path is None:
+                return CommonResult(code=-1, message="非法文件名或知识库未启用")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(str(data_json.get("content", "")), encoding="utf-8")
+            return CommonResult(code=200, message="知识文件已保存")
+        except Exception as e:
+            logger.error(f"agent_rag/file 保存失败！{e}")
+            return CommonResult(code=-1, message=f"保存知识文件失败：{e}")
+
+    @app.post("/agent_rag/file/delete")
+    async def agent_rag_file_delete(request: Request):
+        try:
+            data_json = await request.json()
+            path = _rag_file_path(str(data_json.get("name", "")))
+            if path is None:
+                return CommonResult(code=-1, message="非法文件名或知识库未启用")
+            if path.exists():
+                path.unlink()
+            return CommonResult(code=200, message="已删除")
+        except Exception as e:
+            logger.error(f"agent_rag/file/delete 失败！{e}")
+            return CommonResult(code=-1, message=f"删除知识文件失败：{e}")
+
+    @app.get("/mcp_status")
+    async def mcp_status():
+        try:
+            mcp = (
+                getattr(state.my_handle.agent_runtime, "mcp", None)
+                if getattr(state.my_handle, "agent_runtime", None)
+                else None
+            )
+            if mcp is None:
+                return CommonResult(code=200, data={"enabled": False, "servers": []}, message="MCP 未启用")
+            return CommonResult(code=200, data={"enabled": True, **mcp.status()}, message="成功")
+        except Exception as e:
+            logger.error(f"mcp_status 失败！{e}")
+            return CommonResult(code=-1, message=f"读取 MCP 状态失败：{e}")
+
     @app.get("/agent_stats")
     async def agent_stats():
         """决策聚合统计（P1 尾部度量）：降级率 / 备用模型触发 / 小模型直答 / 工具成功率。"""

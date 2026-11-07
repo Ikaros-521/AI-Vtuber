@@ -276,6 +276,22 @@ Agent 决策失败：
 - 统计口径注记：Agent 决策统计来自 trace 最近 200 条滚动窗口（非严格按日），
   报告数据里带 `window_note` 说明；业务数据（弹幕/礼物）严格按日
 
+## 14. 人设知识库 RAG 与 MCP 生态（P2，2026-11-07 实装）
+
+**人设知识库 RAG（轻量版）**：`luna/agent/rag.py`——markdown 知识文件
+（默认 `knowledge/` 目录，WebUI 可视化编辑）按标题分块，「CJK 2-gram +
+英数词」关键词打分检索，命中片段注入 system prompt。刻意不上向量库/Embedding：
+直播人设知识量级下关键词检索足够准，零新依赖零索引维护；文件 mtime 变化自动重载。
+配置：`agent.rag.{enabled, knowledge_dir, top_k, max_chars}`。
+
+**MCP host**：`luna/agent/mcp_client.py`——**纯 stdlib 实现 stdio JSON-RPC 2.0**
+（initialize / tools/list / tools/call），刻意不用官方 mcp SDK：它硬依赖
+pydantic v2，而主程序日常运行环境（Miniconda 基座）是 v1.10。外部 server 的
+工具以 `mcp__<server>__<tool>` 前缀并入工具清单，走与内置工具完全相同的门禁
+（每观众频率/预算/输出过滤）；**信任边界是 server 级**——`agent.mcp.servers`
+配置即信任，per-tool 过滤键 `agent.mcp.enabled_tools` 留作后续需要时启用。
+常驻连接：独立事件循环线程 + `run_coroutine_threadsafe` 同步门面。
+
 ## 附录 A：`config.json` 新增段草案
 
 ```json
