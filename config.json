@@ -298,13 +298,13 @@
     "name": "Hiyori"
   },
   "openai": {
-    "api": "http://124.223.187.198:13000/v1",
+    "api": "http://127.0.0.1:3425/v1",
     "api_key": [
-      "sk-clW6uvSCGqN7KHSOjPIwAsXAn4STF4eqqEsrM52NlUZoBChb"
+      "magpie"
     ]
   },
   "chatgpt": {
-    "model": "glm-4.5-flash",
+    "model": "zai/glm-5.3-flash",
     "temperature": 0.9,
     "max_tokens": 4096,
     "top_p": 1.0,
@@ -694,7 +694,7 @@
     "temperature": 0.8
   },
   "choose_song": {
-    "enable": false,
+    "enable": true,
     "similarity": 0.5,
     "start_cmd": [
       "点歌",
@@ -1809,16 +1809,13 @@
     }
   },
   "agent": {
-    "enabled": false,
+    "enabled": true,
     "max_tool_rounds": 3,
     "timeout_seconds": 8,
     "persona": "",
     "llm": {
       "channel": "auto",
-      "model": "",
-      "fallback_chat_type": "",
-      "small_chat_type": "",
-      "small_max_chars": 10
+      "model": ""
     },
     "tools": {
       "enabled": [
@@ -1827,19 +1824,9 @@
         "query_danmu_summary",
         "search_online",
         "memory_save",
-        "play_song",
-        "generate_image",
-        "stop_playback",
-        "pause_playback",
-        "resume_playback",
-        "set_volume",
-        "observe_screen"
+        "play_song"
       ],
       "dangerous_enabled": []
-    },
-    "intent": {
-      "duplicate_burst": { "count": 3, "window_seconds": 30 },
-      "max_content_chars": 200
     },
     "budget": {
       "tokens_per_hour": 200000
