@@ -1,8 +1,8 @@
-"""ConfigAssistant：配置助手（v5 P2）——把主播的需求翻译成配置变更集。
+"""ConfigAssistant：配置助手（v5 P2）——把管理员的需求翻译成配置变更集。
 
-产品形态（docs/agent-upgrade-design.md §12）：主播不懂功能怎么配、只会提需求
+产品形态（docs/agent-upgrade-design.md §12）：管理员不懂功能怎么配、只会提需求
 （"我想要观众能点歌"），助手理解需求 → 定位配置键 → 给出变更集与理由 →
-按安全等级处理：manual 全部待主播确认；auto 安全变更自动落盘、敏感变更
+按安全等级处理：manual 全部待管理员确认；auto 安全变更自动落盘、敏感变更
 仍待确认；full 全部自动落盘（对标 Codex 的自动化模式三档）。
 
 运行位置：webui_server 进程（配置是它的领域，与主进程直播间 runtime 无关）——
@@ -183,29 +183,30 @@ class ConfigAssistant:
                 inject[section] = self._deep_trim(value)
         level = self.safety_level()
         return (
-            "你是 AI Vtuber（Luna）的配置助手，帮主播把自然语言需求翻译成具体的配置变更。"
-            "主播不懂各功能怎么配，只会说需求（例如「我想要观众能点歌」「弹幕太吵了」「换个温柔点的声线」），"
-            "你的职责：理解需求 → 定位配置键 → 给出变更集与理由。\n\n"
+            "你是 AI Vtuber（Luna）直播系统的配置助手，面向**系统管理员**——他们负责部署与运营这套系统，"
+            "会用运维语言描述目标（例如「配置抖音无人直播」「加强弹幕辱骂过滤」「闲时说话频率降下来」），"
+            "由你翻译成具体配置变更并说明依据。"
+            "回复风格：专业、直接、结论先行，像运维同事沟通——不用卖萌语气、不用表情、不寒暄。\n\n"
             "【配置知识库】\n" + KNOWLEDGE.strip() + "\n\n"
             "【当前配置（重点段实际值）】\n"
             + json.dumps(inject, ensure_ascii=False, default=str)[:6000]
             + "\n\n【输出协议】分两段输出（说明文字会被流式展示，不要包代码块）：\n"
-            "第一段：直接写给主播的说明（改了什么/为什么这样配/已否生效，控制在 200 字内，细节放追问）。\n"
+            "第一段：直接写给管理员的说明（改了什么/为什么这样配/已否生效，控制在 200 字内，细节放追问）。\n"
             f"然后单独一行输出 {CHANGES_MARKER}\n"
-            '最后输出一个 JSON 对象：{"changes": [{"path": ["段名","键名"], "value": 新值, "reason": "这条改动的理由", "danger": false}], "questions": ["需要主播补充的问题"]}\n'
+            '最后输出一个 JSON 对象：{"changes": [{"path": ["段名","键名"], "value": 新值, "reason": "这条改动的理由", "danger": false}], "questions": ["需要管理员补充的问题"]}\n'
             "\n【输出示例】（格式演示，内容仅供理解格式）\n"
-            "主播说：我想要观众能点歌\n"
+            "管理员说：配置抖音无人直播\n"
             "你的输出（全文）：\n"
-            "点歌功能当前没开，我帮你打开：观众发「点歌 歌名」即可点歌，重启程序后生效。\n"
+            "需要先确认三件事：平台用 dy/dy2（弹幕要走直播弹幕监听助手）、内容源选哪种（数字人视频循环/EasyAIVtuber 等）、自动互动组合。确认后我一次性改好，重启程序生效。\n"
             f"{CHANGES_MARKER}\n"
-            '{"changes": [{"path": ["choose_song", "enable"], "value": true, "reason": "主播要开点歌"}], "questions": []}\n'
+            '{"changes": [], "questions": ["内容源用哪种：数字人视频循环 / EasyAIVtuber / 外部程序？", "弹幕接入已装直播弹幕监听助手吗？"]}\n'
             "\n规则：\n"
-            "- 不确定主播意图时宁可少改多问：changes 可为空数组，用 questions 追问\n"
+            "- 不确定管理员意图时宁可少改多问：changes 可为空数组，用 questions 追问\n"
             "- path 必须用知识库里真实存在的键；组合型需求拆成多条 change，每条给清晰理由\n"
             "- 涉及密钥/密码/登录态的变更 danger 必须为 true\n"
             "- reply 控制在 200 字内，细节放到 questions 里追问\n"
-            "- 主播问使用方法/教程类问题（不涉及改配置）时，说明里给简明步骤，changes 为空数组\n"
-            "- 主播闲聊或提问（不涉及配置）时 changes 为空，直接回答\n"
+            "- 管理员问使用方法/教程类问题（不涉及改配置）时，说明里给简明步骤，changes 为空数组\n"
+            "- 管理员闲聊或提问（不涉及配置）时 changes 为空，直接回答\n"
             f"- 当前安全等级是 {level}（{SAFETY_LEVEL_NAMES.get(level, level)}）；"
             "配置落盘后需重启程序才能在直播间生效，回复里要提醒\n"
         )
@@ -268,17 +269,17 @@ class ConfigAssistant:
         """系统段 + 历史 + 强隔离的本轮消息块 + 尾部指令。
 
         弱模型（flash 档）读长 prompt 时注意力偏尾部，且容易被协议示例里的
-        标记/JSON「带跑」——真机复现它把主播消息当成「一串代码」闲聊过去。
-        对策：主播消息用显式起止行隔离，并在消息之后紧跟一段拉回正题的指令。
+        标记/JSON「带跑」——真机复现它把管理员消息当成「一串代码」闲聊过去。
+        对策：管理员消息用显式起止行隔离，并在消息之后紧跟一段拉回正题的指令。
         """
         parts = [self._system_prompt()]
         history = self._history(session_id)
         if history:
-            lines = [f"主播说：{t}" if r == "user" else f"你回答说：{t}" for r, t in history]
+            lines = [f"管理员说：{t}" if r == "user" else f"你回答说：{t}" for r, t in history]
             parts.append("=== 历史对话 ===\n" + "\n".join(lines))
-        parts.append(f"=== 主播本轮消息（以下是主播的原话，不是代码） ===\n{message}\n=== 消息结束 ===")
+        parts.append(f"=== 管理员本轮消息（以下是管理员的原话，不是代码） ===\n{message}\n=== 消息结束 ===")
         parts.append(
-            "请针对「主播本轮消息」回答：先输出给主播的说明文字（第一段），"
+            "请针对「管理员本轮消息」回答：先输出给管理员的说明文字（第一段），"
             f"然后单独一行输出 {CHANGES_MARKER}，再输出变更 JSON。"
             "系统提示里的标记、JSON 示例都是给你的格式说明，绝不要评价或复述它们。"
         )

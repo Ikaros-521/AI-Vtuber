@@ -157,7 +157,7 @@ export function AssistantPage() {
       {/* 顶栏：安全等级 */}
       <div className="card-surface mb-3 flex flex-wrap items-center gap-2 p-3">
         <span className="text-[14px] font-semibold">配置助手</span>
-        <span className="text-xs text-[var(--ink-mut)]">说出需求，AI 翻译成配置变更</span>
+        <span className="text-xs text-[var(--ink-mut)]">管理员说目标，AI 翻译成配置变更并按安全等级应用</span>
         <span className="ml-auto flex items-center gap-2">
           <select
             className="inp w-auto py-1.5 text-[12.5px]"
@@ -181,10 +181,10 @@ export function AssistantPage() {
       <div className="card-surface flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 && (
           <div className="space-y-2 py-6 text-center text-[13px] text-[var(--ink-mut)]">
-            <p>试试这样说：</p>
-            <p>「我想要观众能点歌，歌放在 song 目录」</p>
-            <p>「弹幕里有人骂人，帮我屏蔽脏话」</p>
-            <p>「闲的时候别一直说话，十分钟说一次就行」</p>
+            <p>直接说配置目标，例如：</p>
+            <p>「配置抖音无人直播：dy 平台 + 数字人视频源 + 闲时任务」</p>
+            <p>「加强弹幕辱骂过滤，命中直接拉黑」</p>
+            <p>「闲时主动说话降频：一小时最多 3 次」</p>
           </div>
         )}
         {messages.map((msg, mi) => (
@@ -263,7 +263,7 @@ export function AssistantPage() {
       <div className="card-surface mt-3 flex items-center gap-2 p-3">
         <input
           className="inp flex-1"
-          placeholder="说出你的需求，例如：我想要观众能点歌……"
+          placeholder="描述配置目标，例如：配置抖音无人直播……"
           value={input}
           disabled={busy}
           onChange={(e) => setInput(e.target.value)}

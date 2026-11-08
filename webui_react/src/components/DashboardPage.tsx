@@ -210,9 +210,9 @@ export function DashboardPage({
         >
           <span className="text-[20px]">💬</span>
           <span className="flex-1">
-            <span className="block text-[13.5px] font-semibold">不会配置？直接说需求</span>
+            <span className="block text-[13.5px] font-semibold">配置助手 · 把需求变成配置</span>
             <span className="block text-xs text-[var(--ink-mut)]">
-              配置助手听你吩咐：「我想要观众能点歌」→ AI 帮你把配置调好，确认后生效
+              像对运维同事那样说目标（如：配置抖音无人直播），AI 生成变更集并按安全等级应用
             </span>
           </span>
           <span className="whitespace-nowrap text-[13px] font-medium" style={{ color: 'var(--accent)' }}>
