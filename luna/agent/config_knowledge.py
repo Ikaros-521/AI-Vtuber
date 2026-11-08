@@ -56,6 +56,16 @@ room_display_id 是直播间号；各平台以自身段名存接入参数（如 
 
 【数据与播放】"database": path（sqlite 路径，积分/弹幕/画像都在这）。"play_audio": player（pygame/audio_player 播放器选择）。
 "webui": ip/port（面板地址）。"api_port"：主程序内部接口端口。
+
+【无人值守直播（俗称"无人直播"）】指开播后不需要主播在镜头前，由程序自主维持直播内容与互动。
+本产品的无人直播 = 选好平台 + 开启内容源 + 开启自动互动，三者齐备：
+1. 平台接入：platform 选对应平台（抖音是 dy / dy2；注意抖音弹幕不能直连，需要观众侧装
+   「直播弹幕监听助手」推送，或走其它接入方式，见"直播弹幕监听助手"段）。
+2. 内容源（开播台 → 形象/内容）：digital_human_video_player（数字人视频播放）、EasyAIVtuber、
+   metahuman_stream 等，或在"coordination_program"里挂外部程序（如视频循环播放器）。
+3. 自动互动（任选组合）：idle_time_task 闲时任务（定时/闲时主动说话）、schedule 定时文案、
+   thanks 答谢、read_comment 念弹幕、agent.enabled（Agent 自主话题与工具）。
+典型需求映射：「帮我配无人直播」→ 引导确认平台与内容源，再建议开启 idle_time_task + agent。
 """
 
 # 每轮对话注入实际值的配置段（助手最常涉及的域；控制体积，不注入平台密钥段）

@@ -5,7 +5,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from webui_server.config_assistant import ConfigAssistant
+from webui_server.config_assistant import CHANGES_MARKER, ConfigAssistant
 from webui_server.agent_api import _get_assistant
 from webui_server.app import create_app
 from webui_server.runtime import runtime
@@ -42,13 +42,20 @@ def read_tmp_config(tmp_config):
 def test_split_output_with_marker():
     assistant = ConfigAssistant(runtime)
     raw = (
-        "已开启点歌功能，重启后生效。\n<<<CHANGES>>>\n"
+        f"已开启点歌功能，重启后生效。\n{CHANGES_MARKER}\n"
         '{"changes": [{"path": ["choose_song","enable"], "value": true, "reason": "点歌需求"}], "questions": ["歌库目录在哪？"]}'
     )
     result = assistant._split_output(raw)
     assert result["reply"] == "已开启点歌功能，重启后生效。"
     assert result["changes"][0]["path"] == ["choose_song", "enable"]
     assert result["questions"] == ["歌库目录在哪？"]
+
+
+def test_split_output_legacy_marker_still_accepted():
+    """容错：模型输出旧版 <<<CHANGES>>> 标记也能解析。"""
+    assistant = ConfigAssistant(runtime)
+    result = assistant._split_output('ok\n<<<CHANGES>>>\n{"changes": [], "questions": []}')
+    assert result["reply"] == "ok"
 
 
 def test_split_output_without_marker_treats_all_as_reply():
@@ -61,7 +68,7 @@ def test_split_output_without_marker_treats_all_as_reply():
 
 def test_split_output_broken_changes_json():
     assistant = ConfigAssistant(runtime)
-    result = assistant._split_output("说明文字\n<<<CHANGES>>>\n{broken json")
+    result = assistant._split_output(f"说明文字\n{CHANGES_MARKER}\n{{broken json")
     assert result["reply"] == "说明文字"
     assert result["changes"] == []
 
@@ -72,7 +79,7 @@ def test_chat_stream_yields_deltas_then_done(tmp_config):
     assistant._call_llm_stream = lambda prompt: (
         iter(
             [
-                "已开启。\n<<<CHANGES>>>\n",
+                f"已开启。\n{CHANGES_MARKER}\n",
                 '{"changes": [{"path": ["choose_song","enable"], "value": true, "reason": "r"}], "questions": []}',
             ]
         ),

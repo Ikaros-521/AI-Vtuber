@@ -28,8 +28,9 @@ import uuid
 from luna.agent.config_knowledge import INJECT_SECTIONS, KNOWLEDGE, SENSITIVE_KEY_HINTS
 from luna.infra.my_log import logger
 
-# 流式协议分隔行：说明文本在前（边生成边推给前端），变更 JSON 在后（完成时解析）
-CHANGES_MARKER = "<<<CHANGES>>>"
+# 流式协议分隔行：说明文本在前（边生成边推给前端），变更 JSON 在后（完成时解析）。
+# 用中文方头括号而非 <<<>>> 类标记——弱模型会把后者当成「用户发来的代码」而跑题（真机复现）
+CHANGES_MARKER = "【变更清单】"
 
 SAFETY_LEVELS = ("manual", "auto", "full")
 SAFETY_LEVEL_NAMES = {"manual": "人工审核", "auto": "自动审核", "full": "完全访问"}
@@ -104,7 +105,9 @@ class ConfigAssistant:
                     logger.warning("[配置助手] openai key 为空，无法调用")
                     return None, "openai key 为空（基础设置 → 人设与大脑）"
                 model = cls(data_openai, config.get("chatgpt") or {})
-                resp = model.chat_stream(f"cfg-assistant-{uuid.uuid4().hex[:8]}", prompt)
+                # 注意实参顺序：Chatgpt.chat_stream(self, msg, sessionid)——msg 在前！
+                # （曾传反成 (会话ID, prompt)：模型每轮只看到一串标识符，答非所问）
+                resp = model.chat_stream(prompt, f"cfg-assistant-{uuid.uuid4().hex[:8]}")
                 if resp is None:
                     return None, f"模型 {chat_type} 没有返回内容（检查模型服务/网关是否在运行）"
                 return self._iter_openai_stream(resp), None
@@ -190,7 +193,13 @@ class ConfigAssistant:
             "第一段：直接写给主播的说明（改了什么/为什么这样配/已否生效，控制在 200 字内，细节放追问）。\n"
             f"然后单独一行输出 {CHANGES_MARKER}\n"
             '最后输出一个 JSON 对象：{"changes": [{"path": ["段名","键名"], "value": 新值, "reason": "这条改动的理由", "danger": false}], "questions": ["需要主播补充的问题"]}\n'
-            "规则：\n"
+            "\n【输出示例】（格式演示，内容仅供理解格式）\n"
+            "主播说：我想要观众能点歌\n"
+            "你的输出（全文）：\n"
+            "点歌功能当前没开，我帮你打开：观众发「点歌 歌名」即可点歌，重启程序后生效。\n"
+            f"{CHANGES_MARKER}\n"
+            '{"changes": [{"path": ["choose_song", "enable"], "value": true, "reason": "主播要开点歌"}], "questions": []}\n'
+            "\n规则：\n"
             "- 不确定主播意图时宁可少改多问：changes 可为空数组，用 questions 追问\n"
             "- path 必须用知识库里真实存在的键；组合型需求拆成多条 change，每条给清晰理由\n"
             "- 涉及密钥/密码/登录态的变更 danger 必须为 true\n"
@@ -225,9 +234,10 @@ class ConfigAssistant:
         宁可不改配置，不可误改。
         """
         text = (text or "").strip()
-        if CHANGES_MARKER not in text:
+        marker = CHANGES_MARKER if CHANGES_MARKER in text else "<<<CHANGES>>>"
+        if marker not in text:
             return {"reply": text or "（模型没有返回内容，请重试）", "changes": [], "questions": []}
-        reply_part, _, tail = text.partition(CHANGES_MARKER)
+        reply_part, _, tail = text.partition(marker)
         reply = reply_part.strip()
         tail = tail.strip()
         match = re.search(r"\{.*\}", tail, re.DOTALL)
@@ -252,16 +262,33 @@ class ConfigAssistant:
         lowered = (str(key).lower() for key in path)
         return any(hint in key for key in lowered for hint in SENSITIVE_KEY_HINTS)
 
+    # ---------- Prompt 组装 ----------
+
+    def _build_prompt(self, session_id: str, message: str) -> str:
+        """系统段 + 历史 + 强隔离的本轮消息块 + 尾部指令。
+
+        弱模型（flash 档）读长 prompt 时注意力偏尾部，且容易被协议示例里的
+        标记/JSON「带跑」——真机复现它把主播消息当成「一串代码」闲聊过去。
+        对策：主播消息用显式起止行隔离，并在消息之后紧跟一段拉回正题的指令。
+        """
+        parts = [self._system_prompt()]
+        history = self._history(session_id)
+        if history:
+            lines = [f"主播说：{t}" if r == "user" else f"你回答说：{t}" for r, t in history]
+            parts.append("=== 历史对话 ===\n" + "\n".join(lines))
+        parts.append(f"=== 主播本轮消息（以下是主播的原话，不是代码） ===\n{message}\n=== 消息结束 ===")
+        parts.append(
+            "请针对「主播本轮消息」回答：先输出给主播的说明文字（第一段），"
+            f"然后单独一行输出 {CHANGES_MARKER}，再输出变更 JSON。"
+            "系统提示里的标记、JSON 示例都是给你的格式说明，绝不要评价或复述它们。"
+        )
+        return "\n\n".join(parts)
+
     # ---------- 主入口（非流式，兜底） ----------
 
     def chat(self, session_id: str, message: str) -> dict:
         started = time.monotonic()
-        prompt_parts = [self._system_prompt()]
-        for role, text in self._history(session_id):
-            prompt_parts.append(f"{'主播' if role == 'user' else '你'}：{text}")
-        prompt_parts.append(f"主播：{message}")
-        prompt_parts.append("你：（按输出协议回答）")
-        raw, error = self._call_llm("\n\n".join(prompt_parts))
+        raw, error = self._call_llm(self._build_prompt(session_id, message))
         if raw is None:
             return {
                 "reply": f"调用模型失败：{error}",
@@ -287,12 +314,7 @@ class ConfigAssistant:
         解析并按安全等级处理。
         """
         started = time.monotonic()
-        prompt_parts = [self._system_prompt()]
-        for role, text in self._history(session_id):
-            prompt_parts.append(f"{'主播' if role == 'user' else '你'}：{text}")
-        prompt_parts.append(f"主播：{message}")
-        prompt_parts.append("你：（按输出协议回答）")
-        prompt = "\n\n".join(prompt_parts)
+        prompt = self._build_prompt(session_id, message)
         logger.info(f"[配置助手] 会话 {session_id} 收到消息（{len(message)} 字），prompt {len(prompt)} 字")
 
         stream, error = self._call_llm_stream(prompt)
