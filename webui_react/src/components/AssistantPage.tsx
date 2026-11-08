@@ -247,21 +247,27 @@ export function AssistantPage() {
         <span className="text-[14px] font-semibold">配置助手</span>
         <span className="text-xs text-[var(--ink-mut)]">管理员说目标，AI 翻译成配置变更并按安全等级应用</span>
         <span className="ml-auto flex items-center gap-2">
-          {sessions.length > 0 && (
-            <select
-              className="inp w-auto max-w-[220px] py-1.5 text-[12.5px]"
-              value={activeSessionId}
-              onChange={(e) => switchSession(e.target.value)}
-              title="恢复历史会话"
-            >
-              {sessions.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.title} · {new Date(item.updatedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  {serverSessionIds.includes(item.id) ? '' : '（记忆已失效）'}
-                </option>
-              ))}
-            </select>
-          )}
+          <span className="flex items-center gap-1 text-[12.5px] text-[var(--ink-mut)]">
+            会话：
+          </span>
+          <select
+            className="inp w-auto max-w-[220px] py-1.5 text-[12.5px]"
+            value={activeSessionId || '__none__'}
+            onChange={(e) => {
+              if (e.target.value !== '__none__') switchSession(e.target.value)
+            }}
+            title="历史会话列表：点击切回（对话记录保存在本机浏览器）"
+          >
+            {sessions.length === 0 && (
+              <option value="__none__">暂无历史会话（发第一条消息后自动保存）</option>
+            )}
+            {sessions.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.title} · {new Date(item.updatedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                {serverSessionIds.includes(item.id) ? '' : '（记忆已失效）'}
+              </option>
+            ))}
+          </select>
           <select
             className="inp w-auto py-1.5 text-[12.5px]"
             value={level}
