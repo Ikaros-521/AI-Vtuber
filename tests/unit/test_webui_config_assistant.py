@@ -99,6 +99,42 @@ def test_chat_stream_yields_deltas_then_done(tmp_config):
     assert assistant._history("s1")[-1] == ("assistant", "已开启。")
 
 
+def test_chat_stream_suppresses_changes_block(tmp_config):
+    """标记及之后的 JSON 不进流——前端会把变更渲染成卡片，再打一遍字就是重复显示。
+
+    覆盖三种形态：标记单发、标记被拆进相邻 delta、整段单 delta（非流式兜底）。
+    """
+    assistant = ConfigAssistant(runtime)
+    json_tail = '{"changes": [{"path": ["choose_song","enable"], "value": true, "reason": "r"}], "questions": []}'
+
+    def fake_stream_marker_split(prompt):
+        # 标记跨 delta：先给「…清单」的前半，再给后半 + JSON（返回值必须是 (迭代器, 错误) 元组）
+        return iter(["已开启。\n【变更", f"清单】\n{json_tail}"]), None
+
+    def fake_stream_single_chunk(prompt):
+        return iter([f"已开启。\n{CHANGES_MARKER}\n{json_tail}"]), None
+
+    def fake_stream_no_marker(prompt):
+        return iter(["这只是普通回答，", "不涉及配置"]), None
+
+    for fake in (fake_stream_marker_split, fake_stream_single_chunk):
+        assistant._call_llm_stream = fake
+        events = list(assistant.chat_stream("s1", "我要点歌"))
+        deltas = "".join(e["text"] for e in events if e["type"] == "reply_delta")
+        assert deltas.startswith("已开启。")
+        assert CHANGES_MARKER not in deltas and "changes" not in deltas  # JSON 不打字
+        done = [e for e in events if e["type"] == "done"][0]
+        assert done["reply"] == "已开启。"
+        assert done["changes"][0]["path"] == ["choose_song", "enable"]
+
+    # 无标记：说明全文照常透出（含被扣住的尾部），整段当回复
+    assistant._call_llm_stream = fake_stream_no_marker
+    events = list(assistant.chat_stream("s1", "闲聊"))
+    deltas = "".join(e["text"] for e in events if e["type"] == "reply_delta")
+    assert deltas == "这只是普通回答，不涉及配置"
+    assert [e for e in events if e["type"] == "done"][0]["changes"] == []
+
+
 def test_chat_stream_error_event(tmp_config):
     assistant = ConfigAssistant(runtime)
     assistant._call_llm_stream = lambda prompt: (None, "模型没有返回内容")

@@ -13,10 +13,11 @@
 luna/agent/config_knowledge.py（webui → luna 合法方向）。
 
 输出协议（流式版）：模型先输出说明文本（经 SSE 边生成边推给前端），
-然后一行 <<<CHANGES>>> 分隔，最后输出 {"changes": [...], "questions": [...]}
-JSON。说明部分流式、变更部分完成时解析——纯 JSON 协议没法流式（回复藏在
-JSON 里，前端要干等几十秒）。模型没按协议输出时整段当说明、不出变更
-（宁可不改配置，不可误改）。
+然后一行【变更清单】分隔，最后输出 {"changes": [...], "questions": [...]}
+JSON。说明部分流式；标记及之后的 JSON 不进流（前端会把变更渲染成卡片，
+再打一遍字就是重复显示），在完成时解析并随 done 事件下发。纯 JSON 协议
+没法流式（回复藏在 JSON 里，前端要干等几十秒）。模型没按协议输出时整段
+当说明、不出变更（宁可不改配置，不可误改）。
 """
 
 import json
@@ -31,6 +32,14 @@ from luna.infra.my_log import logger
 # 流式协议分隔行：说明文本在前（边生成边推给前端），变更 JSON 在后（完成时解析）。
 # 用中文方头括号而非 <<<>>> 类标记——弱模型会把后者当成「用户发来的代码」而跑题（真机复现）
 CHANGES_MARKER = "【变更清单】"
+# 旧版标记仍兼容解析（弱模型可能照旧例输出）；两处都参与流式截断与解析定位
+LEGACY_MARKER = "<<<CHANGES>>>"
+CHANGE_MARKERS = (CHANGES_MARKER, LEGACY_MARKER)
+
+
+def _find_changes_marker(text: str) -> int:
+    """返回最先出现的变更清单标记位置，没有则 -1。"""
+    return min((pos for marker in CHANGE_MARKERS if (pos := text.find(marker)) >= 0), default=-1)
 
 SAFETY_LEVELS = ("manual", "auto", "full")
 SAFETY_LEVEL_NAMES = {"manual": "人工审核", "auto": "自动审核", "full": "完全访问"}
@@ -240,10 +249,11 @@ class ConfigAssistant:
         宁可不改配置，不可误改。
         """
         text = (text or "").strip()
-        marker = CHANGES_MARKER if CHANGES_MARKER in text else "<<<CHANGES>>>"
-        if marker not in text:
+        marker_pos = _find_changes_marker(text)
+        if marker_pos < 0:
             return {"reply": text or "（模型没有返回内容，请重试）", "changes": [], "questions": []}
-        reply_part, _, tail = text.partition(marker)
+        found_marker = next(marker for marker in CHANGE_MARKERS if marker in text)
+        reply_part, _, tail = text.partition(found_marker)
         reply = reply_part.strip()
         tail = tail.strip()
         match = re.search(r"\{.*\}", tail, re.DOTALL)
@@ -330,10 +340,24 @@ class ConfigAssistant:
             return
 
         chunks = []
+        emitted = 0  # 已透出的累计字符数
+        suppressed = False  # 出现变更清单标记后停止流式：JSON 部分由 done 事件的变更卡片渲染，不再打字
         try:
             for delta in stream:
                 chunks.append(delta)
-                yield {"type": "reply_delta", "text": delta}
+                so_far = "".join(chunks)
+                if suppressed:
+                    continue
+                marker_pos = _find_changes_marker(so_far)
+                if marker_pos >= 0:
+                    suppressed = True
+                else:
+                    # 标记可能被拆进相邻 delta：先扣住末尾（最长标记-1）字符，确认不是标记前缀再放行
+                    hold = max(len(marker) for marker in CHANGE_MARKERS) - 1
+                    marker_pos = max(0, len(so_far) - hold)
+                if marker_pos > emitted:
+                    yield {"type": "reply_delta", "text": so_far[emitted:marker_pos]}
+                    emitted = marker_pos
         except Exception as e:
             lowered = str(e).lower()
             if "tim" in lowered and ("out" in lowered or "timeout" in lowered):
@@ -345,6 +369,11 @@ class ConfigAssistant:
             return
 
         text = "".join(chunks)
+        if not suppressed:
+            # 模型没按协议输出（无标记）：把扣住的尾部补发完整
+            if len(text) > emitted:
+                yield {"type": "reply_delta", "text": text[emitted:]}
+            emitted = len(text)
         elapsed_ms = round((time.monotonic() - started) * 1000)
         result = self._split_output(text)
         reply = result["reply"]

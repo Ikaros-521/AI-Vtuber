@@ -18,6 +18,15 @@ const LEVEL_OPTIONS = [
   { value: 'full', label: '完全访问', desc: '全部自动生效（谨慎）' },
 ]
 
+// 变更清单以卡片渲染：正文里截掉协议标记及其后的 JSON，避免和卡片重复显示
+// （服务端已停止流式透出该段；本兜底覆盖修复前存进 localStorage 的旧会话）
+const CHANGES_BLOCK_RE = /【变更清单】|<<<CHANGES>>>/
+
+function stripChangesBlock(text: string): string {
+  const match = CHANGES_BLOCK_RE.exec(text)
+  return match ? text.slice(0, match.index).trimEnd() : text
+}
+
 interface ChatMessage {
   role: 'user' | 'assistant'
   text: string
@@ -176,7 +185,8 @@ export function AssistantPage() {
             setMessages((prev) =>
               prev.map((msg, i) =>
                 i === prev.length - 1
-                  ? { ...msg, text: msg.text.trim() + cost, questions: ev.questions, changes: ev.changes }
+                  ? // 终稿以服务端 reply 为准：不含协议标记/JSON（流式期间已截断，此处再对齐一次）
+                    { ...msg, text: (ev.reply ?? msg.text).trim() + cost, questions: ev.questions, changes: ev.changes }
                   : msg,
               ),
             )
@@ -306,7 +316,7 @@ export function AssistantPage() {
                   : { background: 'color-mix(in srgb, var(--ink-mut) 8%, white)' }
               }
             >
-              <p className="whitespace-pre-wrap">{msg.text}</p>
+              <p className="whitespace-pre-wrap">{stripChangesBlock(msg.text)}</p>
               {msg.questions && msg.questions.length > 0 && (
                 <ul className="mt-1.5 list-disc pl-4 text-[12.5px] text-[var(--ink-mut)]">
                   {msg.questions.map((q, qi) => (
