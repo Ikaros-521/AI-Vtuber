@@ -241,3 +241,15 @@ def test_config_chat_stream_endpoint_sse(tmp_config, monkeypatch):
     assert "data: " in resp.text
     assert "reply_delta" in resp.text
     assert "[DONE]" in resp.text
+
+
+def test_config_chat_sessions_endpoint(tmp_config, monkeypatch):
+    assistant = _get_assistant()
+    monkeypatch.setattr(assistant, "_call_llm", lambda prompt: ("回答", None))
+    assistant.chat("live-1", "第一条")
+    with _client() as client:
+        body = client.get("/api/agent/config-chat-sessions").json()
+    assert body["code"] == 200
+    ids = [item["id"] for item in body["sessions"]]
+    assert "live-1" in ids
+    assert body["sessions"][0]["rounds"] == 1

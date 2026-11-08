@@ -103,6 +103,7 @@ export const api = {
   configApply: (changes: { path: string[]; value: unknown }[]) =>
     post<ApiResult & { results: { path: string[]; ok: boolean }[] }>('/api/agent/config-apply', { changes }),
   assistantSettings: () => get<ApiResult & { safety_level: string }>('/api/agent/assistant-settings'),
+  assistantSessions: () => get<ApiResult & { sessions: { id: string; rounds: number }[] }>('/api/agent/config-chat-sessions'),
 
   // ---------- 人设知识库 RAG / MCP 生态（v5 P2） ----------
   ragStatus: () => get<ApiResult & { enabled: boolean; dir?: string; files?: string[]; chunks?: number }>(

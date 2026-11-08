@@ -140,6 +140,11 @@ class ConfigAssistant:
         with self._lock:
             self._sessions.pop(session_id, None)
 
+    def list_sessions(self) -> list:
+        """服务端存活会话列表（webui 进程重启后清空，前端据此标注记忆有效性）。"""
+        with self._lock:
+            return [{"id": sid, "rounds": len(items) // 2} for sid, items in self._sessions.items()]
+
     def _history(self, session_id: str) -> list:
         with self._lock:
             return list(self._sessions.get(session_id, []))

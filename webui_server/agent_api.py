@@ -25,6 +25,7 @@ from webui_server.schemas import (
     AgentViewerListResult,
     AssistantSettingsResult,
     ConfigApplyResult,
+    ConfigSessionsResult,
     ConfigChatResult,
     Envelope,
 )
@@ -381,6 +382,15 @@ def config_chat_stream(req: ConfigChatRequest):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@router.get("/config-chat-sessions", response_model=ConfigSessionsResult)
+def config_chat_sessions():
+    """服务端存活的助手会话列表（前端恢复会话时标注记忆有效性）。"""
+    try:
+        return {"code": 200, "sessions": _get_assistant().list_sessions()}
+    except Exception as e:
+        return {"code": -1, "message": f"读取会话列表失败：{e}"}
 
 
 @router.post("/config-apply", response_model=ConfigApplyResult)

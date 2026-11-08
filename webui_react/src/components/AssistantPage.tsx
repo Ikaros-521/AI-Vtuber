@@ -5,6 +5,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, configChatStream, type ConfigChange } from '../api/client'
+import { deepDiff } from '../lib/path'
+import { useConfigStore } from '../state/configStore'
 import { notify, useConfirmStore } from '../state/ui'
 
 const BTN =
@@ -23,6 +25,33 @@ interface ChatMessage {
   changes?: ConfigChange[]
 }
 
+interface StoredSession {
+  id: string
+  title: string
+  messages: ChatMessage[]
+  updatedAt: number
+}
+
+const SESSIONS_KEY = 'luna-assistant-sessions'
+const MAX_STORED_SESSIONS = 10
+
+function loadStoredSessions(): StoredSession[] {
+  try {
+    const raw = localStorage.getItem(SESSIONS_KEY)
+    return raw ? (JSON.parse(raw) as StoredSession[]) : []
+  } catch {
+    return []
+  }
+}
+
+function persistSessions(list: StoredSession[]) {
+  try {
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(list.slice(0, MAX_STORED_SESSIONS)))
+  } catch {
+    // localStorage 满/被禁：会话持久化是体验增强，失败不影响对话
+  }
+}
+
 export function AssistantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -30,8 +59,40 @@ export function AssistantPage() {
   const [elapsed, setElapsed] = useState(0)
   const [level, setLevel] = useState<string>('manual')
   const [sessionVersion, setSessionVersion] = useState(0)
+  const [sessions, setSessions] = useState<StoredSession[]>([])
+  const [serverSessionIds, setServerSessionIds] = useState<string[]>([])
+  const [activeSessionId, setActiveSessionId] = useState<string>('')
   const sessionId = useRef(`assistant-${sessionVersion}`)
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  // 恢复最近会话（切页/刷新后不丢对话）；服务端会话列表用于标注记忆有效性
+  useEffect(() => {
+    const stored = loadStoredSessions()
+    setSessions(stored)
+    if (stored.length > 0) {
+      const last = stored[0]
+      sessionId.current = last.id
+      setActiveSessionId(last.id)
+      setMessages(last.messages)
+    }
+    void api.assistantSessions().then((resp) => {
+      if (resp.code === 200) setServerSessionIds(resp.sessions.map((item) => item.id))
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 会话自动持久化：消息一变就落 localStorage（最近 10 个会话，切页/刷新可恢复）
+  useEffect(() => {
+    if (messages.length === 0) return
+    const id = sessionId.current
+    const title = (messages.find((m) => m.role === 'user')?.text ?? '新会话').slice(0, 30)
+    setSessions((prev) => {
+      const rest = prev.filter((item) => item.id !== id)
+      const list = [{ id, title, messages, updatedAt: Date.now() }, ...rest].slice(0, MAX_STORED_SESSIONS)
+      persistSessions(list)
+      return list
+    })
+  }, [messages])
 
   useEffect(() => {
     sessionId.current = `assistant-${sessionVersion}`
@@ -95,7 +156,23 @@ export function AssistantPage() {
           if (ev.type === 'done') {
             const cost = ev.elapsed_ms ? `（耗时 ${(ev.elapsed_ms / 1000).toFixed(1)}s）` : ''
             const applied = (ev.changes ?? []).some((c) => c.status === 'applied')
-            if (applied) notify.ok('有变更已生效 · 重启程序后作用于直播间')
+            if (applied) {
+              // 助手是服务端直写 config.json，前端各页读的是 configStore 基线——
+              // 不同步的话信号链/设置页一直显示旧值（用户得手动刷新）
+              const st = useConfigStore.getState()
+              const dirty = st.config && st.draft ? deepDiff(st.config, st.draft).length > 0 : false
+              const sync = () => {
+                void st.refreshConfig()
+                notify.ok('配置已同步到前端 · 重启程序后作用于直播间')
+              }
+              if (dirty) {
+                useConfirmStore
+                  .getState()
+                  .ask('同步助手改过的配置', () => void sync(), '你有未保存的草稿改动；同步将以助手落盘的配置为准，草稿会被丢弃。')
+              } else {
+                sync()
+              }
+            }
             setMessages((prev) =>
               prev.map((msg, i) =>
                 i === prev.length - 1
@@ -149,7 +226,18 @@ export function AssistantPage() {
     useConfirmStore.getState().ask('开始新会话', () => {
       setMessages([])
       setSessionVersion((v) => v + 1)
-    }, '将清空当前对话上下文（已生效的配置不受影响）。')
+    }, '将清空当前对话上下文（旧会话保留在会话列表里可随时切回；已生效的配置不受影响）。')
+  }
+
+  const switchSession = (id: string) => {
+    const target = sessions.find((item) => item.id === id)
+    if (!target || id === sessionId.current) return
+    sessionId.current = id
+    setActiveSessionId(id)
+    setMessages(target.messages)
+    if (!serverSessionIds.includes(id)) {
+      notify.info('该会话早于最近一次服务重启，助手不记得上文了——继续聊会重新开始理解你')
+    }
   }
 
   return (
@@ -159,6 +247,21 @@ export function AssistantPage() {
         <span className="text-[14px] font-semibold">配置助手</span>
         <span className="text-xs text-[var(--ink-mut)]">管理员说目标，AI 翻译成配置变更并按安全等级应用</span>
         <span className="ml-auto flex items-center gap-2">
+          {sessions.length > 0 && (
+            <select
+              className="inp w-auto max-w-[220px] py-1.5 text-[12.5px]"
+              value={activeSessionId}
+              onChange={(e) => switchSession(e.target.value)}
+              title="恢复历史会话"
+            >
+              {sessions.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title} · {new Date(item.updatedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  {serverSessionIds.includes(item.id) ? '' : '（记忆已失效）'}
+                </option>
+              ))}
+            </select>
+          )}
           <select
             className="inp w-auto py-1.5 text-[12.5px]"
             value={level}

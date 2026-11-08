@@ -91,5 +91,9 @@ class ConfigApplyResult(Envelope):
     results: List[Dict[str, Any]] = []
 
 
+class ConfigSessionsResult(Envelope):
+    sessions: List[Dict[str, Any]] = []
+
+
 class AssistantSettingsResult(Envelope):
     safety_level: str = "manual"

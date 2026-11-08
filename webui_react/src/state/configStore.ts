@@ -19,6 +19,8 @@ interface ConfigState {
   configPath: string
   loadError: string | null
   fetchConfig: () => Promise<void>
+  /** 静默重读服务端配置（不打 loading、丢弃草稿）——助手落盘后同步用。 */
+  refreshConfig: () => Promise<void>
   setValue: (path: Path, value: unknown) => void
   save: () => Promise<SaveOutcome>
 }
@@ -56,6 +58,25 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       }
     } catch (e) {
       set({ status: 'error', loadError: `连不上后端服务：${e}` })
+    }
+  },
+
+  refreshConfig: async () => {
+    // 与 fetchConfig 同源，但不切 status（避免整页 loading 闪烁）；落盘基线以服务端为准
+    try {
+      const resp = await api.getConfig()
+      if (resp.code !== 200) return
+      set({
+        status: 'ready',
+        config: resp.config,
+        draft: structuredClone(resp.config),
+        sha256: resp.sha256,
+        configPath: resp.path,
+        loadError: null,
+      })
+      applyAccent(resp.config)
+    } catch {
+      // 静默失败：保持现状，下次保存时 sha256 校验会兜底
     }
   },
 
