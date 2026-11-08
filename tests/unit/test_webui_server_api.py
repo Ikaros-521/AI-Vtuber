@@ -125,6 +125,17 @@ def test_config_get_and_save_roundtrip(tmp_config):
         on_disk = json.loads(tmp_config.read_text(encoding="utf-8"))
         assert on_disk["api_port"] == 19000
 
+        # 响应必须带回落盘后的新 sha256：response_model 漏声明会剥掉该字段，
+        # 前端基线停在旧值，下一次保存就会误报 409「被外部程序修改过」
+        assert resp["sha256"]
+
+        # 用新基线连续第二次保存必须成功（页面改一项保存后再改另一项的常见路径）
+        resp2 = client.post(
+            "/api/config/save",
+            json={"base_sha256": resp["sha256"], "changes": [{"path": ["api_port"], "value": 19001}]},
+        ).json()
+        assert resp2["code"] == 200 and resp2["sha256"]
+
 
 def test_config_save_conflict_409(tmp_config):
     with _client() as client:

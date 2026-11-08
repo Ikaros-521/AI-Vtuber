@@ -31,6 +31,9 @@ class ConfigGetResult(Envelope):
 
 
 class ConfigSaveResult(Envelope):
+    # 200 时回传落盘后的新 sha256，前端拿它续接下一次保存的 base_sha256；
+    # 漏声明会被 response_model 过滤掉，前端基线停在旧值，第二次保存必 409
+    sha256: str = ""
     # 422 校验失败时回传配置路径数组供前端跳转
     path: Optional[List[Any]] = None
 
